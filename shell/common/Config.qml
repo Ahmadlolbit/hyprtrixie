@@ -9,7 +9,7 @@ Singleton {
 
   readonly property var defaults: ({
       position: "top",
-      left: [],
+      left: ["workspaces"],
       center: [],
       right: []
     })
