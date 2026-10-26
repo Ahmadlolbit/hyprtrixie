@@ -10,7 +10,7 @@ Singleton {
   readonly property var defaults: ({
       position: "top",
       left: ["workspaces", "window"],
-      center: [],
+      center: ["clock"],
       right: []
     })
   readonly property var system: parse(systemFile.text())
