@@ -1,0 +1,5 @@
+linux-headers-amd64/backports
+nvidia-open-kernel-dkms/backports
+nvidia-driver/backports
+firmware-nvidia-gsp/backports
+nvidia-suspend-common/backports
