@@ -172,7 +172,7 @@ interface() {
 }
 
 desktop_settings() {
-  local mode="${COLORS[mode]}"
+  local mode="${COLORS[mode]}" icons=""
   command -v gsettings >/dev/null || return 0
   interface color-scheme "prefer-$mode"
   if [[ $mode == light ]]; then
@@ -180,6 +180,12 @@ desktop_settings() {
   else
     interface gtk-theme Adwaita-dark
   fi
+  [[ -f $STATE/theme/icons.theme ]] && icons="$(head -n 1 "$STATE/theme/icons.theme")"
+  if [[ ! $icons =~ ^[A-Za-z0-9._-]+$ || ! -d /usr/share/icons/$icons ]]; then
+    icons=Yaru
+    [[ $mode == dark ]] && icons=Yaru-dark
+  fi
+  interface icon-theme "$icons"
 }
 
 retint() {
