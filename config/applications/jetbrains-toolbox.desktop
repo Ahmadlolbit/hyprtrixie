@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=JetBrains Toolbox
+Comment=Install and update JetBrains IDEs
+Exec=/opt/jetbrains-toolbox/bin/jetbrains-toolbox %u
+Icon=/opt/jetbrains-toolbox/bin/toolbox.svg
+Categories=Development;
+MimeType=x-scheme-handler/jetbrains;
+StartupWMClass=jetbrains-toolbox
+Terminal=false

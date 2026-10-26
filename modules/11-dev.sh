@@ -1,7 +1,7 @@
 register_module 11 "Developer tools"
 
 option DEV_TOOLS --section dev --label "Developer tools" --type multi \
-  --values "docker@developer podman@developer mise@developer python@developer rust@developer go@developer kubernetes@developer neovim@developer vscode@developer vscodium@developer zed@developer"
+  --values "docker@developer podman@developer mise@developer python@developer rust@developer go@developer kubernetes@developer neovim@developer vscode@developer vscodium@developer zed@developer toolbox@developer"
 option CONTAINER_ENGINE --section dev --label "Engine behind the docker command" --type choice \
   --default docker --values "docker podman" --when both_engines
 option DOCKER_PORTS --section dev --label "Docker publishes ports on" --type choice \
@@ -168,6 +168,21 @@ editors_ready() {
   return 0
 }
 
+toolbox_install() {
+  local dir=/opt/jetbrains-toolbox tmp
+  if ! release_current toolbox || [[ ! -x $dir/bin/jetbrains-toolbox ]]; then
+    fetch_release toolbox || return 1
+    tmp="$(mktemp -d)" || return 1
+    tar -xzf "$FETCHED_PATH" -C "$tmp" || return 1
+    rm -rf "$dir"
+    mv "$tmp"/jetbrains-toolbox-* "$dir" || return 1
+    rm -rf "$tmp"
+    release_mark toolbox
+  fi
+  ln -sfn "$dir/bin/jetbrains-toolbox" "$BIN_DIR/jetbrains-toolbox" || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/config/applications/jetbrains-toolbox.desktop" /usr/local/share/applications/jetbrains-toolbox.desktop
+}
+
 module_11() {
   tool_wanted docker && run_step "Install Docker" docker_install
   tool_wanted podman && run_step "Install Podman" podman_install
@@ -185,6 +200,7 @@ module_11() {
   tool_wanted vscode && run_step "Install Visual Studio Code" vscode_install
   tool_wanted vscodium && run_step "Install VSCodium" vscodium_install
   tool_wanted zed && run_step "Install Zed" zed_install
+  tool_wanted toolbox && run_step "Install JetBrains Toolbox" toolbox_install
   return 0
 }
 
@@ -219,4 +235,9 @@ verify_11_neovim() {
 
 verify_11_editors() {
   run_check "Code editors are installed" editors_ready
+}
+
+verify_11_toolbox() {
+  tool_wanted toolbox || return 0
+  run_check "JetBrains Toolbox is installed" commands_present jetbrains-toolbox
 }

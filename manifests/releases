@@ -8,3 +8,4 @@ k9s 0.51.0 https://github.com/derailed/k9s/releases/download/v0.51.0/k9s_linux_a
 kind v0.33.0 https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-linux-amd64 aee6151561422756b764a4ae28e7f44cda5af5a9eead3cc9985112b1de8d8e0d
 neovim v0.12.6 https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-linux-x86_64.tar.gz 474430d53e6264f6d6dd18db42d6dc9df3a1b56ca9e88a325bbf860e1a811d87
 zed v1.25.3 https://github.com/zed-industries/zed/releases/download/v1.25.3/zed-linux-x86_64.tar.gz 35f9115acd8b4c3bea6ed20f7c9b6ec8f1d2c2dd5a1cc438d552167b5ed4b342
+toolbox 3.9.0.88839 https://download.jetbrains.com/toolbox/jetbrains-toolbox-3.9.0.88839.tar.gz e578d49627da13a6e196e234bfb6325db02a64a07fd22414909daae378ab4049
