@@ -7,4 +7,6 @@ ShellRoot {
 
     Bar {}
   }
+
+  Osd {}
 }
