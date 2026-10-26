@@ -46,6 +46,7 @@ deploy_file() {
       return 0
     fi
     if [[ -n $known && $current != "$known" ]]; then
+      [[ $new == "$known" ]] && return 0
       install -m "$mode" -o "$owner" -g "$(owner_group "$owner")" "$src" "$dest.hyprtrixie-new" || return 1
       log warn "kept local edits in $dest, new version written to $dest.hyprtrixie-new"
       return 0
