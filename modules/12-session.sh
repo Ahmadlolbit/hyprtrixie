@@ -138,6 +138,10 @@ screenshot_install() {
   deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-screenshot" "$BIN_DIR/hyprtrixie-screenshot" 0755
 }
 
+power_menu_install() {
+  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-power-menu" "$BIN_DIR/hyprtrixie-power-menu" 0755
+}
+
 module_12() {
   run_step "Install session packages" apt_install_list session
   run_step "Install the Hyprland defaults" hyprland_defaults
@@ -149,6 +153,7 @@ module_12() {
   run_step "Set up notifications" mako_setup
   run_step "Install the Walker launcher" walker_install
   run_step "Install the screenshot command" screenshot_install
+  run_step "Install the power menu" power_menu_install
 }
 
 verify_12_packages() {
@@ -185,4 +190,8 @@ verify_12_walker() {
 
 verify_12_screenshot() {
   run_check "The screenshot command is installed" commands_present hyprtrixie-screenshot
+}
+
+verify_12_power_menu() {
+  run_check "The power menu is installed" commands_present hyprtrixie-power-menu
 }

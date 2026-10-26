@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+choice="$(printf '%s\n' "󰌾  Lock" "󰒲  Suspend" "󰍃  Log out" "󰜉  Restart" "󰐥  Shut down" |
+  walker --dmenu --placeholder "Power" --width 320 --maxheight 340)" || exit 0
+
+case "$choice" in
+  *Lock) pidof hyprlock >/dev/null || hyprlock ;;
+  *Suspend) systemctl suspend ;;
+  *"Log out") hyprctl dispatch 'hl.dsp.exit()' ;;
+  *Restart) systemctl reboot ;;
+  *"Shut down") systemctl poweroff ;;
+esac
