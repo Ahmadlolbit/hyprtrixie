@@ -96,6 +96,7 @@ theme_ready() {
 }
 
 module_14() {
+  run_step "Install theme packages" apt_install_list themes
   run_step "Install the Omarchy themes" omarchy_themes_install
   run_step "Install the community themes" community_themes_install
   run_step "Install the theme switcher" theme_engine_install

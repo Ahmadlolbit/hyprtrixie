@@ -163,6 +163,25 @@ link_apps() {
   fi
 }
 
+interface() {
+  if [[ -n ${DBUS_SESSION_BUS_ADDRESS:-} ]]; then
+    gsettings set org.gnome.desktop.interface "$1" "$2"
+  else
+    dbus-run-session -- gsettings set org.gnome.desktop.interface "$1" "$2" 2>/dev/null
+  fi
+}
+
+desktop_settings() {
+  local mode="${COLORS[mode]}"
+  command -v gsettings >/dev/null || return 0
+  interface color-scheme "prefer-$mode"
+  if [[ $mode == light ]]; then
+    interface gtk-theme Adwaita
+  else
+    interface gtk-theme Adwaita-dark
+  fi
+}
+
 retint() {
   [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]] || return 0
   hyprctl reload >/dev/null 2>&1
@@ -197,6 +216,7 @@ apply() {
   printf '%s\n' "$name" >"$STATE/theme.name"
   pick_background "$name" "$previous"
   link_apps
+  desktop_settings
   retint
 }
 
