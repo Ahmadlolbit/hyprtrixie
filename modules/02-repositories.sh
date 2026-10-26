@@ -20,13 +20,20 @@ sources_legacy_cleanup() {
 }
 
 sources_write() {
+  local changed=0
   apt_install ca-certificates || return 1
   sources_legacy_cleanup || return 1
   deploy_rendered "$HYPRTRIXIE_ROOT/system/apt/debian.sources" "$APT_SOURCES_DIR/debian.sources" 0644 root \
     "MIRROR=$DEBIAN_MIRROR" "SECURITY=$DEBIAN_SECURITY_MIRROR" || return 1
+  ((DEPLOY_CHANGED)) && changed=1
   deploy_rendered "$HYPRTRIXIE_ROOT/system/apt/debian-backports.sources" "$APT_SOURCES_DIR/debian-backports.sources" 0644 root \
     "MIRROR=$DEBIAN_MIRROR" || return 1
-  apt_update --force
+  ((DEPLOY_CHANGED)) && changed=1
+  if ((changed)); then
+    apt_update --force
+  else
+    apt_update
+  fi
 }
 
 extrepo_setup() {
