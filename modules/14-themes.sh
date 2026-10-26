@@ -1,9 +1,13 @@
 register_module 14 "Themes"
 
+option THEME --section look --label "Theme" --type choice --default catppuccin \
+  --values "catppuccin catppuccin-latte ethereal everforest flexoki-light gruvbox hackerman kanagawa last-horizon lumon lupine matte-black miasma nord osaka-jade retro-82 ristretto rose-pine solitude tokyo-night vantablack white bloodline neon-plum noir cobalt-night navy-mint porcelain dayshift inkwell terracotta marble green-magic roseglass"
+
 OMARCHY_DIR="${HYPRTRIXIE_OMARCHY_DIR:-/usr/share/omarchy}"
 COMMUNITY_THEMES=(hermes-bloodline:bloodline hermtang:neon-plum nous-noir:noir portal-vibes:cobalt-night
   perfect-computer:navy-mint hermachy:porcelain nous-dayshift:dayshift codexy:inkwell claudey:terracotta
   tonarchy:marble green-magic:green-magic roseglass:roseglass)
+THEME_STATE=.local/state/omarchy/current
 
 theme_copy() {
   local src="$1" dest="$2" old="${3:-}" new="${4:-}" file base
@@ -51,19 +55,35 @@ community_themes_install() {
 }
 
 themes_present() {
-  compgen -G "$OMARCHY_DIR/themes/*/colors.toml" >/dev/null
+  local name
+  for name in $(option_items THEME); do
+    [[ -f $OMARCHY_DIR/themes/$name/colors.toml ]] || return 1
+  done
 }
 
 theme_engine_install() {
   deploy_file "$HYPRTRIXIE_ROOT/bin/omarchy-theme-set" "$BIN_DIR/omarchy-theme-set" 0755
 }
 
+theme_apply() {
+  as_user env OMARCHY_PATH="$OMARCHY_DIR" "$BIN_DIR/omarchy-theme-set" "$THEME"
+}
+
+theme_ready() {
+  [[ "$(cat "$(user_path "$THEME_STATE/theme.name")" 2>/dev/null)" == "$THEME" ]]
+}
+
 module_14() {
   run_step "Install the Omarchy themes" omarchy_themes_install
   run_step "Install the community themes" community_themes_install
   run_step "Install the theme switcher" theme_engine_install
+  run_step "Apply the $THEME theme" theme_apply
 }
 
 verify_14_themes() {
   run_check "All themes are installed" themes_present
+}
+
+verify_14_theme() {
+  run_check "The $THEME theme is applied" theme_ready
 }
