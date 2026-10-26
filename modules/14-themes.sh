@@ -67,7 +67,10 @@ theme_engine_install() {
 }
 
 theme_apply() {
-  as_user env OMARCHY_PATH="$OMARCHY_DIR" "$BIN_DIR/omarchy-theme-set" "$THEME"
+  as_user env OMARCHY_PATH="$OMARCHY_DIR" "$BIN_DIR/omarchy-theme-set" "$THEME" || return 1
+  if [[ -f "$(user_path .config/mako/config)" ]]; then
+    ensure_line "$(user_path .config/mako/config)" "include=~/$THEME_STATE/theme/mako.ini"
+  fi
 }
 
 theme_ready() {
