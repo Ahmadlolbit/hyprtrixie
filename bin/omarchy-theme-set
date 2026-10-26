@@ -163,6 +163,20 @@ link_apps() {
   fi
 }
 
+retint() {
+  [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]] || return 0
+  hyprctl reload >/dev/null 2>&1
+  hyprctl hyprpaper wallpaper ",$(readlink -f "$STATE/background"),cover" >/dev/null 2>&1
+  makoctl reload >/dev/null 2>&1
+  qs -p /usr/share/hyprtrixie/shell ipc call theme reload >/dev/null 2>&1
+  pkill -USR1 -x kitty
+  pkill -USR2 -x btop
+  if pkill -x walker; then
+    setsid -f walker --gapplication-service >/dev/null 2>&1
+  fi
+  return 0
+}
+
 apply() {
   local name="$1" next="$STATE/next-theme" previous
   previous="$(cat "$STATE/theme.name" 2>/dev/null)"
@@ -183,6 +197,7 @@ apply() {
   printf '%s\n' "$name" >"$STATE/theme.name"
   pick_background "$name" "$previous"
   link_apps
+  retint
 }
 
 case "${1:-}" in
