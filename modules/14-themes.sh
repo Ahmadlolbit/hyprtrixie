@@ -64,7 +64,7 @@ themes_present() {
 theme_engine_install() {
   local command
   deploy_tree "$HYPRTRIXIE_ROOT/themed" "$OMARCHY_DIR/default/themed" || return 1
-  for command in omarchy-theme-set omarchy-theme-install; do
+  for command in omarchy-theme-set omarchy-theme-install hyprtrixie-theme-picker; do
     deploy_file "$HYPRTRIXIE_ROOT/bin/$command" "$BIN_DIR/$command" 0755 || return 1
   done
 }
