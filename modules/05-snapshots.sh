@@ -68,6 +68,28 @@ timers_active() {
   service_active snapper-timeline.timer && service_active snapper-cleanup.timer
 }
 
+container_storage() {
+  local pair dir name
+  for pair in /var/lib/docker:@docker /var/lib/containers:@containers; do
+    dir="${pair%%:*}"
+    name="${pair#*:}"
+    mountpoint -q "$dir" && continue
+    if [[ -n "$(ls -A "$dir" 2>/dev/null)" ]]; then
+      printf '%s already has data; it stays inside the root subvolume\n' "$dir"
+      continue
+    fi
+    mount_subvolume "$name" "$dir" noatime || return 1
+  done
+}
+
+container_storage_ok() {
+  local dir
+  for dir in /var/lib/docker /var/lib/containers; do
+    mountpoint -q "$dir" && continue
+    [[ -n "$(ls -A "$dir" 2>/dev/null)" ]] || return 1
+  done
+}
+
 module_05() {
   if ! root_is_btrfs; then
     module_skip "Snapshots need a btrfs root; this system uses $(root_fstype)"
@@ -83,10 +105,16 @@ module_05() {
   run_step "Configure snapper" snapper_configure
   run_step "Turn on the snapshot timers" service_start snapper-timeline.timer snapper-cleanup.timer
   run_step "Take the first snapshot" snapper_first
+  run_step "Keep container storage out of snapshots" container_storage
 }
 
 verify_05_snapper() {
   root_is_btrfs && snapshots_enabled || return 0
   run_check "Snapper is set up for /" snapper_ready
   run_check "Snapshot timers are running" timers_active
+}
+
+verify_05_containers() {
+  root_is_btrfs && snapshots_enabled || return 0
+  run_check "Container storage is outside root snapshots" container_storage_ok
 }
