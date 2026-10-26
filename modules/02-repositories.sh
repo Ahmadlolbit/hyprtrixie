@@ -38,6 +38,42 @@ extrepo_ready() {
   pkg_installed extrepo && grep -qE '^- non-free$' "$EXTREPO_CONFIG"
 }
 
+firmware_lists() {
+  local vendor lists=(firmware)
+  case "$CPU_VENDOR" in
+    intel) lists+=(cpu-intel audio-sof) ;;
+    amd) lists+=(cpu-amd) ;;
+  esac
+  for vendor in intel amd nvidia; do
+    has_gpu "$vendor" && lists+=("gpu-$vendor")
+  done
+  for vendor in intel realtek mediatek atheros broadcom; do
+    has_wifi "$vendor" && lists+=("wifi-$vendor")
+  done
+  printf '%s\n' "${lists[@]}"
+}
+
+firmware_packages() {
+  local lists=() list
+  mapfile -t lists < <(firmware_lists)
+  for list in "${lists[@]}"; do
+    pkg_list "$list" || return 1
+  done
+}
+
+firmware_install() {
+  local pkgs=()
+  mapfile -t pkgs < <(firmware_packages)
+  printf 'firmware for: %s\n' "$(firmware_lists | tr '\n' ' ')"
+  apt_install "${pkgs[@]}"
+}
+
+firmware_present() {
+  local pkgs=()
+  mapfile -t pkgs < <(firmware_packages)
+  packages_present "${pkgs[@]}"
+}
+
 apt_has_suite() {
   apt-cache policy 2>/dev/null | grep -q "n=$1,"
 }
@@ -50,6 +86,7 @@ module_02() {
   run_step "Use Debian over HTTPS with backports" sources_write
   run_step "Prepare vendor repositories" extrepo_setup
   run_step "Install base packages" apt_install_list base
+  run_step "Install firmware for this machine" firmware_install
 }
 
 verify_02_sources() {
@@ -63,4 +100,8 @@ verify_02_extrepo() {
 
 verify_02_base() {
   run_check "Base packages are installed" list_present base
+}
+
+verify_02_firmware() {
+  run_check "Firmware for this machine is installed" firmware_present
 }
