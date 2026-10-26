@@ -117,6 +117,19 @@ grub_btrfs_ready() {
   [[ -x /etc/grub.d/41_snapshots-btrfs ]] && service_active grub-btrfsd.service
 }
 
+rollback_install() {
+  apt_install_list rollback || return 1
+  fetch_git_cached snapper-rollback || return 1
+  deploy_file "$FETCHED_PATH/snapper-rollback.py" /usr/local/sbin/snapper-rollback 0755 || return 1
+  deploy_rendered "$HYPRTRIXIE_ROOT/system/snapper-rollback.conf" /etc/snapper-rollback.conf 0644 root \
+    "SUBVOL=$(root_subvolume)" "DEVICE=$(root_device)" || return 1
+  mkdir -p /btrfsroot
+}
+
+rollback_ready() {
+  /usr/local/sbin/snapper-rollback --help >/dev/null 2>&1
+}
+
 module_05() {
   if ! root_is_btrfs; then
     module_skip "Snapshots need a btrfs root; this system uses $(root_fstype)"
@@ -135,6 +148,7 @@ module_05() {
   run_step "Keep container storage out of snapshots" container_storage
   run_step "Install grub-btrfs" grub_btrfs_install
   run_step "Show snapshots in the boot menu" grub_btrfs_enable
+  run_step "Install snapper-rollback" rollback_install
 }
 
 verify_05_snapper() {
@@ -151,4 +165,9 @@ verify_05_containers() {
 verify_05_grub() {
   root_is_btrfs && snapshots_enabled || return 0
   run_check "Snapshots appear in the boot menu" grub_btrfs_ready
+}
+
+verify_05_rollback() {
+  root_is_btrfs && snapshots_enabled || return 0
+  run_check "snapper-rollback works" rollback_ready
 }
