@@ -1,16 +1,22 @@
 register_module 07 "Login screen"
 
+option GREETER --section system --label "Login screen runs on" --type choice \
+  --default x11 --values "x11 wayland"
+
 SDDM_CONF="${HYPRTRIXIE_SDDM_CONF:-/etc/sddm.conf.d/10-hyprtrixie.conf}"
 SDDM_STATE="${HYPRTRIXIE_SDDM_STATE:-/var/lib/sddm/state.conf}"
 SDDM_THEMES="${HYPRTRIXIE_SDDM_THEMES:-/usr/share/sddm/themes}"
 SDDM_THEME="catppuccin-mocha-blue"
 
 sddm_packages() {
-  apt_install_list sddm
+  apt_install_list sddm || return 1
+  if [[ $GREETER == wayland ]]; then
+    apt_install_list sddm-wayland || return 1
+  fi
 }
 
 sddm_configure() {
-  deploy_rendered "$HYPRTRIXIE_ROOT/system/sddm/x11.conf" "$SDDM_CONF" 0644 root "THEME=$SDDM_THEME" || return 1
+  deploy_rendered "$HYPRTRIXIE_ROOT/system/sddm/$GREETER.conf" "$SDDM_CONF" 0644 root "THEME=$SDDM_THEME" || return 1
   if [[ -n $TARGET_USER ]] && ! grep -q '^Session=' "$SDDM_STATE" 2>/dev/null; then
     mkdir -p "${SDDM_STATE%/*}" || return 1
     render_template "$HYPRTRIXIE_ROOT/system/sddm/state.conf" "USER=$TARGET_USER" >"$SDDM_STATE" || return 1
