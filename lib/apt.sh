@@ -175,6 +175,10 @@ extrepo_enable() {
   done
 }
 
+pkg_candidate() {
+  apt-cache policy "$1" 2>/dev/null | awk '/Candidate:/ { if ($2 != "(none)") print $2; exit }'
+}
+
 extrepo_release_url() {
   local file="/etc/apt/sources.list.d/extrepo_$1.sources" uri suite
   [[ -f $file ]] || return 1
