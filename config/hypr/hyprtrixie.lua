@@ -9,3 +9,7 @@ require("hyprtrixie.hypr.input")
 require("hyprtrixie.hypr.windows")
 require("hyprtrixie.hypr.autostart")
 require("hyprtrixie.hypr.bindings")
+
+if package.searchpath("hyprtrixie.hypr.options", package.path) then
+  require("hyprtrixie.hypr.options")
+end

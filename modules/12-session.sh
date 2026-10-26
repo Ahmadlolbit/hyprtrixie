@@ -1,10 +1,38 @@
 register_module 12 "Desktop session"
 
+option DISPLAY_SCALE --section input --label "Display scale" --type choice \
+  --default auto --values "auto 1 1.25 1.5 1.75 2"
+option NATURAL_SCROLL --section input --label "Natural scrolling" --type bool --default no
+option TAP_TO_CLICK --section input --label "Tap to click" --type bool --default yes
+option ANIMATIONS --section look --label "Animations" --type bool --default yes
+
 HYPR_SHARE="$SHARE_DIR/hypr"
+
+lua_bool() {
+  if [[ $1 == yes ]]; then
+    printf 'true'
+  else
+    printf 'false'
+  fi
+}
+
+lua_scale() {
+  if [[ $1 == auto ]]; then
+    printf '"auto"'
+  else
+    printf '%s' "$1"
+  fi
+}
 
 hyprland_defaults() {
   deploy_tree "$HYPRTRIXIE_ROOT/config/hypr" "$HYPR_SHARE" || return 1
   deploy_file "$HYPRTRIXIE_ROOT/system/hypr/hyprland.lua" /etc/xdg/hypr/hyprland.lua
+}
+
+hyprland_options() {
+  deploy_rendered "$HYPRTRIXIE_ROOT/system/hypr/options.lua" /etc/hyprtrixie/hypr/options.lua 0644 root \
+    "NATURAL_SCROLL=$(lua_bool "$NATURAL_SCROLL")" "TAP_TO_CLICK=$(lua_bool "$TAP_TO_CLICK")" \
+    "ANIMATIONS=$(lua_bool "$ANIMATIONS")" "SCALE=$(lua_scale "$DISPLAY_SCALE")"
 }
 
 hyprland_user_config() {
@@ -36,6 +64,7 @@ hyprland_config_ok() {
 module_12() {
   run_step "Install session packages" apt_install_list session
   run_step "Install the Hyprland defaults" hyprland_defaults
+  run_step "Apply display and input settings" hyprland_options
   run_step "Set up your Hyprland config" hyprland_user_config
 }
 
