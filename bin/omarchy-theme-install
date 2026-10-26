@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage: omarchy-theme-install <https URL of a theme repository>
+
+Clones an Omarchy theme into ~/.config/omarchy/themes and applies it. A theme
+from a repository can change colours and backgrounds, but not run code.
+USAGE
+}
+
+url="${1:-}"
+case "$url" in
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  https://*) ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac
+
+name="$(basename -- "${url%/}" .git | sed -E 's/^omarchy-//; s/-theme$//' | tr '[:upper:]' '[:lower:]')"
+if [[ ! $name =~ ^[a-z0-9_][a-z0-9._+-]*$ ]]; then
+  printf 'cannot tell the theme name from %s\n' "$url" >&2
+  exit 1
+fi
+
+dir="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/themes/$name"
+mkdir -p "${dir%/*}" || exit 1
+rm -rf "$dir.part"
+git clone --quiet --depth 1 -- "$url" "$dir.part" || exit 1
+rm -rf "$dir"
+mv "$dir.part" "$dir" || exit 1
+exec omarchy-theme-set "$name"
