@@ -15,6 +15,7 @@ bind("SUPER + F", "Full screen", hl.dsp.window.fullscreen({ mode = "fullscreen" 
 bind("SUPER + T", "Float or tile window", hl.dsp.window.float({ action = "toggle" }))
 bind("SUPER + J", "Change split direction", hl.dsp.layout("togglesplit"))
 bind("SUPER + P", "Pseudo-tile window", hl.dsp.window.pseudo())
+bind("SUPER + L", "Lock", "pidof hyprlock || hyprlock")
 
 local arrows = {
   { "LEFT", "left", -50, 0 },

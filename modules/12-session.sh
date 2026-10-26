@@ -63,11 +63,16 @@ hyprland_config_ok() {
   return 1
 }
 
+hyprlock_setup() {
+  deploy_file "$HYPRTRIXIE_ROOT/system/hypr/hyprlock.conf" /etc/xdg/hypr/hyprlock.conf
+}
+
 module_12() {
   run_step "Install session packages" apt_install_list session
   run_step "Install the Hyprland defaults" hyprland_defaults
   run_step "Apply display and input settings" hyprland_options
   run_step "Set up your Hyprland config" hyprland_user_config
+  run_step "Set up the lock screen" hyprlock_setup
 }
 
 verify_12_packages() {
@@ -80,4 +85,8 @@ verify_12_hyprland() {
 
 verify_12_user() {
   run_check "Your Hyprland config loads the hyprtrixie defaults" hyprland_user_ready
+}
+
+verify_12_lock() {
+  run_check "The lock screen is configured" test -f /etc/xdg/hypr/hyprlock.conf
 }
