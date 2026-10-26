@@ -11,7 +11,7 @@ Singleton {
       position: "top",
       left: ["workspaces", "window"],
       center: ["clock"],
-      right: []
+      right: ["cpu"]
     })
   readonly property var system: parse(systemFile.text())
   readonly property var user: parse(userFile.text())
