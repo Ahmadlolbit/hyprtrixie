@@ -37,10 +37,20 @@ zsh_ready() {
   [[ "$(user_shell)" == /usr/bin/zsh ]] && grep -qF "$ZSH_SHARE/hyprtrixie.zsh" "$(user_path .zshrc)"
 }
 
+prompt_setup() {
+  deploy_user_file "$HYPRTRIXIE_ROOT/config/starship.toml" .config/starship.toml || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/config/zsh/prompt-starship.zsh" "$ZSH_SHARE/prompt.zsh"
+}
+
+prompt_ready() {
+  command -v starship >/dev/null && grep -q starship "$ZSH_SHARE/prompt.zsh"
+}
+
 module_08() {
   run_step "Install terminal packages" apt_install_list terminal
   run_step "Install JetBrains Mono Nerd Font" nerd_font_install
   run_step "Set up zsh with Oh My Zsh" zsh_setup
+  run_step "Set up the Starship prompt" prompt_setup
 }
 
 verify_08_terminal() {
@@ -53,4 +63,8 @@ verify_08_font() {
 
 verify_08_zsh() {
   run_check "zsh is the login shell" zsh_ready
+}
+
+verify_08_prompt() {
+  run_check "The Starship prompt is set up" prompt_ready
 }
