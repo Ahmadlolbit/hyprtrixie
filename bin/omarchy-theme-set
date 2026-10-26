@@ -186,6 +186,7 @@ desktop_settings() {
     [[ $mode == dark ]] && icons=Yaru-dark
   fi
   interface icon-theme "$icons"
+  interface cursor-theme Bibata-Modern-Ice
 }
 
 retint() {
