@@ -49,6 +49,61 @@ preflight_disk() {
   fi
 }
 
+preflight_choose_user() {
+  local users=() pick name
+  mapfile -t users < <(human_users)
+  pick="Create a new account"
+  if ((${#users[@]})); then
+    pick="$(ui_choose "Which account should this computer be set up for?" "" "${users[@]}" "Create a new account")" || return 1
+  fi
+  if [[ $pick == "Create a new account" ]]; then
+    name="$(ui_input "Name for the new account (lowercase, no spaces)" "")" || return 1
+    if [[ ! $name =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; then
+      printf 'Account names use lowercase letters, digits, - and _.\n'
+      return 1
+    fi
+    adduser --disabled-password --comment "" "$name" || return 1
+    pick="$name"
+  fi
+  set_target_user "$pick"
+}
+
+preflight_password() {
+  local first second
+  while :; do
+    first="$(ui_password "Choose a password for $TARGET_USER")" || return 1
+    second="$(ui_password "Type it once more")" || return 1
+    [[ -n $first && $first == "$second" ]] && break
+    ui_status warn "Those didn't match, try again"
+  done
+  printf '%s:%s\n' "$TARGET_USER" "$first" | chpasswd
+}
+
+preflight_user() {
+  if [[ -z $TARGET_USER ]]; then
+    if ! ui_can_ask; then
+      printf 'No admin account found. Run hyprtrixie with sudo from your own account.\n'
+      return 1
+    fi
+    preflight_choose_user || return 1
+    log_attach_user "$TARGET_HOME" "$TARGET_USER"
+  fi
+  apt_install sudo || return 1
+  user_add_groups sudo || return 1
+  if ! user_has_password; then
+    if ! ui_can_ask; then
+      printf '%s has no password yet; set one with: passwd %s\n' "$TARGET_USER" "$TARGET_USER"
+      return 1
+    fi
+    preflight_password || return 1
+  fi
+  printf 'Admin account: %s (%s)\n' "$TARGET_USER" "$TARGET_HOME"
+}
+
+user_is_admin() {
+  [[ -n $TARGET_USER ]] && sudo -l -U "$TARGET_USER" 2>/dev/null | grep -qE '\(ALL( : ALL)?\) ALL'
+}
+
 preflight_detect() {
   detect_all
   detect_summary
@@ -60,9 +115,14 @@ module_01() {
   run_step "Secure Boot is off" preflight_secure_boot
   run_step "Internet connection" preflight_network
   run_step "Enough free disk space" preflight_disk
+  run_step --interactive "Admin account" preflight_user
   run_step "Detect hardware" preflight_detect
 }
 
 verify_01_os() {
   run_check "Running on Debian 13 (trixie)" preflight_os
+}
+
+verify_01_admin() {
+  run_check "${TARGET_USER:-The admin account} can use sudo" user_is_admin
 }
