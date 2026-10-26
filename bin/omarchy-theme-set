@@ -152,6 +152,14 @@ pick_background() {
   ln -nsf "${found[0]}" "$STATE/background"
 }
 
+link_apps() {
+  local theme="$STATE/theme"
+  if [[ -f $theme/walker.css ]]; then
+    mkdir -p "$CONFIG_HOME/walker/themes/hyprtrixie" &&
+      ln -nsf "$theme/walker.css" "$CONFIG_HOME/walker/themes/hyprtrixie/style.css"
+  fi
+}
+
 apply() {
   local name="$1" next="$STATE/next-theme" previous
   previous="$(cat "$STATE/theme.name" 2>/dev/null)"
@@ -171,6 +179,7 @@ apply() {
   mv "$next" "$STATE/theme" || return 1
   printf '%s\n' "$name" >"$STATE/theme.name"
   pick_background "$name" "$previous"
+  link_apps
 }
 
 case "${1:-}" in
