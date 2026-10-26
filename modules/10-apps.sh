@@ -1,7 +1,7 @@
 register_module 10 "Applications"
 
 option APPS --section apps --label "Applications" --type multi \
-  --values "helium@minimal"
+  --values "helium@minimal whatsapp@everyday"
 
 app_wanted() {
   option_enabled APPS "$1"
@@ -27,11 +27,18 @@ helium_is_default() {
   [[ "$(as_user xdg-mime query default x-scheme-handler/https)" == helium.desktop ]]
 }
 
+whatsapp_install() {
+  pkg_installed helium-bin || helium_install || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/config/applications/whatsapp-web.svg" "$SHARE_DIR/icons/whatsapp-web.svg" || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/config/applications/whatsapp-web.desktop" /usr/local/share/applications/whatsapp-web.desktop
+}
+
 module_10() {
   if app_wanted helium; then
     run_step "Install the Helium browser" helium_install
     run_step "Make Helium the default browser" helium_default
   fi
+  app_wanted whatsapp && run_step "Add the WhatsApp web app" whatsapp_install
   return 0
 }
 
@@ -39,4 +46,9 @@ verify_10_helium() {
   app_wanted helium || return 0
   run_check "Helium is installed" pkg_installed helium-bin
   run_check "Helium is the default browser" helium_is_default
+}
+
+verify_10_whatsapp() {
+  app_wanted whatsapp || return 0
+  run_check "The WhatsApp web app is in the launcher" test -f /usr/local/share/applications/whatsapp-web.desktop
 }
