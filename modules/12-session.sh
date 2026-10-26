@@ -5,6 +5,8 @@ option DISPLAY_SCALE --section input --label "Display scale" --type choice \
 option NATURAL_SCROLL --section input --label "Natural scrolling" --type bool --default no
 option TAP_TO_CLICK --section input --label "Tap to click" --type bool --default yes
 option ANIMATIONS --section look --label "Animations" --type bool --default yes
+option WINDOW_STYLE --section look --label "Window style" --type choice \
+  --default sharp --values "sharp soft"
 
 HYPR_SHARE="$SHARE_DIR/hypr"
 
@@ -32,7 +34,7 @@ hyprland_defaults() {
 hyprland_options() {
   deploy_rendered "$HYPRTRIXIE_ROOT/system/hypr/options.lua" /etc/hyprtrixie/hypr/options.lua 0644 root \
     "NATURAL_SCROLL=$(lua_bool "$NATURAL_SCROLL")" "TAP_TO_CLICK=$(lua_bool "$TAP_TO_CLICK")" \
-    "ANIMATIONS=$(lua_bool "$ANIMATIONS")" "SCALE=$(lua_scale "$DISPLAY_SCALE")"
+    "ANIMATIONS=$(lua_bool "$ANIMATIONS")" "SCALE=$(lua_scale "$DISPLAY_SCALE")" "WINDOW_STYLE=$WINDOW_STYLE"
 }
 
 hyprland_user_config() {

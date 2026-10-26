@@ -11,3 +11,5 @@ hl.config({
 })
 
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = {{ SCALE }} })
+
+require("hyprtrixie.hypr.style-{{ WINDOW_STYLE }}")

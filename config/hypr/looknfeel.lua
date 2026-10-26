@@ -14,15 +14,6 @@ hl.config({
     allow_tearing = false,
     layout = "dwindle",
   },
-  decoration = {
-    rounding = 0,
-    shadow = {
-      enabled = false,
-    },
-    blur = {
-      enabled = false,
-    },
-  },
   group = {
     col = {
       border_active = active,
