@@ -131,6 +131,16 @@ packages_present() {
   done
 }
 
+commands_present() {
+  local name missing=()
+  for name in "$@"; do
+    command -v "$name" >/dev/null 2>&1 || missing+=("$name")
+  done
+  ((${#missing[@]} == 0)) && return 0
+  printf 'missing: %s\n' "${missing[*]}"
+  return 1
+}
+
 list_present() {
   local list pkgs=()
   for list in "$@"; do
