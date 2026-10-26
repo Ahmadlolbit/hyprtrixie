@@ -1,7 +1,7 @@
 register_module 11 "Developer tools"
 
 option DEV_TOOLS --section dev --label "Developer tools" --type multi \
-  --values "docker@developer podman@developer mise@developer python@developer rust@developer go@developer"
+  --values "docker@developer podman@developer mise@developer python@developer rust@developer go@developer kubernetes@developer"
 option CONTAINER_ENGINE --section dev --label "Engine behind the docker command" --type choice \
   --default docker --values "docker podman" --when both_engines
 option DOCKER_PORTS --section dev --label "Docker publishes ports on" --type choice \
@@ -80,6 +80,18 @@ toolchains_ready() {
   return 0
 }
 
+kubernetes_install() {
+  extrepo_try kubernetes || return 1
+  extrepo_try helm || return 1
+  apt_install_list dev-kubernetes || return 1
+  deb_install_release k9s k9s || return 1
+  if ! release_current kind || [[ ! -x $BIN_DIR/kind ]]; then
+    fetch_release kind || return 1
+    install -D -m 0755 "$FETCHED_PATH" "$BIN_DIR/kind" || return 1
+    release_mark kind
+  fi
+}
+
 module_11() {
   tool_wanted docker && run_step "Install Docker" docker_install
   tool_wanted podman && run_step "Install Podman" podman_install
@@ -88,6 +100,7 @@ module_11() {
   tool_wanted python && run_step "Install pyenv" apt_install_list dev-python
   tool_wanted rust && run_step "Install Rust (stable)" rust_install
   tool_wanted go && run_step "Install Go" apt_install_list dev-go
+  tool_wanted kubernetes && run_step "Install kubectl, helm, k9s and kind" kubernetes_install
   return 0
 }
 
@@ -108,4 +121,9 @@ verify_11_engine() {
 
 verify_11_toolchains() {
   run_check "Language toolchains are ready" toolchains_ready
+}
+
+verify_11_kubernetes() {
+  tool_wanted kubernetes || return 0
+  run_check "kubectl, helm, k9s and kind are installed" commands_present kubectl helm k9s kind
 }
