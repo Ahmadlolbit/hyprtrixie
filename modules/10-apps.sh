@@ -1,7 +1,7 @@
 register_module 10 "Applications"
 
 option APPS --section apps --label "Applications" --type multi \
-  --values "helium@minimal whatsapp@everyday dolphin@minimal libreoffice@everyday vlc@everyday telegram@everyday"
+  --values "helium@minimal whatsapp@everyday dolphin@minimal libreoffice@everyday vlc@everyday telegram@everyday signal@everyday vesktop@everyday teams@everyday"
 
 app_wanted() {
   option_enabled APPS "$1"
@@ -50,6 +50,27 @@ desktop_apps_present() {
   done
 }
 
+messaging_install() {
+  if app_wanted signal; then
+    extrepo_try signal || return 1
+    apt_install_list app-signal || return 1
+  fi
+  if app_wanted vesktop; then
+    deb_install_release vesktop vesktop || return 1
+  fi
+  if app_wanted teams; then
+    extrepo_try teams-for-linux || return 1
+    apt_install_list app-teams || return 1
+  fi
+}
+
+messaging_present() {
+  app_wanted signal && ! pkg_installed signal-desktop && return 1
+  app_wanted vesktop && ! pkg_installed vesktop && return 1
+  app_wanted teams && ! pkg_installed teams-for-linux && return 1
+  return 0
+}
+
 module_10() {
   if app_wanted helium; then
     run_step "Install the Helium browser" helium_install
@@ -57,6 +78,7 @@ module_10() {
   fi
   app_wanted whatsapp && run_step "Add the WhatsApp web app" whatsapp_install
   run_step "Install desktop applications" desktop_apps_install
+  run_step "Install messaging apps" messaging_install
   return 0
 }
 
@@ -73,4 +95,8 @@ verify_10_whatsapp() {
 
 verify_10_desktop_apps() {
   run_check "Desktop applications are installed" desktop_apps_present
+}
+
+verify_10_messaging() {
+  run_check "Messaging apps are installed" messaging_present
 }
