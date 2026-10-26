@@ -68,7 +68,11 @@ hyprland_config_ok() {
 }
 
 hyprlock_setup() {
-  deploy_file "$HYPRTRIXIE_ROOT/system/hypr/hyprlock.conf" /etc/xdg/hypr/hyprlock.conf
+  local clock="\$TIME"
+  if [[ $CLOCK_FORMAT == 12h ]]; then
+    clock="\$TIME12"
+  fi
+  deploy_rendered "$HYPRTRIXIE_ROOT/system/hypr/hyprlock.conf" /etc/xdg/hypr/hyprlock.conf 0644 root "TIME=$clock"
 }
 
 idle_listener() {
