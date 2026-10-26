@@ -7,3 +7,4 @@ bitwarden 2026.10.1 https://github.com/bitwarden/clients/releases/download/deskt
 k9s 0.51.0 https://github.com/derailed/k9s/releases/download/v0.51.0/k9s_linux_amd64.deb 56b539a509eb2d6357cf4f575ed38c089f0e4880c95f79a70196b54f14954908
 kind v0.33.0 https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-linux-amd64 aee6151561422756b764a4ae28e7f44cda5af5a9eead3cc9985112b1de8d8e0d
 neovim v0.12.6 https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-linux-x86_64.tar.gz 474430d53e6264f6d6dd18db42d6dc9df3a1b56ca9e88a325bbf860e1a811d87
+zed v1.25.3 https://github.com/zed-industries/zed/releases/download/v1.25.3/zed-linux-x86_64.tar.gz 35f9115acd8b4c3bea6ed20f7c9b6ec8f1d2c2dd5a1cc438d552167b5ed4b342

@@ -1,7 +1,7 @@
 register_module 11 "Developer tools"
 
 option DEV_TOOLS --section dev --label "Developer tools" --type multi \
-  --values "docker@developer podman@developer mise@developer python@developer rust@developer go@developer kubernetes@developer neovim@developer"
+  --values "docker@developer podman@developer mise@developer python@developer rust@developer go@developer kubernetes@developer neovim@developer vscode@developer vscodium@developer zed@developer"
 option CONTAINER_ENGINE --section dev --label "Engine behind the docker command" --type choice \
   --default docker --values "docker podman" --when both_engines
 option DOCKER_PORTS --section dev --label "Docker publishes ports on" --type choice \
@@ -128,6 +128,46 @@ neovim_ready() {
   "$BIN_DIR/nvim" --version 2>/dev/null | head -n1 | grep -qE 'NVIM v(0\.(1[1-9]|[2-9][0-9])|[1-9])'
 }
 
+vscode_install() {
+  extrepo_try vscode || return 1
+  apt_install_list dev-vscode
+}
+
+vscodium_install() {
+  extrepo_try vscodium || return 1
+  apt_install_list dev-vscodium
+}
+
+zed_install() {
+  local app tmp desktop
+  app="$(user_path .local/zed.app)"
+  if ! release_current zed || [[ ! -x $app/bin/zed ]]; then
+    fetch_release zed || return 1
+    tmp="$(mktemp -d)" || return 1
+    tar -xzf "$FETCHED_PATH" -C "$tmp" || return 1
+    rm -rf "$app"
+    user_mkdir .local || return 1
+    mv "$tmp/zed.app" "$app" || return 1
+    rm -rf "$tmp"
+    chown -R "$TARGET_USER:" "$app" || return 1
+    release_mark zed
+  fi
+  user_mkdir .local/bin || return 1
+  as_user ln -sfn "$app/bin/zed" "$(user_path .local/bin/zed)" || return 1
+  user_mkdir .local/share/applications || return 1
+  desktop="$(user_path .local/share/applications/dev.zed.Zed.desktop)"
+  sed -e "s|Exec=zed|Exec=$app/bin/zed|g" -e "s|Icon=zed|Icon=$app/share/icons/hicolor/512x512/apps/zed.png|g" \
+    "$app/share/applications/dev.zed.Zed.desktop" >"$desktop" || return 1
+  chown "$TARGET_USER:" "$desktop"
+}
+
+editors_ready() {
+  tool_wanted vscode && ! commands_present code && return 1
+  tool_wanted vscodium && ! commands_present codium && return 1
+  tool_wanted zed && [[ ! -x "$(user_path .local/zed.app/bin/zed)" ]] && return 1
+  return 0
+}
+
 module_11() {
   tool_wanted docker && run_step "Install Docker" docker_install
   tool_wanted podman && run_step "Install Podman" podman_install
@@ -142,6 +182,9 @@ module_11() {
     run_step "Set up LazyVim" lazyvim_setup
     run_step "Install LazyVim plugins" lazyvim_plugins
   fi
+  tool_wanted vscode && run_step "Install Visual Studio Code" vscode_install
+  tool_wanted vscodium && run_step "Install VSCodium" vscodium_install
+  tool_wanted zed && run_step "Install Zed" zed_install
   return 0
 }
 
@@ -172,4 +215,8 @@ verify_11_kubernetes() {
 verify_11_neovim() {
   tool_wanted neovim || return 0
   run_check "Neovim 0.11 or newer is installed" neovim_ready
+}
+
+verify_11_editors() {
+  run_check "Code editors are installed" editors_ready
 }
