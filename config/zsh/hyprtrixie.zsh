@@ -28,6 +28,10 @@ fi
 (( $+commands[bat] )) && export BAT_THEME=ansi
 (( $+commands[fd] )) && export FZF_DEFAULT_COMMAND='fd --type f --hidden --exclude .git'
 
+if [[ "$(cat /var/lib/hyprtrixie/container-engine 2>/dev/null)" == podman ]]; then
+  export DOCKER_HOST="unix://${XDG_RUNTIME_DIR:-/run/user/$UID}/podman/podman.sock"
+fi
+
 [[ -f /usr/share/hyprtrixie/zsh/prompt.zsh ]] && source /usr/share/hyprtrixie/zsh/prompt.zsh
 
 for script in /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh; do
