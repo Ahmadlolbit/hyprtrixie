@@ -62,6 +62,7 @@ themes_present() {
 }
 
 theme_engine_install() {
+  deploy_tree "$HYPRTRIXIE_ROOT/themed" "$OMARCHY_DIR/default/themed" || return 1
   deploy_file "$HYPRTRIXIE_ROOT/bin/omarchy-theme-set" "$BIN_DIR/omarchy-theme-set" 0755
 }
 
