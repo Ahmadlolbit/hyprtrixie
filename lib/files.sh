@@ -124,6 +124,15 @@ deploy_rendered() {
   return "$rc"
 }
 
+conf_set() {
+  local file="$1" key="$2" value="$3"
+  if [[ -f $file ]] && grep -qE "^#?[[:space:]]*$key=" "$file"; then
+    sed -i -E "s|^#?[[:space:]]*$key=.*|$key=$value|" "$file"
+  else
+    printf '%s=%s\n' "$key" "$value" >>"$file"
+  fi
+}
+
 ensure_line() {
   local file="$1" line="$2"
   [[ -f $file ]] && grep -qxF -- "$line" "$file" && return 0
