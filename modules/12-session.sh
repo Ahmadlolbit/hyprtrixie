@@ -21,7 +21,12 @@ hyprland_config_ok() {
 }
 
 module_12() {
+  run_step "Install session packages" apt_install_list session
   run_step "Install the Hyprland defaults" hyprland_defaults
+}
+
+verify_12_packages() {
+  run_check "Session packages are installed" list_present session
 }
 
 verify_12_hyprland() {
