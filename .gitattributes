@@ -1,0 +1,11 @@
+* text=auto eol=lf
+
+*.sh diff=bash
+hyprtrixie diff=bash
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ttf binary
+*.otf binary
