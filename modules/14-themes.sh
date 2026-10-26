@@ -54,9 +54,14 @@ themes_present() {
   compgen -G "$OMARCHY_DIR/themes/*/colors.toml" >/dev/null
 }
 
+theme_engine_install() {
+  deploy_file "$HYPRTRIXIE_ROOT/bin/omarchy-theme-set" "$BIN_DIR/omarchy-theme-set" 0755
+}
+
 module_14() {
   run_step "Install the Omarchy themes" omarchy_themes_install
   run_step "Install the community themes" community_themes_install
+  run_step "Install the theme switcher" theme_engine_install
 }
 
 verify_14_themes() {
