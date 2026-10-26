@@ -9,7 +9,7 @@ ONLY=""
 SKIP=""
 RUN_MODE=""
 
-for lib in log ui config step user apt files fetch detect service menu; do
+for lib in log ui config step user apt files fetch detect service btrfs menu; do
   source "$HYPRTRIXIE_ROOT/lib/$lib.sh"
 done
 for module in "$HYPRTRIXIE_ROOT"/modules/[0-9][0-9]-*.sh; do
