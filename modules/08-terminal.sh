@@ -58,11 +58,26 @@ prompt_ready() {
   command -v starship >/dev/null && grep -q starship "$ZSH_SHARE/prompt.zsh"
 }
 
+tmux_setup() {
+  local plugin dir
+  deploy_user_file "$HYPRTRIXIE_ROOT/config/tmux/tmux.conf" .config/tmux/tmux.conf || return 1
+  for plugin in tpm tmux-resurrect tmux-continuum; do
+    dir="$(user_path ".config/tmux/plugins/$plugin")"
+    fetch_git "$plugin" "$dir" || return 1
+    chown -R "$TARGET_USER:" "$dir" || return 1
+  done
+}
+
+tmux_ready() {
+  [[ -f "$(user_path .config/tmux/tmux.conf)" && -x "$(user_path .config/tmux/plugins/tpm/tpm)" ]]
+}
+
 module_08() {
   run_step "Install terminal packages" apt_install_list terminal
   run_step "Install JetBrains Mono Nerd Font" nerd_font_install
   run_step "Set up zsh with Oh My Zsh" zsh_setup
   run_step "Set up the $SHELL_PROMPT prompt" prompt_setup
+  run_step "Set up tmux" tmux_setup
 }
 
 verify_08_terminal() {
@@ -79,4 +94,8 @@ verify_08_zsh() {
 
 verify_08_prompt() {
   run_check "The $SHELL_PROMPT prompt is set up" prompt_ready
+}
+
+verify_08_tmux() {
+  run_check "tmux is set up with its plugins" tmux_ready
 }

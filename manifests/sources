@@ -2,3 +2,6 @@ grub-btrfs https://github.com/Antynea/grub-btrfs.git 2fcfbe967637166b88dadd49c83
 snapper-rollback https://github.com/jrabinow/snapper-rollback.git 04488f2350e8ec214277fe7de608492a9ee665a7
 oh-my-zsh https://github.com/ohmyzsh/ohmyzsh.git d2b7f557cceaddb16ba89bbf8200d8a8df35c4d8
 powerlevel10k https://github.com/romkatv/powerlevel10k.git 35833ea15f14b71dbcebc7e54c104d8d56ca5268
+tpm https://github.com/tmux-plugins/tpm.git e261deb1b47614eed3400089ce7197dc68acc4eb
+tmux-resurrect https://github.com/tmux-plugins/tmux-resurrect.git cff343cf9e81983d3da0c8562b01616f12e8d548
+tmux-continuum https://github.com/tmux-plugins/tmux-continuum.git 0698e8f4b17d6454c71bf5212895ec055c578da0
