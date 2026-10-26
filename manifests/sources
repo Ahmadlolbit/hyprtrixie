@@ -6,3 +6,4 @@ tpm https://github.com/tmux-plugins/tpm.git e261deb1b47614eed3400089ce7197dc68ac
 tmux-resurrect https://github.com/tmux-plugins/tmux-resurrect.git cff343cf9e81983d3da0c8562b01616f12e8d548
 tmux-continuum https://github.com/tmux-plugins/tmux-continuum.git 0698e8f4b17d6454c71bf5212895ec055c578da0
 lazyvim-starter https://github.com/LazyVim/starter.git 803bc181d7c0d6d5eeba9274d9be49b287294d99
+omarchy https://github.com/basecamp/omarchy.git 237f1b4071a0bff2296c6d740ba2b9fd695ebfa0
