@@ -1,7 +1,20 @@
 register_module 03 "Kernel and drivers"
 
+option KERNEL --section system --label "Kernel" --type choice \
+  --default backports --values "backports stable"
+
+kernel_packages() {
+  local pkg
+  for pkg in "$@"; do
+    [[ $KERNEL == stable ]] && pkg="${pkg%/backports}"
+    printf '%s\n' "$pkg"
+  done
+}
+
 kernel_install() {
-  apt_install linux-image-amd64/backports
+  local pkgs=()
+  mapfile -t pkgs < <(kernel_packages linux-image-amd64/backports)
+  apt_install "${pkgs[@]}"
 }
 
 kernel_newest() {
@@ -35,10 +48,10 @@ kernel_booted() {
 }
 
 module_03() {
-  run_step "Install the backports kernel" kernel_install
+  run_step "Install the $KERNEL kernel" kernel_install
 }
 
 verify_03_kernel() {
-  run_check "The kernel comes from backports" kernel_from_backports
+  [[ $KERNEL == backports ]] && run_check "The kernel comes from backports" kernel_from_backports
   run_check "The newest kernel is running (or starts after a reboot)" kernel_booted
 }

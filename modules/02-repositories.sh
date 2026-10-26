@@ -61,10 +61,13 @@ firmware_lists() {
 }
 
 firmware_packages() {
-  local lists=() list
+  local lists=() list pkg
   mapfile -t lists < <(firmware_lists)
   for list in "${lists[@]}"; do
-    pkg_list "$list" || return 1
+    while IFS= read -r pkg; do
+      [[ ${KERNEL:-backports} == stable ]] && pkg="${pkg%/backports}"
+      printf '%s\n' "$pkg"
+    done < <(pkg_list "$list")
   done
 }
 
