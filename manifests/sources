@@ -1,3 +1,4 @@
 grub-btrfs https://github.com/Antynea/grub-btrfs.git 2fcfbe967637166b88dadd49c834807243a941bf
 snapper-rollback https://github.com/jrabinow/snapper-rollback.git 04488f2350e8ec214277fe7de608492a9ee665a7
 oh-my-zsh https://github.com/ohmyzsh/ohmyzsh.git d2b7f557cceaddb16ba89bbf8200d8a8df35c4d8
+powerlevel10k https://github.com/romkatv/powerlevel10k.git 35833ea15f14b71dbcebc7e54c104d8d56ca5268
