@@ -134,6 +134,10 @@ walker_ready() {
   done
 }
 
+screenshot_install() {
+  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-screenshot" "$BIN_DIR/hyprtrixie-screenshot" 0755
+}
+
 module_12() {
   run_step "Install session packages" apt_install_list session
   run_step "Install the Hyprland defaults" hyprland_defaults
@@ -144,6 +148,7 @@ module_12() {
   run_step "Set up the wallpaper" hyprpaper_setup
   run_step "Set up notifications" mako_setup
   run_step "Install the Walker launcher" walker_install
+  run_step "Install the screenshot command" screenshot_install
 }
 
 verify_12_packages() {
@@ -176,4 +181,8 @@ verify_12_notifications() {
 
 verify_12_walker() {
   run_check "Walker and its providers are installed" walker_ready
+}
+
+verify_12_screenshot() {
+  run_check "The screenshot command is installed" commands_present hyprtrixie-screenshot
 }

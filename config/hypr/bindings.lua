@@ -17,6 +17,9 @@ bind("SUPER + J", "Change split direction", hl.dsp.layout("togglesplit"))
 bind("SUPER + P", "Pseudo-tile window", hl.dsp.window.pseudo())
 bind("SUPER + L", "Lock", "pidof hyprlock || hyprlock")
 bind("SUPER + Space", "Launcher", "walker")
+bind("Print", "Screenshot of a region", "hyprtrixie-screenshot region")
+bind("SHIFT + Print", "Screenshot of the window", "hyprtrixie-screenshot window")
+bind("CTRL + Print", "Screenshot of the screen", "hyprtrixie-screenshot screen")
 
 local arrows = {
   { "LEFT", "left", -50, 0 },
