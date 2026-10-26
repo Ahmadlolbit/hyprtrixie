@@ -9,3 +9,14 @@ kind v0.33.0 https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/k
 neovim v0.12.6 https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-linux-x86_64.tar.gz 474430d53e6264f6d6dd18db42d6dc9df3a1b56ca9e88a325bbf860e1a811d87
 zed v1.25.3 https://github.com/zed-industries/zed/releases/download/v1.25.3/zed-linux-x86_64.tar.gz 35f9115acd8b4c3bea6ed20f7c9b6ec8f1d2c2dd5a1cc438d552167b5ed4b342
 toolbox 3.9.0.88839 https://download.jetbrains.com/toolbox/jetbrains-toolbox-3.9.0.88839.tar.gz e578d49627da13a6e196e234bfb6325db02a64a07fd22414909daae378ab4049
+walker v2.17.2 https://github.com/abenz1267/walker/releases/download/v2.17.2/walker-v2.17.2-x86_64-unknown-linux-gnu.tar.gz 57e68d1f9f14782f1ae0f1c704509749a545a92531b8788b76b16bc29fcc5c19
+elephant v2.22.1 https://github.com/abenz1267/elephant/releases/download/v2.22.1/elephant-linux-amd64.tar.gz 53098cd67fbd0eb256d02594b06ef6817031ed93e93911126bea9904b33ad775
+elephant-desktopapplications v2.22.1 https://github.com/abenz1267/elephant/releases/download/v2.22.1/desktopapplications-linux-amd64.tar.gz a185897cae065c036a2b2a5beac08201e0a233ad51587b9a553428434225c75a
+elephant-calc v2.22.1 https://github.com/abenz1267/elephant/releases/download/v2.22.1/calc-linux-amd64.tar.gz b0b861f6e88ce84c7e5bbcedf233e028ac86fe50312c1291b906ce6741e4be1c
+elephant-runner v2.22.1 https://github.com/abenz1267/elephant/releases/download/v2.22.1/runner-linux-amd64.tar.gz 0a6ff0435b62b5c804a55cc2cd7af9ea846f412eeec62277212b7f14a6fc15ca
+elephant-files v2.22.1 https://github.com/abenz1267/elephant/releases/download/v2.22.1/files-linux-amd64.tar.gz 1342d88da31610fdadb3c62445c033ca188a4bbcb17da992d1ef2ee0f23be9dc
+elephant-symbols v2.22.1 https://github.com/abenz1267/elephant/releases/download/v2.22.1/symbols-linux-amd64.tar.gz a85996477a78354f80592459d544300659b73f974707f7e86cf96bab32f89f91
+elephant-websearch v2.22.1 https://github.com/abenz1267/elephant/releases/download/v2.22.1/websearch-linux-amd64.tar.gz bfa793014370b88fcea8c6166b403c938aacaf26ada5c84b63e4a30f6ebcd7ff
+elephant-clipboard v2.22.1 https://github.com/abenz1267/elephant/releases/download/v2.22.1/clipboard-linux-amd64.tar.gz 775a7bca91493fffce27f33f65b91c0a92b96b51a3cb3fe0e99143ff0f18e099
+elephant-providerlist v2.22.1 https://github.com/abenz1267/elephant/releases/download/v2.22.1/providerlist-linux-amd64.tar.gz bafb807419f9cf38825935e15097aea10adc8678234468a7971543d3bba59862
+elephant-unicode v2.22.1 https://github.com/abenz1267/elephant/releases/download/v2.22.1/unicode-linux-amd64.tar.gz 1ab560105e181000975bbff098399d716c6eb448bf88c2b9d64dbdadf87478f7

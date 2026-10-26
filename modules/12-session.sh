@@ -11,6 +11,8 @@ option IDLE_LOCK_MINUTES --section system --label "Lock the screen after idle mi
 option IDLE_SUSPEND_MINUTES --section system --label "Suspend after idle minutes (0 = never)" --type number --default 30
 
 HYPR_SHARE="$SHARE_DIR/hypr"
+ELEPHANT_LIB=/usr/local/lib/elephant
+ELEPHANT_PROVIDERS=(desktopapplications calc runner files symbols websearch clipboard providerlist unicode)
 
 lua_bool() {
   if [[ $1 == yes ]]; then
@@ -113,6 +115,25 @@ mako_setup() {
   deploy_user_once "$HYPRTRIXIE_ROOT/config/mako/config" .config/mako/config
 }
 
+walker_install() {
+  local provider
+  release_extract walker walker "$BIN_DIR/walker" || return 1
+  release_extract elephant elephant-linux-amd64 "$BIN_DIR/elephant" || return 1
+  for provider in "${ELEPHANT_PROVIDERS[@]}"; do
+    release_extract "elephant-$provider" "$provider-linux-amd64.so" "$ELEPHANT_LIB/$provider.so" 0644 || return 1
+  done
+  deploy_file "$HYPRTRIXIE_ROOT/system/walker/config.toml" /etc/xdg/walker/config.toml || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/system/walker/style.css" /etc/xdg/walker/themes/hyprtrixie/style.css
+}
+
+walker_ready() {
+  local provider
+  commands_present walker elephant || return 1
+  for provider in "${ELEPHANT_PROVIDERS[@]}"; do
+    [[ -f $ELEPHANT_LIB/$provider.so ]] || return 1
+  done
+}
+
 module_12() {
   run_step "Install session packages" apt_install_list session
   run_step "Install the Hyprland defaults" hyprland_defaults
@@ -122,6 +143,7 @@ module_12() {
   run_step "Set up idle locking and suspend" hypridle_setup
   run_step "Set up the wallpaper" hyprpaper_setup
   run_step "Set up notifications" mako_setup
+  run_step "Install the Walker launcher" walker_install
 }
 
 verify_12_packages() {
@@ -150,4 +172,8 @@ verify_12_wallpaper() {
 
 verify_12_notifications() {
   run_check "Notifications are set up" test -f "$(user_path .config/mako/config)"
+}
+
+verify_12_walker() {
+  run_check "Walker and its providers are installed" walker_ready
 }
