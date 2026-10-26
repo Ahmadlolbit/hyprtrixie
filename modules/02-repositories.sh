@@ -29,6 +29,15 @@ sources_write() {
   apt_update --force
 }
 
+extrepo_setup() {
+  apt_install extrepo || return 1
+  extrepo_policy main && extrepo_policy contrib && extrepo_policy non-free
+}
+
+extrepo_ready() {
+  pkg_installed extrepo && grep -qE '^- non-free$' "$EXTREPO_CONFIG"
+}
+
 apt_has_suite() {
   apt-cache policy 2>/dev/null | grep -q "n=$1,"
 }
@@ -39,9 +48,14 @@ apt_has_component() {
 
 module_02() {
   run_step "Use Debian over HTTPS with backports" sources_write
+  run_step "Prepare vendor repositories" extrepo_setup
 }
 
 verify_02_sources() {
   run_check "Backports are available" apt_has_suite trixie-backports
   run_check "Firmware and non-free components are on" apt_has_component non-free-firmware
+}
+
+verify_02_extrepo() {
+  run_check "Vendor repositories can be enabled" extrepo_ready
 }
