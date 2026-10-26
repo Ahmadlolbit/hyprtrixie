@@ -1,7 +1,7 @@
 register_module 11 "Developer tools"
 
 option DEV_TOOLS --section dev --label "Developer tools" --type multi \
-  --values "docker@developer podman@developer mise@developer python@developer rust@developer go@developer kubernetes@developer"
+  --values "docker@developer podman@developer mise@developer python@developer rust@developer go@developer kubernetes@developer neovim@developer"
 option CONTAINER_ENGINE --section dev --label "Engine behind the docker command" --type choice \
   --default docker --values "docker podman" --when both_engines
 option DOCKER_PORTS --section dev --label "Docker publishes ports on" --type choice \
@@ -92,6 +92,42 @@ kubernetes_install() {
   fi
 }
 
+neovim_install() {
+  local dir tmp
+  release_get neovim || return 1
+  dir="/opt/nvim-${RELEASE_VERSION#v}"
+  if [[ ! -x $dir/bin/nvim ]]; then
+    fetch_release neovim || return 1
+    tmp="$(mktemp -d)" || return 1
+    tar -xzf "$FETCHED_PATH" -C "$tmp" || return 1
+    rm -rf "$dir"
+    mv "$tmp/nvim-linux-x86_64" "$dir" || return 1
+    rm -rf "$tmp"
+  fi
+  ln -sfn "$dir/bin/nvim" "$BIN_DIR/nvim" || return 1
+  deploy_file "$dir/share/applications/nvim.desktop" /usr/local/share/applications/nvim.desktop || return 1
+  apt_install_list dev-neovim
+}
+
+lazyvim_setup() {
+  local config
+  config="$(user_path .config/nvim)"
+  [[ -e $config ]] && return 0
+  fetch_git_cached lazyvim-starter || return 1
+  user_mkdir .config || return 1
+  cp -a "$FETCHED_PATH" "$config" || return 1
+  rm -rf "$config/.git"
+  chown -R "$TARGET_USER:" "$config"
+}
+
+lazyvim_plugins() {
+  as_user "$BIN_DIR/nvim" --headless "+Lazy! sync" +qa
+}
+
+neovim_ready() {
+  "$BIN_DIR/nvim" --version 2>/dev/null | head -n1 | grep -qE 'NVIM v(0\.(1[1-9]|[2-9][0-9])|[1-9])'
+}
+
 module_11() {
   tool_wanted docker && run_step "Install Docker" docker_install
   tool_wanted podman && run_step "Install Podman" podman_install
@@ -101,6 +137,11 @@ module_11() {
   tool_wanted rust && run_step "Install Rust (stable)" rust_install
   tool_wanted go && run_step "Install Go" apt_install_list dev-go
   tool_wanted kubernetes && run_step "Install kubectl, helm, k9s and kind" kubernetes_install
+  if tool_wanted neovim; then
+    run_step "Install Neovim" neovim_install
+    run_step "Set up LazyVim" lazyvim_setup
+    run_step "Install LazyVim plugins" lazyvim_plugins
+  fi
   return 0
 }
 
@@ -126,4 +167,9 @@ verify_11_toolchains() {
 verify_11_kubernetes() {
   tool_wanted kubernetes || return 0
   run_check "kubectl, helm, k9s and kind are installed" commands_present kubectl helm k9s kind
+}
+
+verify_11_neovim() {
+  tool_wanted neovim || return 0
+  run_check "Neovim 0.11 or newer is installed" neovim_ready
 }
