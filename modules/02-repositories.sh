@@ -49,6 +49,7 @@ apt_has_component() {
 module_02() {
   run_step "Use Debian over HTTPS with backports" sources_write
   run_step "Prepare vendor repositories" extrepo_setup
+  run_step "Install base packages" apt_install_list base
 }
 
 verify_02_sources() {
@@ -58,4 +59,8 @@ verify_02_sources() {
 
 verify_02_extrepo() {
   run_check "Vendor repositories can be enabled" extrepo_ready
+}
+
+verify_02_base() {
+  run_check "Base packages are installed" list_present base
 }
