@@ -108,6 +108,11 @@ hyprpaper_setup() {
   deploy_file "$HYPRTRIXIE_ROOT/system/hypr/hyprpaper.conf" /etc/xdg/hypr/hyprpaper.conf
 }
 
+mako_setup() {
+  deploy_file "$HYPRTRIXIE_ROOT/config/mako/defaults" "$SHARE_DIR/mako/defaults" || return 1
+  deploy_user_once "$HYPRTRIXIE_ROOT/config/mako/config" .config/mako/config
+}
+
 module_12() {
   run_step "Install session packages" apt_install_list session
   run_step "Install the Hyprland defaults" hyprland_defaults
@@ -116,6 +121,7 @@ module_12() {
   run_step "Set up the lock screen" hyprlock_setup
   run_step "Set up idle locking and suspend" hypridle_setup
   run_step "Set up the wallpaper" hyprpaper_setup
+  run_step "Set up notifications" mako_setup
 }
 
 verify_12_packages() {
@@ -140,4 +146,8 @@ verify_12_idle() {
 
 verify_12_wallpaper() {
   run_check "The wallpaper service is configured" test -f /etc/xdg/hypr/hyprpaper.conf
+}
+
+verify_12_notifications() {
+  run_check "Notifications are set up" test -f "$(user_path .config/mako/config)"
 }
