@@ -4,6 +4,7 @@ STEP_KIND="step"
 CURRENT_MODULE=""
 MODULE_FAILED=0
 MODULE_PARTIAL=0
+MODULE_SKIPPED=0
 MODULE_IDS=()
 STEP_FAILURES=()
 STEP_SKIPS=()
@@ -115,6 +116,7 @@ module_begin() {
   CURRENT_MODULE="$1"
   MODULE_FAILED=0
   MODULE_PARTIAL=0
+  MODULE_SKIPPED=0
   ui_rule "$1  ${MODULE_TITLES[$1]:-}"
   log info "module $1 begin: ${MODULE_TITLES[$1]:-}"
 }
@@ -123,12 +125,20 @@ module_finish() {
   local id="$1" status="PASS"
   if ((MODULE_FAILED)); then
     status="FAIL"
+  elif ((MODULE_SKIPPED)); then
+    status="SKIP"
   elif ((MODULE_PARTIAL)); then
     status="PARTIAL"
   fi
   MODULE_STATUS[$id]="$status"
   log info "module $id end: $status"
   status_save
+}
+
+module_skip() {
+  MODULE_SKIPPED=1
+  ui_status skip "$*"
+  log info "module ${CURRENT_MODULE:-none} skipped: $*"
 }
 
 verify_module() {
