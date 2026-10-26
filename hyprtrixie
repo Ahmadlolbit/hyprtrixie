@@ -1,0 +1,293 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+HYPRTRIXIE_VERSION="0.1.0"
+HYPRTRIXIE_ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+LOCK_FILE="${HYPRTRIXIE_LOCK:-/run/hyprtrixie.lock}"
+ASSUME_YES=0
+ONLY=""
+SKIP=""
+RUN_MODE=""
+
+for lib in log ui config step user apt files fetch detect service menu; do
+  source "$HYPRTRIXIE_ROOT/lib/$lib.sh"
+done
+for module in "$HYPRTRIXIE_ROOT"/modules/[0-9][0-9]-*.sh; do
+  [[ -f $module ]] && source "$module"
+done
+unset lib module
+
+usage() {
+  cat <<EOF
+hyprtrixie $HYPRTRIXIE_VERSION - Debian 13 with Hyprland, set up properly
+
+USAGE
+  hyprtrixie                       Open the setup menu
+  hyprtrixie install [options]     Run the setup with the saved configuration
+                                     --config FILE      use this configuration file
+                                     --only 04,05       run only these modules
+                                     --skip 10,11       leave these modules out
+                                     --yes              ask nothing, use the configuration as is
+                                     --on-failure MODE  ask | halt | continue
+  hyprtrixie verify [--only ...]   Run every check again
+  hyprtrixie modules               List the modules and how they last ended
+  hyprtrixie config [show|path|edit|reset]
+  hyprtrixie version
+  hyprtrixie help
+
+Configuration: $CONFIG_FILE
+Logs:          $LOG_DIR/ and ~/runbook-logs/
+EOF
+}
+
+die() {
+  printf '%s\n' "$*" >&2
+  exit 1
+}
+
+require_root() {
+  ((EUID == 0)) || die "hyprtrixie needs root for this. Run it again with sudo: sudo $0 ${RUN_MODE:-}"
+}
+
+take_lock() {
+  exec {LOCK_FD}>"$LOCK_FILE" || die "cannot create $LOCK_FILE"
+  flock -n "$LOCK_FD" || die "another hyprtrixie run is still going"
+}
+
+bootstrap_gum() {
+  command -v gum >/dev/null 2>&1 && return 0
+  printf 'Getting the setup screens ready (installing gum)...\n'
+  apt_env
+  if ! { apt-get -qq update && apt-get -qq -y install gum; } >/dev/null 2>&1; then
+    printf 'gum could not be installed, using plain screens for now.\n'
+  fi
+}
+
+module_selected() {
+  local id="$1"
+  [[ -n $ONLY && ",$ONLY," != *",$id,"* ]] && return 1
+  [[ -n $SKIP && ",$SKIP," == *",$id,"* ]] && return 1
+  return 0
+}
+
+print_summary() {
+  local id status width=${UI_WIDTH:-64}
+  ((${#MODULE_STATUS[@]})) || return 0
+  ui_rule "Summary"
+  for id in "${MODULE_IDS[@]}"; do
+    status="${MODULE_STATUS[$id]:-}"
+    [[ -n $status ]] || continue
+    case "$status" in
+      PASS) status="$C_GREEN$status$C_RESET" ;;
+      FAIL) status="$C_RED$status$C_RESET" ;;
+      *) status="$C_YELLOW$status$C_RESET" ;;
+    esac
+    printf '  %s  %-*s %s\n' "$id" "$((width - 16))" "${MODULE_TITLES[$id]}" "$status"
+  done
+  printf '\n  Log: %s\n' "${LOG_FILE:-none}"
+  [[ -n $USER_LOG ]] && printf '  Copy: %s\n' "$USER_LOG"
+  return 0
+}
+
+on_exit() {
+  local rc=$?
+  ui_spin_stop
+  status_save
+  if declare -F write_report >/dev/null && [[ -n $TARGET_HOME ]]; then
+    write_report >/dev/null 2>&1 || log warn "could not write the report"
+  fi
+  print_summary
+  log info "finished with exit code $rc"
+  exit "$rc"
+}
+
+on_interrupt() {
+  ui_spin_stop
+  printf '\n'
+  log warn "interrupted"
+  exit 130
+}
+
+start_run() {
+  RUN_MODE="$1"
+  shift
+  require_root
+  take_lock
+  bootstrap_gum
+  ui_init
+  log_init "$RUN_MODE $*" || die "cannot write logs to $LOG_DIR"
+  [[ -f $CONFIG_FILE ]] && config_load "$CONFIG_FILE"
+  if detect_target_user; then
+    log_attach_user "$TARGET_HOME" "$TARGET_USER"
+  fi
+  trap on_exit EXIT
+  trap on_interrupt INT TERM
+}
+
+parse_run_options() {
+  local value
+  while (($#)); do
+    case "$1" in
+      --config)
+        value="${2:-}"
+        [[ -f $value ]] || die "no such configuration file: $value"
+        RUN_CONFIG="$value"
+        shift
+        ;;
+      --only)
+        ONLY="${2:-}"
+        shift
+        ;;
+      --skip)
+        SKIP="${2:-}"
+        shift
+        ;;
+      --yes | -y) ASSUME_YES=1 ;;
+      --on-failure)
+        value="${2:-}"
+        [[ $value == ask || $value == halt || $value == continue ]] || die "--on-failure takes ask, halt or continue"
+        RUN_FAILURE_MODE="$value"
+        shift
+        ;;
+      -h | --help)
+        usage
+        exit 0
+        ;;
+      *) die "unknown option: $1 (see: hyprtrixie help)" ;;
+    esac
+    shift
+  done
+}
+
+run_modules() {
+  local id
+  for id in "${MODULE_IDS[@]}"; do
+    if module_selected "$id"; then
+      run_module "$id"
+    else
+      log info "module $id not selected"
+    fi
+  done
+}
+
+apply_run_config() {
+  if [[ -n ${RUN_CONFIG:-} ]]; then
+    config_load "$RUN_CONFIG" || die "cannot read $RUN_CONFIG"
+  fi
+  return 0
+}
+
+apply_run_overrides() {
+  [[ -n ${RUN_FAILURE_MODE:-} ]] && FAILURE_MODE="$RUN_FAILURE_MODE"
+  return 0
+}
+
+show_machine() {
+  local lines=()
+  detect_all
+  mapfile -t lines < <(detect_summary)
+  detect_summary | while IFS= read -r line; do log info "$line"; done
+  ui_box "${lines[@]}"
+}
+
+cmd_install() {
+  parse_run_options "$@"
+  start_run install "$@"
+  apply_run_config
+  ui_header "hyprtrixie $HYPRTRIXIE_VERSION" "Debian 13 with Hyprland, set up properly"
+  show_machine
+  if ! ((ASSUME_YES)) && ui_can_ask; then
+    ui_confirm "Start the setup now?" yes || exit 0
+  fi
+  config_save
+  apply_run_overrides
+  run_modules
+  ((${#STEP_FAILURES[@]} == 0))
+}
+
+cmd_menu() {
+  start_run menu
+  ui_header "hyprtrixie $HYPRTRIXIE_VERSION" "Debian 13 with Hyprland, set up properly"
+  show_machine
+  if ! ui_can_ask; then
+    die "the menu needs a terminal; use: sudo $0 install --yes"
+  fi
+  menu_main || exit 0
+  config_save
+  run_modules
+  ((${#STEP_FAILURES[@]} == 0))
+}
+
+cmd_verify() {
+  local id
+  parse_run_options "$@"
+  start_run verify "$@"
+  apply_run_config
+  apply_run_overrides
+  detect_all
+  for id in "${MODULE_IDS[@]}"; do
+    module_selected "$id" || continue
+    module_begin "$id"
+    verify_module "$id"
+    module_finish "$id"
+  done
+  ((${#STEP_FAILURES[@]} == 0))
+}
+
+cmd_modules() {
+  local id last status when
+  ui_init
+  for id in "${MODULE_IDS[@]}"; do
+    last="$(status_of "$id")"
+    status="${last%%|*}"
+    when="${last#*|}"
+    printf '%s  %-34s %-8s %s\n' "$id" "${MODULE_TITLES[$id]}" "${status:-never}" "${last:+$when}"
+  done
+}
+
+cmd_config() {
+  case "${1:-show}" in
+    show)
+      [[ -f $CONFIG_FILE ]] && config_load "$CONFIG_FILE"
+      config_show
+      ;;
+    path) printf '%s\n' "$CONFIG_FILE" ;;
+    edit)
+      RUN_MODE="config edit"
+      require_root
+      [[ -f $CONFIG_FILE ]] || config_save
+      "${EDITOR:-nano}" "$CONFIG_FILE"
+      ;;
+    reset)
+      RUN_MODE="config reset"
+      require_root
+      rm -f "$CONFIG_FILE"
+      printf 'Configuration reset; defaults apply on the next run.\n'
+      ;;
+    *) die "usage: hyprtrixie config [show|path|edit|reset]" ;;
+  esac
+}
+
+main() {
+  case "${1:-}" in
+    "") cmd_menu ;;
+    install)
+      shift
+      cmd_install "$@"
+      ;;
+    verify)
+      shift
+      cmd_verify "$@"
+      ;;
+    modules) cmd_modules ;;
+    config)
+      shift
+      cmd_config "$@"
+      ;;
+    version | --version) printf 'hyprtrixie %s\n' "$HYPRTRIXIE_VERSION" ;;
+    help | -h | --help) usage ;;
+    *) die "unknown command: $1 (see: hyprtrixie help)" ;;
+  esac
+}
+
+main "$@"
