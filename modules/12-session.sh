@@ -7,6 +7,8 @@ option TAP_TO_CLICK --section input --label "Tap to click" --type bool --default
 option ANIMATIONS --section look --label "Animations" --type bool --default yes
 option WINDOW_STYLE --section look --label "Window style" --type choice \
   --default sharp --values "sharp soft"
+option IDLE_LOCK_MINUTES --section system --label "Lock the screen after idle minutes (0 = never)" --type number --default 5
+option IDLE_SUSPEND_MINUTES --section system --label "Suspend after idle minutes (0 = never)" --type number --default 30
 
 HYPR_SHARE="$SHARE_DIR/hypr"
 
@@ -67,12 +69,48 @@ hyprlock_setup() {
   deploy_file "$HYPRTRIXIE_ROOT/system/hypr/hyprlock.conf" /etc/xdg/hypr/hyprlock.conf
 }
 
+idle_listener() {
+  printf '\nlistener {\n    timeout = %s\n    on-timeout = %s\n' "$1" "$2"
+  if [[ -n ${3:-} ]]; then
+    printf '    on-resume = %s\n' "$3"
+  fi
+  printf '}\n'
+}
+
+hypridle_config() {
+  local lock=$((IDLE_LOCK_MINUTES * 60)) suspend=$((IDLE_SUSPEND_MINUTES * 60))
+  local on="hyprctl dispatch 'hl.dsp.dpms({action = \"on\"})'" off="hyprctl dispatch 'hl.dsp.dpms({action = \"off\"})'"
+  printf 'general {\n    lock_cmd = pidof hyprlock || hyprlock\n    before_sleep_cmd = loginctl lock-session\n'
+  printf '    after_sleep_cmd = %s\n}\n' "$on"
+  if ((lock > 0)); then
+    if ((lock > 60)); then
+      idle_listener $((lock - 30)) "brightnessctl -s set 10%" "brightnessctl -r"
+      idle_listener $((lock - 30)) "brightnessctl -sd '*::kbd_backlight' set 0" "brightnessctl -rd '*::kbd_backlight'"
+    fi
+    idle_listener "$lock" "loginctl lock-session"
+    idle_listener $((lock + 30)) "$off" "$on"
+  fi
+  if ((suspend > 0)); then
+    idle_listener "$suspend" "systemctl suspend"
+  fi
+}
+
+hypridle_setup() {
+  local tmp rc
+  tmp="$(mktemp)" || return 1
+  hypridle_config >"$tmp" && deploy_file "$tmp" /etc/xdg/hypr/hypridle.conf
+  rc=$?
+  rm -f "$tmp"
+  return "$rc"
+}
+
 module_12() {
   run_step "Install session packages" apt_install_list session
   run_step "Install the Hyprland defaults" hyprland_defaults
   run_step "Apply display and input settings" hyprland_options
   run_step "Set up your Hyprland config" hyprland_user_config
   run_step "Set up the lock screen" hyprlock_setup
+  run_step "Set up idle locking and suspend" hypridle_setup
 }
 
 verify_12_packages() {
@@ -89,4 +127,8 @@ verify_12_user() {
 
 verify_12_lock() {
   run_check "The lock screen is configured" test -f /etc/xdg/hypr/hyprlock.conf
+}
+
+verify_12_idle() {
+  run_check "Idle locking and suspend are configured" test -f /etc/xdg/hypr/hypridle.conf
 }
