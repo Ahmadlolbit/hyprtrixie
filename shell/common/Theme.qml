@@ -2,19 +2,50 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 Singleton {
-  readonly property color base: "#1e1e2e"
-  readonly property color surface: "#313244"
-  readonly property color overlay: "#45475a"
-  readonly property color text: "#cdd6f4"
-  readonly property color subtext: "#a6adc8"
-  readonly property color accent: "#89b4fa"
-  readonly property color good: "#a6e3a1"
-  readonly property color warning: "#f9e2af"
-  readonly property color critical: "#f38ba8"
+  id: root
+
+  readonly property var palette: parse(file.text())
+  readonly property color base: palette.background || "#1e1e2e"
+  readonly property color surface: palette.lighter_background || "#313244"
+  readonly property color overlay: palette.selection || "#45475a"
+  readonly property color text: palette.foreground || "#cdd6f4"
+  readonly property color subtext: Qt.tint(text, Qt.alpha(base, 0.3))
+  readonly property color accent: palette.accent || "#89b4fa"
+  readonly property color good: palette.green || "#a6e3a1"
+  readonly property color warning: palette.yellow || "#f9e2af"
+  readonly property color critical: palette.red || "#f38ba8"
   readonly property string font: "JetBrainsMono Nerd Font"
   readonly property int fontSize: 13
   readonly property int barHeight: 30
   readonly property int spacing: 14
+
+  function parse(text) {
+    const colors = {};
+    for (const line of text.split("\n")) {
+      const match = line.match(/^\s*([a-z0-9_]+)\s*=\s*"(#[0-9A-Fa-f]{6})"/);
+      if (match)
+        colors[match[1]] = match[2];
+    }
+    return colors;
+  }
+
+  FileView {
+    id: file
+
+    path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/omarchy/current/theme/colors.toml"
+    watchChanges: true
+    printErrors: false
+    onFileChanged: reload()
+  }
+
+  IpcHandler {
+    target: "theme"
+
+    function reload(): void {
+      file.reload();
+    }
+  }
 }
