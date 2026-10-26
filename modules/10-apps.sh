@@ -1,7 +1,7 @@
 register_module 10 "Applications"
 
 option APPS --section apps --label "Applications" --type multi \
-  --values "helium@minimal whatsapp@everyday"
+  --values "helium@minimal whatsapp@everyday dolphin@minimal libreoffice@everyday vlc@everyday telegram@everyday"
 
 app_wanted() {
   option_enabled APPS "$1"
@@ -33,12 +33,30 @@ whatsapp_install() {
   deploy_file "$HYPRTRIXIE_ROOT/config/applications/whatsapp-web.desktop" /usr/local/share/applications/whatsapp-web.desktop
 }
 
+desktop_apps_install() {
+  local app lists=()
+  for app in dolphin libreoffice vlc telegram; do
+    app_wanted "$app" && lists+=("app-$app")
+  done
+  ((${#lists[@]})) || return 0
+  apt_install_list "${lists[@]}"
+}
+
+desktop_apps_present() {
+  local app
+  for app in dolphin libreoffice vlc telegram; do
+    app_wanted "$app" || continue
+    list_present "app-$app" || return 1
+  done
+}
+
 module_10() {
   if app_wanted helium; then
     run_step "Install the Helium browser" helium_install
     run_step "Make Helium the default browser" helium_default
   fi
   app_wanted whatsapp && run_step "Add the WhatsApp web app" whatsapp_install
+  run_step "Install desktop applications" desktop_apps_install
   return 0
 }
 
@@ -51,4 +69,8 @@ verify_10_helium() {
 verify_10_whatsapp() {
   app_wanted whatsapp || return 0
   run_check "The WhatsApp web app is in the launcher" test -f /usr/local/share/applications/whatsapp-web.desktop
+}
+
+verify_10_desktop_apps() {
+  run_check "Desktop applications are installed" desktop_apps_present
 }
