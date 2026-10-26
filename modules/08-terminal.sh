@@ -72,12 +72,17 @@ tmux_ready() {
   [[ -f "$(user_path .config/tmux/tmux.conf)" && -x "$(user_path .config/tmux/plugins/tpm/tpm)" ]]
 }
 
+kitty_setup() {
+  deploy_user_file "$HYPRTRIXIE_ROOT/config/kitty/kitty.conf" .config/kitty/kitty.conf
+}
+
 module_08() {
   run_step "Install terminal packages" apt_install_list terminal
   run_step "Install JetBrains Mono Nerd Font" nerd_font_install
   run_step "Set up zsh with Oh My Zsh" zsh_setup
   run_step "Set up the $SHELL_PROMPT prompt" prompt_setup
   run_step "Set up tmux" tmux_setup
+  run_step "Set up kitty" kitty_setup
 }
 
 verify_08_terminal() {
