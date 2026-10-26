@@ -158,6 +158,9 @@ link_apps() {
     mkdir -p "$CONFIG_HOME/walker/themes/hyprtrixie" &&
       ln -nsf "$theme/walker.css" "$CONFIG_HOME/walker/themes/hyprtrixie/style.css"
   fi
+  if [[ -f $theme/btop.theme ]]; then
+    mkdir -p "$CONFIG_HOME/btop/themes" && ln -nsf "$theme/btop.theme" "$CONFIG_HOME/btop/themes/hyprtrixie.theme"
+  fi
 }
 
 apply() {

@@ -66,6 +66,21 @@ theme_engine_install() {
   deploy_file "$HYPRTRIXIE_ROOT/bin/omarchy-theme-set" "$BIN_DIR/omarchy-theme-set" 0755
 }
 
+btop_theme_setup() {
+  local conf
+  conf="$(user_path .config/btop/btop.conf)"
+  if [[ ! -f $conf ]]; then
+    user_mkdir .config/btop || return 1
+    printf 'color_theme = "hyprtrixie"\n' | as_user tee "$conf" >/dev/null
+    return
+  fi
+  if grep -q '^color_theme = ' "$conf"; then
+    sed -i 's|^color_theme = .*|color_theme = "hyprtrixie"|' "$conf"
+  else
+    printf 'color_theme = "hyprtrixie"\n' >>"$conf"
+  fi
+}
+
 theme_apply() {
   as_user env OMARCHY_PATH="$OMARCHY_DIR" "$BIN_DIR/omarchy-theme-set" "$THEME" || return 1
   if [[ -f "$(user_path .config/mako/config)" ]]; then
@@ -81,6 +96,7 @@ module_14() {
   run_step "Install the Omarchy themes" omarchy_themes_install
   run_step "Install the community themes" community_themes_install
   run_step "Install the theme switcher" theme_engine_install
+  run_step "Point btop at the theme" btop_theme_setup
   run_step "Apply the $THEME theme" theme_apply
 }
 
