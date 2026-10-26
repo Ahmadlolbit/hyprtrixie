@@ -1,7 +1,7 @@
 register_module 10 "Applications"
 
 option APPS --section apps --label "Applications" --type multi \
-  --values "helium@minimal whatsapp@everyday dolphin@minimal libreoffice@everyday vlc@everyday telegram@everyday signal@everyday vesktop@everyday teams@everyday"
+  --values "helium@minimal whatsapp@everyday dolphin@minimal libreoffice@everyday vlc@everyday telegram@everyday signal@everyday vesktop@everyday teams@everyday bitwarden@everyday"
 option TEAMS_SOURCE --section apps --label "Install Teams from" --type choice \
   --default apt --values "apt snap" --when teams_wanted
 
@@ -95,6 +95,10 @@ messaging_present() {
   return 0
 }
 
+bitwarden_install() {
+  deb_install_release bitwarden bitwarden
+}
+
 module_10() {
   if app_wanted helium; then
     run_step "Install the Helium browser" helium_install
@@ -103,6 +107,7 @@ module_10() {
   app_wanted whatsapp && run_step "Add the WhatsApp web app" whatsapp_install
   run_step "Install desktop applications" desktop_apps_install
   run_step "Install messaging apps" messaging_install
+  app_wanted bitwarden && run_step "Install Bitwarden" bitwarden_install
   return 0
 }
 
@@ -123,4 +128,9 @@ verify_10_desktop_apps() {
 
 verify_10_messaging() {
   run_check "Messaging apps are installed" messaging_present
+}
+
+verify_10_bitwarden() {
+  app_wanted bitwarden || return 0
+  run_check "Bitwarden is installed" pkg_installed bitwarden
 }
