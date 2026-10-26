@@ -7,3 +7,4 @@ tmux-resurrect https://github.com/tmux-plugins/tmux-resurrect.git cff343cf9e8198
 tmux-continuum https://github.com/tmux-plugins/tmux-continuum.git 0698e8f4b17d6454c71bf5212895ec055c578da0
 lazyvim-starter https://github.com/LazyVim/starter.git 803bc181d7c0d6d5eeba9274d9be49b287294d99
 omarchy https://github.com/basecamp/omarchy.git 237f1b4071a0bff2296c6d740ba2b9fd695ebfa0
+community-themes https://github.com/AIowa-LLC/awesome-omarchy-themes.git 8834caae395bc5505e73d4ce90682b08f45adbe1

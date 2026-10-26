@@ -1,6 +1,9 @@
 register_module 14 "Themes"
 
 OMARCHY_DIR="${HYPRTRIXIE_OMARCHY_DIR:-/usr/share/omarchy}"
+COMMUNITY_THEMES=(hermes-bloodline:bloodline hermtang:neon-plum nous-noir:noir portal-vibes:cobalt-night
+  perfect-computer:navy-mint hermachy:porcelain nous-dayshift:dayshift codexy:inkwell claudey:terracotta
+  tonarchy:marble green-magic:green-magic roseglass:roseglass)
 
 theme_copy() {
   local src="$1" dest="$2" old="${3:-}" new="${4:-}" file base
@@ -35,12 +38,25 @@ omarchy_themes_install() {
   source_mark omarchy
 }
 
+community_themes_install() {
+  local pair
+  source_current community-themes && [[ -f $OMARCHY_DIR/LICENSE.community-themes ]] && return 0
+  fetch_git_cached community-themes /themes/ /LICENSE || return 1
+  for pair in "${COMMUNITY_THEMES[@]}"; do
+    theme_copy "$FETCHED_PATH/themes/${pair%%:*}" "$OMARCHY_DIR/themes/${pair#*:}" "${pair%%:*}" "${pair#*:}" || return 1
+  done
+  install -D -m 0644 "$FETCHED_PATH/LICENSE" "$OMARCHY_DIR/LICENSE.community-themes" || return 1
+  rm -rf "$FETCHED_PATH"
+  source_mark community-themes
+}
+
 themes_present() {
   compgen -G "$OMARCHY_DIR/themes/*/colors.toml" >/dev/null
 }
 
 module_14() {
   run_step "Install the Omarchy themes" omarchy_themes_install
+  run_step "Install the community themes" community_themes_install
 }
 
 verify_14_themes() {
