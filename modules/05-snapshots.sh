@@ -90,6 +90,33 @@ container_storage_ok() {
   done
 }
 
+grub_btrfs_install() {
+  local stamp="$STATE_DIR/grub-btrfs.commit" build
+  GRUB_BTRFS_FRESH=0
+  apt_install_list grub-btrfs || return 1
+  fetch_git_cached grub-btrfs || return 1
+  if [[ -x /etc/grub.d/41_snapshots-btrfs && "$(cat "$stamp" 2>/dev/null)" == "$SOURCE_COMMIT" ]]; then
+    return 0
+  fi
+  build="$(mktemp -d)" || return 1
+  cp -a "$FETCHED_PATH/." "$build/" || return 1
+  make -C "$build" install GRUB_UPDATE_EXCLUDE=true || return 1
+  rm -rf "$build"
+  mkdir -p "$STATE_DIR" && printf '%s\n' "$SOURCE_COMMIT" >"$stamp"
+  GRUB_BTRFS_FRESH=1
+}
+
+grub_btrfs_enable() {
+  service_start grub-btrfsd.service || return 1
+  if ((${GRUB_BTRFS_FRESH:-0})) || [[ ! -f /boot/grub/grub-btrfs.cfg ]]; then
+    update-grub
+  fi
+}
+
+grub_btrfs_ready() {
+  [[ -x /etc/grub.d/41_snapshots-btrfs ]] && service_active grub-btrfsd.service
+}
+
 module_05() {
   if ! root_is_btrfs; then
     module_skip "Snapshots need a btrfs root; this system uses $(root_fstype)"
@@ -106,6 +133,8 @@ module_05() {
   run_step "Turn on the snapshot timers" service_start snapper-timeline.timer snapper-cleanup.timer
   run_step "Take the first snapshot" snapper_first
   run_step "Keep container storage out of snapshots" container_storage
+  run_step "Install grub-btrfs" grub_btrfs_install
+  run_step "Show snapshots in the boot menu" grub_btrfs_enable
 }
 
 verify_05_snapper() {
@@ -117,4 +146,9 @@ verify_05_snapper() {
 verify_05_containers() {
   root_is_btrfs && snapshots_enabled || return 0
   run_check "Container storage is outside root snapshots" container_storage_ok
+}
+
+verify_05_grub() {
+  root_is_btrfs && snapshots_enabled || return 0
+  run_check "Snapshots appear in the boot menu" grub_btrfs_ready
 }
