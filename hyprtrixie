@@ -32,6 +32,7 @@ USAGE
   hyprtrixie verify [--only ...]   Run every check again
   hyprtrixie modules               List the modules and how they last ended
   hyprtrixie config [show|path|edit|reset]
+  hyprtrixie collect               Pack the logs, the report and system details for a bug report
   hyprtrixie version
   hyprtrixie help
 
@@ -268,6 +269,53 @@ cmd_config() {
   esac
 }
 
+collect_files() {
+  local dest="$1" file
+  cp -r "$LOG_DIR" "$dest/log" 2>/dev/null
+  cp -r "$TARGET_HOME/runbook-logs" "$dest/" 2>/dev/null
+  for file in "$TARGET_HOME/runbook-report.md" "$CONFIG_FILE" "$STATUS_FILE" /run/user/"$TARGET_UID"/hypr/*/hyprland.log; do
+    if [[ -f $file ]]; then
+      cp "$file" "$dest/"
+    fi
+  done
+}
+
+collect_system() {
+  detect_all
+  detect_summary
+  printf '\n'
+  uname -a
+  cat /etc/os-release
+  printf '\n'
+  lspci -nnk
+  lsusb
+  printf '\n'
+  ip -brief address
+  nmcli general status
+  findmnt -t btrfs
+  printf '\n'
+  dpkg-query -W -f '${Package} ${Version}\n' 'hyprland*' quickshell 'linux-image-*' 'firmware-*' 'nvidia-*' mesa-vulkan-drivers
+  printf '\n'
+  journalctl -b -p warning --no-pager -n 300
+}
+
+cmd_collect() {
+  local name work out
+  RUN_MODE=collect
+  require_root
+  detect_target_user || die "cannot tell whose desktop this is; run it with sudo from your own account"
+  name="hyprtrixie-collect-$(date +%Y%m%d-%H%M%S)"
+  work="$(mktemp -d)" || die "cannot create a temporary folder"
+  mkdir -p "$work/$name"
+  collect_files "$work/$name"
+  collect_system >"$work/$name/system.txt" 2>&1
+  out="$TARGET_HOME/$name.tar.gz"
+  tar -czf "$out" -C "$work" "$name" || die "cannot write $out"
+  chown "$TARGET_USER:" "$out"
+  rm -rf "$work"
+  printf 'Saved %s\n' "$out"
+}
+
 main() {
   case "${1:-}" in
     "") cmd_menu ;;
@@ -280,6 +328,7 @@ main() {
       cmd_verify "$@"
       ;;
     modules) cmd_modules ;;
+    collect) cmd_collect ;;
     config)
       shift
       cmd_config "$@"
