@@ -107,3 +107,14 @@ fetch_git_cached() {
   FETCHED_PATH="$CACHE_DIR/sources/$name"
   fetch_git "$name" "$FETCHED_PATH" "$@"
 }
+
+release_extract() {
+  local name="$1" member="$2" dest="$3" mode="${4:-0755}" dir
+  release_current "$name" && [[ -e $dest ]] && return 0
+  fetch_release "$name" || return 1
+  dir="$(mktemp -d)" || return 1
+  tar -xzf "$FETCHED_PATH" -C "$dir" "$member" || return 1
+  install -D -m "$mode" "$dir/$member" "$dest" || return 1
+  rm -rf "$dir"
+  release_mark "$name"
+}

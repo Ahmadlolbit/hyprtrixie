@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage: hyprtrixie-screenshot [region|window|screen]
+
+Saves a screenshot to ~/Pictures/Screenshots, copies it to the clipboard and
+shows a notification. Choose Edit on the notification to annotate it.
+USAGE
+}
+
+capture() {
+  local area output
+  case "$1" in
+    region)
+      area="$(slurp -d)" || return 2
+      grim -g "$area" "$2"
+      ;;
+    window)
+      area="$(hyprctl -j activewindow | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')" || return 1
+      grim -g "$area" "$2"
+      ;;
+    screen)
+      output="$(hyprctl -j monitors | jq -r '.[] | select(.focused) | .name')" || return 1
+      grim -o "$output" "$2"
+      ;;
+  esac
+}
+
+mode="${1:-region}"
+case "$mode" in
+  region | window | screen) ;;
+  -h | --help | help)
+    usage
+    exit 0
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac
+
+dir="$(xdg-user-dir PICTURES 2>/dev/null || printf '%s/Pictures' "$HOME")/Screenshots"
+file="$dir/Screenshot from $(date '+%Y-%m-%d %H-%M-%S').png"
+mkdir -p "$dir" || exit 1
+capture "$mode" "$file"
+case $? in
+  0) ;;
+  2) exit 0 ;;
+  *) exit 1 ;;
+esac
+
+wl-copy --type image/png <"$file"
+action="$(notify-send --app-name=Screenshot --icon="$file" --action=edit=Edit "Screenshot saved" "${file/#"$HOME"/\~}")"
+if [[ $action == edit ]]; then
+  swappy -f "$file" -o "$file"
+fi
