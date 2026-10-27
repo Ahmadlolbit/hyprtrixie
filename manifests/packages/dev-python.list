@@ -1,0 +1,12 @@
+pyenv
+build-essential
+libbz2-dev
+libffi-dev
+liblzma-dev
+libncurses-dev
+libreadline-dev
+libsqlite3-dev
+libssl-dev
+tk-dev
+xz-utils
+zlib1g-dev

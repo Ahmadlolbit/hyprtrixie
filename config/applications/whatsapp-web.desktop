@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=WhatsApp
+Comment=WhatsApp Web in its own window
+Exec=helium --app=https://web.whatsapp.com/
+Icon=/usr/share/hyprtrixie/icons/whatsapp-web.svg
+Categories=Network;InstantMessaging;
+StartupNotify=true
+Terminal=false

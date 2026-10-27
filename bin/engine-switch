@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+STATE="/var/lib/hyprtrixie/container-engine"
+SHIM="/usr/local/bin/docker"
+
+usage() {
+  cat <<USAGE
+engine-switch - choose which container engine answers to "docker"
+
+  engine-switch docker    use Docker CE
+  engine-switch podman    use Podman; docker commands are passed to podman
+  engine-switch status    show the engine in use
+USAGE
+}
+
+current() {
+  cat "$STATE" 2>/dev/null || printf 'docker\n'
+}
+
+as_root() {
+  ((EUID == 0)) && return 0
+  exec sudo "$0" "$@"
+}
+
+user_socket() {
+  local user="${SUDO_USER:-}" uid
+  [[ -n $user && $user != root ]] || return 0
+  uid="$(id -u "$user")" || return 0
+  [[ -S /run/user/$uid/bus ]] || return 0
+  systemctl --user --machine="$user@" "$@" podman.socket >/dev/null 2>&1 || true
+}
+
+remember() {
+  mkdir -p "${STATE%/*}" && printf '%s\n' "$1" >"$STATE"
+}
+
+use_docker() {
+  command -v /usr/bin/docker >/dev/null || {
+    printf 'Docker is not installed\n' >&2
+    return 1
+  }
+  user_socket disable --now
+  systemctl disable --now podman.socket >/dev/null 2>&1 || true
+  ln -sfn /usr/bin/docker "$SHIM" || return 1
+  systemctl enable --now docker.socket docker.service || return 1
+  remember docker
+  printf 'docker now talks to Docker CE\n'
+}
+
+use_podman() {
+  command -v podman >/dev/null || {
+    printf 'Podman is not installed\n' >&2
+    return 1
+  }
+  systemctl disable --now docker.service docker.socket >/dev/null 2>&1 || true
+  rm -f "$SHIM"
+  printf '#!/bin/sh\nexec /usr/bin/podman "$@"\n' >"$SHIM" || return 1
+  chmod 0755 "$SHIM"
+  systemctl enable --now podman.socket || return 1
+  user_socket enable --now
+  remember podman
+  printf 'docker now talks to Podman\n'
+}
+
+status() {
+  printf 'engine: %s\n' "$(current)"
+  if [[ -L $SHIM ]]; then
+    printf 'docker: %s\n' "$(readlink "$SHIM")"
+  elif [[ -f $SHIM ]]; then
+    printf 'docker: podman shim\n'
+  else
+    printf 'docker: not set up\n'
+  fi
+}
+
+case "${1:-status}" in
+  docker)
+    as_root "$@"
+    use_docker
+    ;;
+  podman)
+    as_root "$@"
+    use_podman
+    ;;
+  status) status ;;
+  help | -h | --help) usage ;;
+  *)
+    usage >&2
+    exit 1
+    ;;
+esac

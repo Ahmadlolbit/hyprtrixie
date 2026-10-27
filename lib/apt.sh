@@ -175,6 +175,36 @@ extrepo_enable() {
   done
 }
 
+pkg_candidate() {
+  apt-cache policy "$1" 2>/dev/null | awk '/Candidate:/ { if ($2 != "(none)") print $2; exit }'
+}
+
+extrepo_release_url() {
+  local file="/etc/apt/sources.list.d/extrepo_$1.sources" uri suite
+  [[ -f $file ]] || return 1
+  uri="$(awk '/^URIs:/ { print $2; exit }' "$file")"
+  suite="$(awk '/^Suites:/ { print $2; exit }' "$file")"
+  if [[ $suite == */ ]]; then
+    printf '%s/%sInRelease' "${uri%/}" "${suite#./}"
+  else
+    printf '%s/dists/%s/InRelease' "${uri%/}" "$suite"
+  fi
+}
+
+extrepo_try() {
+  local name="$1" url
+  extrepo_enable "$name" || return 1
+  apt_update --force && return 0
+  url="$(extrepo_release_url "$name")" || return 1
+  if curl -fsS --max-time 20 -o /dev/null "$url"; then
+    return 1
+  fi
+  log warn "the $name repository can't be reached from here, turning it off"
+  extrepo disable "$name" || true
+  apt_update --force
+  return 2
+}
+
 deb_install_release() {
   local release="$1" package="$2"
   release_get "$release" || return 1

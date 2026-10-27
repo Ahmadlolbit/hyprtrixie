@@ -17,7 +17,13 @@ SAVEHIST=50000
 setopt hist_ignore_all_dups hist_ignore_space share_history
 
 typeset -U path
-path=("$HOME/.local/bin" "$HOME/bin" $path)
+path=("$HOME/.local/bin" "$HOME/bin" "$HOME/.cargo/bin" $path)
+
+(( $+commands[mise] )) && eval "$(mise activate zsh)"
+if (( $+commands[pyenv] )); then
+  export PYENV_ROOT="$HOME/.pyenv"
+  eval "$(pyenv init - zsh)"
+fi
 
 if (( $+commands[eza] )); then
   alias ls='eza --group-directories-first --icons=auto'
@@ -27,6 +33,10 @@ if (( $+commands[eza] )); then
 fi
 (( $+commands[bat] )) && export BAT_THEME=ansi
 (( $+commands[fd] )) && export FZF_DEFAULT_COMMAND='fd --type f --hidden --exclude .git'
+
+if [[ "$(cat /var/lib/hyprtrixie/container-engine 2>/dev/null)" == podman ]]; then
+  export DOCKER_HOST="unix://${XDG_RUNTIME_DIR:-/run/user/$UID}/podman/podman.sock"
+fi
 
 [[ -f /usr/share/hyprtrixie/zsh/prompt.zsh ]] && source /usr/share/hyprtrixie/zsh/prompt.zsh
 
