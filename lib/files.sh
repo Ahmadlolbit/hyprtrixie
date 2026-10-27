@@ -1,5 +1,6 @@
 FILES_STATE_DIR="${HYPRTRIXIE_STATE_DIR:-/var/lib/hyprtrixie}"
 FILES_DB="$FILES_STATE_DIR/files.db"
+DEPLOY_CHANGED=0
 
 file_hash() {
   [[ -f $1 ]] || return 1
@@ -28,6 +29,7 @@ owner_group() {
 
 deploy_file() {
   local src="$1" dest="$2" mode="${3:-0644}" owner="${4:-root}" new current known
+  DEPLOY_CHANGED=0
   new="$(file_hash "$src")" || {
     log error "missing source file: $src"
     return 1
@@ -53,6 +55,7 @@ deploy_file() {
   fi
   install -D -m "$mode" -o "$owner" -g "$(owner_group "$owner")" "$src" "$dest" || return 1
   files_db_set "$dest" "$new"
+  DEPLOY_CHANGED=1
   log info "deployed $dest"
 }
 
@@ -119,6 +122,15 @@ deploy_rendered() {
   rc=$?
   rm -f "$tmp"
   return "$rc"
+}
+
+conf_set() {
+  local file="$1" key="$2" value="$3"
+  if [[ -f $file ]] && grep -qE "^#?[[:space:]]*$key=" "$file"; then
+    sed -i -E "s|^#?[[:space:]]*$key=.*|$key=$value|" "$file"
+  else
+    printf '%s=%s\n' "$key" "$value" >>"$file"
+  fi
 }
 
 ensure_line() {

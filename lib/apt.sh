@@ -10,8 +10,10 @@ apt_env() {
 }
 
 apt_get() {
+  local simulate=()
   apt_env
-  apt-get -y -o Dpkg::Use-Pty=0 \
+  [[ ${APT_SIMULATE:-0} == 1 ]] && simulate=(-s)
+  apt-get -y "${simulate[@]}" -o Dpkg::Use-Pty=0 \
     -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold "$@"
 }
 
@@ -21,6 +23,7 @@ apt_mark_dirty() {
 
 apt_update() {
   local age=999999
+  [[ ${APT_SIMULATE:-0} == 1 ]] && return 0
   if [[ -f $APT_STAMP ]]; then
     age=$(($(date +%s) - $(stat -c %Y "$APT_STAMP")))
   fi
@@ -54,6 +57,29 @@ pkg_needs_backports() {
   dpkg --compare-versions "$current" lt "$wanted"
 }
 
+backports_siblings() {
+  local pkg
+  sed -nE 's/^ *([a-z0-9][a-z0-9.+-]*) : Depends: [a-z0-9.+-]+ \(= [^)]+\) but ([^ ]*~bpo[^ ]* is to be installed|it is not going to be installed).*/\1/p' | sort -u | while IFS= read -r pkg; do
+    [[ -n "$(pkg_backports_version "$pkg")" ]] && printf '%s\n' "$pkg"
+  done
+  return 0
+}
+
+apt_install_stable() {
+  local extra=() more=() out rc attempt
+  for attempt in 1 2 3 4 5; do
+    out="$(apt_get install "$@" "${extra[@]}" 2>&1)"
+    rc=$?
+    printf '%s\n' "$out"
+    ((rc == 0)) && return 0
+    mapfile -t more < <(backports_siblings <<<"$out")
+    ((${#more[@]})) || return "$rc"
+    log warn "attempt $attempt: taking ${more[*]} from $BACKPORTS_SUITE to match libraries already installed from there"
+    extra+=("${more[@]/%//$BACKPORTS_SUITE}")
+  done
+  return 1
+}
+
 apt_install() {
   local spec stable=() backports=()
   ((APT_UPDATE_NEEDED)) && { apt_update || return 1; }
@@ -71,7 +97,7 @@ apt_install() {
   apt_update || return 1
   if ((${#stable[@]})); then
     log info "installing: ${stable[*]}"
-    apt_get install "${stable[@]}" || return 1
+    apt_install_stable "${stable[@]}" || return 1
   fi
   if ((${#backports[@]})); then
     log info "installing from $BACKPORTS_SUITE: ${backports[*]}"
