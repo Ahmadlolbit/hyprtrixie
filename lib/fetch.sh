@@ -51,6 +51,17 @@ fetch_release() {
   FETCHED_PATH="$file"
 }
 
+release_current() {
+  release_get "$1" || return 1
+  [[ "$(cat "${STATE_DIR:-/var/lib/hyprtrixie}/releases/$1" 2>/dev/null)" == "$RELEASE_VERSION" ]]
+}
+
+release_mark() {
+  local dir="${STATE_DIR:-/var/lib/hyprtrixie}/releases"
+  release_get "$1" || return 1
+  mkdir -p "$dir" && printf '%s\n' "$RELEASE_VERSION" >"$dir/$1"
+}
+
 source_get() {
   local line
   line="$(manifest_line sources "$1")" || {
