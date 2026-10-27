@@ -118,3 +118,14 @@ release_extract() {
   rm -rf "$dir"
   release_mark "$name"
 }
+
+source_current() {
+  source_get "$1" || return 1
+  [[ "$(cat "${STATE_DIR:-/var/lib/hyprtrixie}/sources/$1" 2>/dev/null)" == "$SOURCE_COMMIT" ]]
+}
+
+source_mark() {
+  local dir="${STATE_DIR:-/var/lib/hyprtrixie}/sources"
+  source_get "$1" || return 1
+  mkdir -p "$dir" && printf '%s\n' "$SOURCE_COMMIT" >"$dir/$1"
+}

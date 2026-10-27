@@ -1,8 +1,8 @@
-@define-color window_bg_color #1e1e2e;
-@define-color accent_bg_color #89b4fa;
-@define-color theme_fg_color #cdd6f4;
-@define-color error_bg_color #f38ba8;
-@define-color error_fg_color #1e1e2e;
+@define-color window_bg_color {{ background }};
+@define-color accent_bg_color {{ accent }};
+@define-color theme_fg_color {{ foreground }};
+@define-color error_bg_color {{ red }};
+@define-color error_fg_color {{ background }};
 
 * {
   all: unset;
@@ -29,7 +29,7 @@ scrollbar {
 }
 
 .input {
-  background: lighter(@window_bg_color);
+  background: {{ lighter_background }};
   color: @theme_fg_color;
   caret-color: @accent_bg_color;
   padding: 12px;
