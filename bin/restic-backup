@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/restic-backup"
+REPOSITORY_FILE="$CONFIG/repository"
+export RESTIC_PASSWORD_FILE="$CONFIG/password"
+
+usage() {
+  cat <<'USAGE'
+Usage: restic-backup init <location>       set up where backups go (a folder, a USB drive path or a restic URL)
+       restic-backup [run]                 back up your home folder
+       restic-backup list                  show the backups
+       restic-backup restore <id> <folder> restore a backup into a folder
+       restic-backup mount <folder>        browse the backups as files
+       restic-backup check                 verify the backup data
+       restic-backup prune                 keep 7 daily, 4 weekly and 6 monthly backups, drop the rest
+
+The location is remembered in ~/.config/restic-backup/repository and the
+password in ~/.config/restic-backup/password. Keep a copy of the password
+somewhere safe: without it the backups cannot be read. Extra patterns to leave
+out go in ~/.config/restic-backup/excludes, one per line.
+USAGE
+}
+
+use_repository() {
+  if [[ ! -s $REPOSITORY_FILE ]]; then
+    printf 'No backup location yet. Run: restic-backup init <location>\n' >&2
+    return 1
+  fi
+  RESTIC_REPOSITORY="$(<"$REPOSITORY_FILE")"
+  export RESTIC_REPOSITORY
+}
+
+cmd_init() {
+  local location="${1:-}"
+  if [[ -z $location ]]; then
+    usage >&2
+    return 2
+  fi
+  mkdir -p "$CONFIG" || return 1
+  chmod 0700 "$CONFIG" || return 1
+  if [[ ! -s $RESTIC_PASSWORD_FILE ]]; then
+    (umask 077 && head -c 32 /dev/urandom | base64 >"$RESTIC_PASSWORD_FILE") || return 1
+    printf 'A new password is in %s. Keep a copy somewhere safe.\n' "$RESTIC_PASSWORD_FILE"
+  fi
+  printf '%s\n' "$location" >"$REPOSITORY_FILE"
+  use_repository || return 1
+  restic cat config >/dev/null 2>&1 || restic init
+}
+
+cmd_run() {
+  local excludes=(--exclude-caches --exclude "$HOME/.cache" --exclude "$HOME/.local/share/Trash"
+    --exclude "$HOME/.local/share/containers" --exclude "node_modules")
+  use_repository || return 1
+  [[ -f $CONFIG/excludes ]] && excludes+=(--exclude-file "$CONFIG/excludes")
+  restic backup "$HOME" "${excludes[@]}"
+}
+
+case "${1:-run}" in
+  init)
+    shift
+    cmd_init "$@"
+    ;;
+  run) cmd_run ;;
+  list) use_repository && restic snapshots ;;
+  restore)
+    if (($# != 3)); then
+      usage >&2
+      exit 2
+    fi
+    use_repository && restic restore "$2" --target "$3"
+    ;;
+  mount)
+    if (($# != 2)); then
+      usage >&2
+      exit 2
+    fi
+    use_repository && restic mount "$2"
+    ;;
+  check) use_repository && restic check ;;
+  prune) use_repository && restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune ;;
+  -h | --help | help) usage ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac
