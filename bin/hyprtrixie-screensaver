@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+OFF="$CONFIG_HOME/hyprtrixie/screensaver-off"
+CLASS=hyprtrixie.screensaver
+EFFECTS=(beams binarypath blackhole bouncyballs bubbles burn colorshift crumble decrypt errorcorrect expand fireworks
+  highlight laseretch matrix middleout orbittingvolley overflow pour print rain randomsequence rings scattered slice
+  slide spotlights spray swarm sweep synthgrid unstable vhstape waves wipe)
+
+usage() {
+  cat <<'EOF'
+Usage: hyprtrixie-screensaver start|toggle|status
+
+start   shows the screensaver on every monitor (the idle timer runs this)
+toggle  turns the screensaver off or back on for your account
+status  prints on or off
+
+The text comes from ~/.config/hyprtrixie/screensaver.txt when it exists,
+otherwise from /usr/share/hyprtrixie/screensaver.txt.
+EOF
+}
+
+text_file() {
+  if [[ -f $CONFIG_HOME/hyprtrixie/screensaver.txt ]]; then
+    printf '%s\n' "$CONFIG_HOME/hyprtrixie/screensaver.txt"
+  else
+    printf '%s\n' /usr/share/hyprtrixie/screensaver.txt
+  fi
+}
+
+running() {
+  pgrep -f "kitty --class $CLASS" >/dev/null
+}
+
+start() {
+  local monitor monitors=()
+  [[ -e $OFF ]] && return 0
+  running && return 0
+  pidof hyprlock >/dev/null && return 0
+  mapfile -t monitors < <(hyprctl monitors -j | jq -r 'sort_by(.focused) | .[].name')
+  for monitor in "${monitors[@]}"; do
+    hyprctl dispatch "hl.dsp.focus({ monitor = \"$monitor\" })" >/dev/null
+    hyprctl dispatch "hl.dsp.exec_cmd([[kitty --class $CLASS -o background=#000000 -o background_opacity=1 -o window_padding_width=0 -o confirm_os_window_close=0 -o font_size=16 -e hyprtrixie-screensaver run]])" >/dev/null
+  done
+}
+
+focused() {
+  [[ "$(hyprctl activewindow -j | jq -r .class)" == "$CLASS" ]]
+}
+
+finish() {
+  hyprctl eval 'hl.config({ cursor = { invisible = false } })' >/dev/null 2>&1
+  pkill -f "kitty --class $CLASS"
+  exit 0
+}
+
+run() {
+  local file pid
+  file="$(text_file)"
+  trap finish EXIT INT TERM HUP
+  hyprctl eval 'hl.config({ cursor = { invisible = true } })' >/dev/null 2>&1
+  sleep 0.5
+  printf '\e[?1003h\e[?1006h'
+  while true; do
+    tte --input-file "$file" --frame-rate 60 --canvas-width 0 --canvas-height 0 --anchor-canvas c --anchor-text c \
+      "${EFFECTS[RANDOM % ${#EFFECTS[@]}]}" &
+    pid=$!
+    while kill -0 "$pid" 2>/dev/null; do
+      if read -rsn1 -t 1 || ! focused || pidof hyprlock >/dev/null; then
+        finish
+      fi
+    done
+  done
+}
+
+toggle() {
+  if [[ -e $OFF ]]; then
+    rm -f "$OFF"
+    notify-send --app-name=Screensaver "Screensaver on"
+  else
+    mkdir -p "${OFF%/*}" && touch "$OFF"
+    notify-send --app-name=Screensaver "Screensaver off"
+  fi
+}
+
+case "${1:-}" in
+  start) start ;;
+  run) run ;;
+  toggle) toggle ;;
+  status)
+    if [[ -e $OFF ]]; then
+      printf 'off\n'
+    else
+      printf 'on\n'
+    fi
+    ;;
+  -h | --help) usage ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

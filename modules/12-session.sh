@@ -7,6 +7,7 @@ option TAP_TO_CLICK --section input --label "Tap to click" --type bool --default
 option ANIMATIONS --section look --label "Animations" --type bool --default yes
 option WINDOW_STYLE --section look --label "Window style" --type choice \
   --default sharp --values "sharp soft"
+option SCREENSAVER_MINUTES --section system --label "Start the screensaver after idle minutes (0 = never)" --type number --default 3
 option IDLE_LOCK_MINUTES --section system --label "Lock the screen after idle minutes (0 = never)" --type number --default 5
 option IDLE_SUSPEND_MINUTES --section system --label "Suspend after idle minutes (0 = never)" --type number --default 30
 
@@ -84,10 +85,13 @@ idle_listener() {
 }
 
 hypridle_config() {
-  local lock=$((IDLE_LOCK_MINUTES * 60)) suspend=$((IDLE_SUSPEND_MINUTES * 60))
+  local lock=$((IDLE_LOCK_MINUTES * 60)) suspend=$((IDLE_SUSPEND_MINUTES * 60)) saver=$((SCREENSAVER_MINUTES * 60))
   local on="hyprctl dispatch 'hl.dsp.dpms({action = \"on\"})'" off="hyprctl dispatch 'hl.dsp.dpms({action = \"off\"})'"
   printf 'general {\n    lock_cmd = pidof hyprlock || hyprlock\n    before_sleep_cmd = loginctl lock-session\n'
   printf '    after_sleep_cmd = %s\n}\n' "$on"
+  if ((saver > 0 && (lock == 0 || saver < lock))); then
+    idle_listener "$saver" "hyprtrixie-screensaver start"
+  fi
   if ((lock > 0)); then
     if ((lock > 60)); then
       idle_listener $((lock - 30)) "brightnessctl -s set 10%" "brightnessctl -r"
@@ -149,6 +153,11 @@ screenshot_install() {
   deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-screenshot" "$BIN_DIR/hyprtrixie-screenshot" 0755
 }
 
+screensaver_install() {
+  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-screensaver" "$BIN_DIR/hyprtrixie-screensaver" 0755 || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/system/screensaver.txt" "$SHARE_DIR/screensaver.txt"
+}
+
 module_12() {
   run_step "Install session packages" apt_install_list session
   run_step "Install the Hyprland defaults" hyprland_defaults
@@ -161,6 +170,7 @@ module_12() {
   run_step "Set up notifications" mako_setup
   run_step "Install the Walker launcher" walker_install
   run_step "Install the screenshot command" screenshot_install
+  run_step "Install the screensaver" screensaver_install
 }
 
 verify_12_packages() {
@@ -201,4 +211,8 @@ verify_12_start() {
 
 verify_12_screenshot() {
   run_check "The screenshot command is installed" commands_present hyprtrixie-screenshot
+}
+
+verify_12_screensaver() {
+  run_check "The screensaver is installed" commands_present hyprtrixie-screensaver tte
 }

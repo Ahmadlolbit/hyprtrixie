@@ -33,3 +33,9 @@ text = "Power"
 icon = "preferences-system-power"
 keywords = ["battery", "power", "profile", "performance"]
 actions = { "power" = "qs -p /usr/share/hyprtrixie/shell ipc call popup toggle battery" }
+
+[[entries]]
+text = "Screensaver"
+icon = "preferences-system-brightness-lock"
+keywords = ["screensaver", "idle", "saver"]
+actions = { "screensaver" = "hyprtrixie-screensaver toggle" }

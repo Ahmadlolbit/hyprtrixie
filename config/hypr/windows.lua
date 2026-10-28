@@ -35,3 +35,9 @@ hl.window_rule({
   keep_aspect_ratio = true,
   move = { "(monitor_w-window_w-40)", "(monitor_h*0.04)" },
 })
+
+hl.window_rule({
+  name = "screensaver",
+  match = { class = "^hyprtrixie\\.screensaver$" },
+  fullscreen = true,
+})
