@@ -33,3 +33,9 @@ bitwarden security everyday release:bitwarden bitwarden Bitwarden
 keepassxc security offered debian keepassxc KeePassXC
 mullvad security offered extrepo:mullvad mullvad-vpn Mullvad VPN
 protonvpn security offered extrepo:protonvpn proton-vpn-gnome-desktop Proton VPN
+gimp creative offered debian gimp GIMP
+inkscape creative offered debian inkscape Inkscape
+krita creative offered debian krita Krita
+drawing creative offered debian drawing Drawing
+darktable creative offered debian darktable Darktable
+blender creative offered debian blender Blender
