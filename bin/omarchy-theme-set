@@ -13,6 +13,7 @@ usage() {
   cat <<'EOF'
 Usage: omarchy-theme-set <theme>
        omarchy-theme-set --list
+       omarchy-theme-set --previews
        omarchy-theme-set --current
 
 Applies a theme to Hyprland, the bar, kitty, the launcher, notifications, the
@@ -26,7 +27,33 @@ pretty() {
 }
 
 theme_names() {
-  find "$OMARCHY_PATH/themes" "$USER_THEMES" -mindepth 1 -maxdepth 1 \( -type d -o -type l \) -printf '%f\n' 2>/dev/null | sort -u
+  local dir dirs=()
+  for dir in "$OMARCHY_PATH/themes" "$USER_THEMES"; do
+    [[ -d $dir ]] && dirs+=("$dir")
+  done
+  ((${#dirs[@]})) || return 0
+  find "${dirs[@]}" -mindepth 1 -maxdepth 1 \( -type d -o -type l \) -printf '%f\n' | sort -u
+}
+
+preview_of() {
+  local dir file found=()
+  for dir in "$USER_THEMES/$1" "$OMARCHY_PATH/themes/$1"; do
+    for file in "$dir"/preview.{png,jpg,jpeg,webp}; do
+      if [[ -f $file ]]; then
+        printf '%s\n' "$file"
+        return 0
+      fi
+    done
+  done
+  for dir in "$USER_THEMES/$1/backgrounds" "$OMARCHY_PATH/themes/$1/backgrounds"; do
+    [[ -d $dir ]] || continue
+    mapfile -t found < <(find "$dir" -maxdepth 1 -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) | sort)
+    if ((${#found[@]})); then
+      printf '%s\n' "${found[0]}"
+      return 0
+    fi
+  done
+  printf '\n'
 }
 
 slug() {
@@ -242,6 +269,12 @@ case "${1:-}" in
   --list)
     theme_names | pretty
     exit
+    ;;
+  --previews)
+    while IFS= read -r name; do
+      printf '%s\t%s\t%s\n' "$name" "$(pretty <<<"$name")" "$(preview_of "$name")"
+    done < <(theme_names)
+    exit 0
     ;;
   --current)
     [[ -f $STATE/theme.name ]] || exit 1
