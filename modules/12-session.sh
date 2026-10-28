@@ -12,7 +12,7 @@ option IDLE_SUSPEND_MINUTES --section system --label "Suspend after idle minutes
 
 HYPR_SHARE="$SHARE_DIR/hypr"
 ELEPHANT_LIB=/usr/local/lib/elephant
-ELEPHANT_PROVIDERS=(desktopapplications calc runner files symbols websearch clipboard providerlist unicode)
+ELEPHANT_PROVIDERS=(desktopapplications calc runner files symbols websearch clipboard providerlist unicode menus)
 
 lua_bool() {
   if [[ $1 == yes ]]; then
