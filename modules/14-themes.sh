@@ -5,6 +5,7 @@ option THEME --section look --label "Theme" --type choice --default catppuccin \
 
 OMARCHY_DIR="${HYPRTRIXIE_OMARCHY_DIR:-/usr/share/omarchy}"
 THEME_STATE=.local/state/omarchy/current
+DROPPED_THEMES=(bloodline neon-plum noir cobalt-night navy-mint porcelain dayshift inkwell terracotta marble green-magic roseglass)
 
 theme_copy() {
   local src="$1" dest="$2" old="${3:-}" new="${4:-}" file base
@@ -37,6 +38,14 @@ omarchy_themes_install() {
   install -D -m 0644 "$FETCHED_PATH/LICENSE" "$OMARCHY_DIR/LICENSE.omarchy" || return 1
   rm -rf "$FETCHED_PATH"
   source_mark omarchy
+}
+
+dropped_themes_remove() {
+  local name
+  for name in "${DROPPED_THEMES[@]}"; do
+    rm -rf "${OMARCHY_DIR:?}/themes/$name"
+  done
+  rm -f "$OMARCHY_DIR/LICENSE.community-themes" "$STATE_DIR/sources/community-themes"
 }
 
 themes_present() {
@@ -84,6 +93,7 @@ theme_ready() {
 module_14() {
   run_step "Install theme packages" apt_install_list themes
   run_step "Install the Omarchy themes" omarchy_themes_install
+  run_step "Remove the dropped community themes" dropped_themes_remove
   run_step "Install the theme switcher" theme_engine_install
   run_step "Point btop at the theme" btop_theme_setup
   run_step "Apply the $THEME theme" theme_apply
