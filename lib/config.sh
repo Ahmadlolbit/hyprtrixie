@@ -69,6 +69,7 @@ option_default() {
     for item in ${OPTION_VALUES[$key]}; do
       tag="${item#*@}"
       [[ $tag == "$item" ]] && tag="${PROFILES[0]}"
+      [[ $tag == offered ]] && continue
       if (($(profile_level "$tag") <= $(profile_level "${PROFILE:-developer}"))); then
         out+=("${item%@*}")
       fi
