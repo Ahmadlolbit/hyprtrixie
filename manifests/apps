@@ -24,4 +24,9 @@ vlc viewers everyday debian vlc VLC (videos and music)
 okular viewers offered debian okular Okular (PDFs)
 mpv viewers offered debian mpv mpv (videos)
 dolphin files minimal debian dolphin,ark,kio-extras,ffmpegthumbs,kde-cli-tools Dolphin (files and archives)
+localsend files everyday release:localsend localsend LocalSend
+syncthing files offered debian syncthing Syncthing
+nextcloud files offered debian nextcloud-desktop Nextcloud
+qbittorrent files offered debian qbittorrent qBittorrent
+filezilla files offered debian filezilla FileZilla
 bitwarden security everyday release:bitwarden bitwarden Bitwarden
