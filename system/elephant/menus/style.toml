@@ -1,0 +1,23 @@
+name = "hyprtrixie-style"
+name_pretty = "Style"
+icon = "preferences-desktop-theme"
+parent = "hyprtrixie"
+fixed_order = true
+
+[[entries]]
+text = "Theme"
+icon = "preferences-desktop-theme"
+keywords = ["theme", "colors", "look"]
+submenu = "hyprtrixie-themes"
+
+[[entries]]
+text = "Background"
+icon = "preferences-desktop-wallpaper"
+keywords = ["background", "wallpaper"]
+submenu = "hyprtrixie-backgrounds"
+
+[[entries]]
+text = "Next background"
+icon = "preferences-desktop-wallpaper"
+keywords = ["background", "wallpaper"]
+actions = { "next" = "hyprtrixie-background next" }

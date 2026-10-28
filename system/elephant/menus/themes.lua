@@ -1,6 +1,7 @@
 Name = "hyprtrixie-themes"
 NamePretty = "Themes"
 Icon = "preferences-desktop-theme"
+Parent = "hyprtrixie-style"
 Action = "omarchy-theme-set %VALUE%"
 
 local function first_line(path)

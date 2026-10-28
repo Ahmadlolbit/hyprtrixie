@@ -1,6 +1,7 @@
 Name = "hyprtrixie-backgrounds"
 NamePretty = "Backgrounds"
 Icon = "preferences-desktop-wallpaper"
+Parent = "hyprtrixie-style"
 Action = "hyprtrixie-background '%VALUE%'"
 
 local function lines(command)
