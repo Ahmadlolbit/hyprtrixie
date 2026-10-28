@@ -8,13 +8,13 @@ fixed_order = true
 text = "Theme"
 icon = "preferences-desktop-theme"
 keywords = ["theme", "colors", "look"]
-submenu = "hyprtrixie-themes"
+actions = { "themes" = "qs -p /usr/share/hyprtrixie/shell ipc call picker themes" }
 
 [[entries]]
 text = "Background"
 icon = "preferences-desktop-wallpaper"
 keywords = ["background", "wallpaper"]
-submenu = "hyprtrixie-backgrounds"
+actions = { "backgrounds" = "qs -p /usr/share/hyprtrixie/shell ipc call picker backgrounds" }
 
 [[entries]]
 text = "Next background"

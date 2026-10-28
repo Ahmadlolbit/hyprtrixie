@@ -128,6 +128,7 @@ walker_install() {
   done
   rm -rf /etc/xdg/walker/themes/hyprtrixie
   rm -f "$BIN_DIR/hyprtrixie-power-menu"
+  rm -f /etc/xdg/elephant/menus/themes.lua /etc/xdg/elephant/menus/backgrounds.lua
   deploy_file "$HYPRTRIXIE_ROOT/system/walker/config.toml" /etc/xdg/walker/config.toml || return 1
   deploy_tree "$HYPRTRIXIE_ROOT/system/elephant/menus" /etc/xdg/elephant/menus
 }
