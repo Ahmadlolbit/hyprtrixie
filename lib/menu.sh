@@ -35,7 +35,18 @@ section_summary() {
 }
 
 menu_line() {
-  printf '%-24s %s' "$1" "$2"
+  if [[ -n ${3:-} ]] && (($(ui_columns) >= 130)); then
+    printf '%-30s %-16s %s%s%s' "$1" "$2" "$C_DIM" "$3" "$C_RESET"
+  else
+    printf '%-30s %s' "$1" "$2"
+  fi
+}
+
+menu_header() {
+  local key="$1"
+  printf '%s' "${OPTION_LABEL[$key]}"
+  [[ -n ${OPTION_HELP[$key]} ]] && printf '\n%s' "${OPTION_HELP[$key]}"
+  return 0
 }
 
 menu_edit_number() {
@@ -51,7 +62,8 @@ menu_edit_number() {
 }
 
 menu_edit() {
-  local key="$1" label="${OPTION_LABEL[$1]}" value picked=() before
+  local key="$1" label value picked=() before
+  label="$(menu_header "$key")"
   case "${OPTION_TYPE[$key]}" in
     choice)
       mapfile -t picked < <(option_items "$key")
@@ -101,7 +113,7 @@ menu_section() {
     fi
     lines=()
     for key in "${keys[@]}"; do
-      lines+=("$(menu_line "${OPTION_LABEL[$key]}" "$(option_display "$key")")")
+      lines+=("$(menu_line "${OPTION_LABEL[$key]}" "$(option_display "$key")" "${OPTION_HELP[$key]}")")
     done
     lines+=("Back")
     choice="$(ui_choose "${MENU_TITLES[$section]}" "" "${lines[@]}")" || return 0

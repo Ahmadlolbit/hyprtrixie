@@ -8,6 +8,7 @@ declare -gA OPTION_TYPE=()
 declare -gA OPTION_DEFAULT=()
 declare -gA OPTION_VALUES=()
 declare -gA OPTION_WHEN=()
+declare -gA OPTION_HELP=()
 
 profile_level() {
   local i
@@ -21,7 +22,7 @@ profile_level() {
 }
 
 option() {
-  local key="$1" section="" label="" type="choice" default="" values="" when=""
+  local key="$1" section="" label="" type="choice" default="" values="" when="" help=""
   shift
   while (($#)); do
     case "$1" in
@@ -31,6 +32,7 @@ option() {
       --default) default="$2" ;;
       --values) values="$2" ;;
       --when) when="$2" ;;
+      --help) help="$2" ;;
       *) return 1 ;;
     esac
     shift 2
@@ -42,6 +44,7 @@ option() {
   OPTION_DEFAULT[$key]="$default"
   OPTION_VALUES[$key]="$values"
   OPTION_WHEN[$key]="$when"
+  OPTION_HELP[$key]="$help"
   [[ -v $key ]] || printf -v "$key" '%s' "$(option_default "$key")"
 }
 
@@ -173,6 +176,8 @@ config_show() {
 }
 
 option PROFILE --section profile --label "Profile" --type choice \
-  --default developer --values "developer everyday minimal"
+  --default developer --values "developer everyday minimal" \
+  --help "Presets for apps and tools: minimal, everyday, or developer (everything)"
 option FAILURE_MODE --section run --label "When a step fails" --type choice \
-  --default ask --values "ask halt continue"
+  --default ask --values "ask halt continue" \
+  --help "Ask what to do, stop the run, or note the failure and carry on"

@@ -1,9 +1,11 @@
 register_module 10 "Applications"
 
 option APPS --section apps --label "Applications" --type multi \
-  --values "helium@minimal whatsapp@everyday dolphin@minimal libreoffice@everyday vlc@everyday telegram@everyday signal@everyday vesktop@everyday teams@everyday bitwarden@everyday"
+  --values "helium@minimal whatsapp@everyday dolphin@minimal libreoffice@everyday vlc@everyday telegram@everyday signal@everyday vesktop@everyday teams@everyday bitwarden@everyday" \
+  --help "Apps to install; untick any you don't want"
 option TEAMS_SOURCE --section apps --label "Install Teams from" --type choice \
-  --default apt --values "apt snap" --when teams_wanted
+  --default apt --values "apt snap" --when teams_wanted \
+  --help "Teams for Linux from its apt repository or from the Snap Store"
 
 app_wanted() {
   option_enabled APPS "$1"

@@ -1,7 +1,8 @@
 register_module 14 "Themes"
 
 option THEME --section look --label "Theme" --type choice --default catppuccin \
-  --values "catppuccin catppuccin-latte ethereal everforest flexoki-light gruvbox hackerman kanagawa last-horizon lumon lupine matte-black miasma nord osaka-jade retro-82 ristretto rose-pine solitude tokyo-night vantablack white"
+  --values "catppuccin catppuccin-latte ethereal everforest flexoki-light gruvbox hackerman kanagawa last-horizon lumon lupine matte-black miasma nord osaka-jade retro-82 ristretto rose-pine solitude tokyo-night vantablack white" \
+  --help "Colours, wallpaper and icons for every app; Super+Ctrl+T changes it later"
 
 OMARCHY_DIR="${HYPRTRIXIE_OMARCHY_DIR:-/usr/share/omarchy}"
 THEME_STATE=.local/state/omarchy/current

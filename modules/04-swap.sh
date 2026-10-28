@@ -1,8 +1,11 @@
 register_module 04 "Swap and memory"
 
-option SWAPFILE_GB --section storage --label "Swapfile size in GiB (0 = none)" --type number --default 8
-option ZRAM_PERCENT --section storage --label "zram size, % of memory (0 = off)" --type number --default 50
-option SWAPPINESS --section storage --label "Swappiness" --type number --default 180
+option SWAPFILE_GB --section storage --label "Swapfile size (GiB)" --type number --default 8 \
+  --help "Disk space used as extra memory when RAM runs out; 0 turns it off"
+option ZRAM_PERCENT --section storage --label "zram size (% of memory)" --type number --default 50 \
+  --help "Compressed memory that works as fast swap; 0 turns it off"
+option SWAPPINESS --section storage --label "Swappiness" --type number --default 180 \
+  --help "How readily memory moves to swap; a high value suits zram"
 
 SWAP_DIR="${HYPRTRIXIE_SWAP_DIR:-/swap}"
 SWAPFILE="$SWAP_DIR/swapfile"

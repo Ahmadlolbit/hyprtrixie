@@ -1,9 +1,11 @@
 register_module 03 "Kernel and drivers"
 
 option KERNEL --section system --label "Kernel" --type choice \
-  --default backports --values "backports stable"
+  --default backports --values "backports stable" \
+  --help "Backports has a newer kernel for recent laptops; stable is Debian's own"
 option GRAPHICS --section system --label "NVIDIA driver" --type choice \
-  --default proprietary --values "proprietary nouveau" --when nvidia_present
+  --default proprietary --values "proprietary nouveau" --when nvidia_present \
+  --help "NVIDIA's own driver is faster; nouveau is open source and slower"
 
 nvidia_present() {
   has_gpu nvidia

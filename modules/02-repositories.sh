@@ -1,7 +1,8 @@
 register_module 02 "Repositories and base packages"
 
 option DEBIAN_MIRROR --section system --label "Debian mirror" --type text \
-  --default "https://deb.debian.org/debian"
+  --default "https://deb.debian.org/debian" \
+  --help "Where Debian packages download from; the default picks a nearby server"
 
 APT_SOURCES_DIR="${HYPRTRIXIE_SOURCES_DIR:-/etc/apt/sources.list.d}"
 APT_SOURCES_LIST="${HYPRTRIXIE_SOURCES_LIST:-/etc/apt/sources.list}"

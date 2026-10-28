@@ -1,11 +1,14 @@
 register_module 11 "Developer tools"
 
 option DEV_TOOLS --section dev --label "Developer tools" --type multi \
-  --values "docker@developer podman@developer mise@developer python@developer rust@developer go@developer kubernetes@developer neovim@developer vscode@developer vscodium@developer zed@developer toolbox@developer"
-option CONTAINER_ENGINE --section dev --label "Engine behind the docker command" --type choice \
-  --default docker --values "docker podman" --when both_engines
+  --values "docker@developer podman@developer mise@developer python@developer rust@developer go@developer kubernetes@developer neovim@developer vscode@developer vscodium@developer zed@developer toolbox@developer" \
+  --help "Languages, containers and editors to set up for programming"
+option CONTAINER_ENGINE --section dev --label "Docker command uses" --type choice \
+  --default docker --values "docker podman" --when both_engines \
+  --help "When both are installed, which engine answers the docker command"
 option DOCKER_PORTS --section dev --label "Docker publishes ports on" --type choice \
-  --default localhost --values "localhost all" --when docker_wanted
+  --default localhost --values "localhost all" --when docker_wanted \
+  --help "Container ports reach only this computer, or every network"
 
 tool_wanted() {
   option_enabled DEV_TOOLS "$1"

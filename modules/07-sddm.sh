@@ -1,7 +1,8 @@
 register_module 07 "Login screen"
 
 option GREETER --section system --label "Login screen runs on" --type choice \
-  --default x11 --values "x11 wayland"
+  --default x11 --values "x11 wayland" \
+  --help "X11 is the most reliable for the login screen; Wayland is newer"
 
 SDDM_CONF="${HYPRTRIXIE_SDDM_CONF:-/etc/sddm.conf.d/10-hyprtrixie.conf}"
 SDDM_STATE="${HYPRTRIXIE_SDDM_STATE:-/var/lib/sddm/state.conf}"

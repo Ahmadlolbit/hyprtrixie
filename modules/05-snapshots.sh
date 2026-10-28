@@ -1,9 +1,13 @@
 register_module 05 "Snapshots and rollback"
 
-option SNAPSHOTS --section storage --label "System snapshots" --type bool --default yes
-option SNAPSHOT_DAILY --section storage --label "Daily snapshots to keep" --type number --default 7 --when snapshots_enabled
-option SNAPSHOT_WEEKLY --section storage --label "Weekly snapshots to keep" --type number --default 4 --when snapshots_enabled
-option SNAPSHOT_MONTHLY --section storage --label "Monthly snapshots to keep" --type number --default 1 --when snapshots_enabled
+option SNAPSHOTS --section storage --label "System snapshots" --type bool --default yes \
+  --help "Snapshots before changes, so you can roll back from the boot menu"
+option SNAPSHOT_DAILY --section storage --label "Daily snapshots to keep" --type number --default 7 --when snapshots_enabled \
+  --help "How many daily snapshots to keep"
+option SNAPSHOT_WEEKLY --section storage --label "Weekly snapshots to keep" --type number --default 4 --when snapshots_enabled \
+  --help "How many weekly snapshots to keep"
+option SNAPSHOT_MONTHLY --section storage --label "Monthly snapshots to keep" --type number --default 1 --when snapshots_enabled \
+  --help "How many monthly snapshots to keep"
 
 SNAPPER_DEFAULTS="${HYPRTRIXIE_SNAPPER_DEFAULTS:-/etc/default/snapper}"
 SNAPPER_CONFIG="${HYPRTRIXIE_SNAPPER_CONFIG:-/etc/snapper/configs/root}"
