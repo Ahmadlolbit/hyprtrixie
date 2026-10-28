@@ -10,6 +10,7 @@ Singleton {
   readonly property var defaults: ({
       position: "top",
       clock: "24h",
+      style: "sharp",
       left: ["workspaces", "window"],
       center: ["clock"],
       right: ["indicators", "tray", "cpu", "memory", "network", "audio", "brightness", "power-profile", "battery"]
@@ -18,6 +19,7 @@ Singleton {
   readonly property var user: parse(userFile.text())
   readonly property string position: value("position")
   readonly property string clock: value("clock")
+  readonly property string style: value("style")
   readonly property var left: value("left")
   readonly property var center: value("center")
   readonly property var right: value("right")

@@ -13,7 +13,7 @@ bar_install() {
 
 bar_settings() {
   deploy_rendered "$HYPRTRIXIE_ROOT/system/shell.json" /etc/hyprtrixie/shell.json 0644 root \
-    "POSITION=$BAR_POSITION" "CLOCK=$CLOCK_FORMAT"
+    "POSITION=$BAR_POSITION" "CLOCK=$CLOCK_FORMAT" "STYLE=$WINDOW_STYLE"
 }
 
 bar_ready() {

@@ -14,7 +14,7 @@ Scope {
   property bool armed: false
 
   function show(icon, level) {
-    if (!armed)
+    if (!armed || Popups.open)
       return;
     root.icon = icon;
     root.level = level;
