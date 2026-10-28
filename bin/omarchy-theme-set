@@ -192,7 +192,10 @@ desktop_settings() {
 retint() {
   [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]] || return 0
   hyprctl reload >/dev/null 2>&1
-  hyprctl hyprpaper wallpaper ",$(readlink -f "$STATE/background"),cover" >/dev/null 2>&1
+  if pkill -x hyprpaper; then
+    timeout 3 pidwait -x hyprpaper
+    setsid -f hyprpaper >/dev/null 2>&1
+  fi
   makoctl reload >/dev/null 2>&1
   qs -p /usr/share/hyprtrixie/shell ipc call theme reload >/dev/null 2>&1
   pkill -USR1 -x kitty
