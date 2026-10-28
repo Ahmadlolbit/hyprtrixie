@@ -27,10 +27,14 @@ Scope {
     busy = false;
     items = [];
     content.forceActiveFocus();
-    themeName.reload();
-    selected = themeName.text().trim();
-    list.command = ["omarchy-theme-set", "--previews"];
-    list.running = true;
+    if (kind === "themes") {
+      themeName.reload();
+      selected = themeName.text().trim();
+      list.command = ["omarchy-theme-set", "--previews"];
+      list.running = true;
+    } else {
+      background.running = true;
+    }
   }
 
   function close() {
@@ -47,16 +51,23 @@ Scope {
     if (!item || busy)
       return;
     busy = true;
-    applying.command = ["omarchy-theme-set", item.value];
+    applying.command = mode === "themes" ? ["omarchy-theme-set", item.value] : ["hyprtrixie-background", item.value];
     applying.running = true;
   }
 
   function parse(line) {
-    const fields = line.split("\t");
+    if (mode === "themes") {
+      const fields = line.split("\t");
+      return {
+        value: fields[0],
+        label: fields[1] || fields[0],
+        image: fields[2] || ""
+      };
+    }
     return {
-      value: fields[0],
-      label: fields[1] || fields[0],
-      image: fields[2] || ""
+      value: line,
+      label: line.split("/").pop().replace(/\.[^.]+$/, ""),
+      image: line
     };
   }
 
@@ -68,6 +79,19 @@ Scope {
     path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/omarchy/current/theme.name"
     blockLoading: true
     printErrors: false
+  }
+
+  Process {
+    id: background
+
+    command: ["hyprtrixie-background", "--current"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        root.selected = text.trim();
+        list.command = ["hyprtrixie-background", "--list"];
+        list.running = true;
+      }
+    }
   }
 
   Process {
@@ -99,6 +123,10 @@ Scope {
 
     function themes(): void {
       root.show("themes");
+    }
+
+    function backgrounds(): void {
+      root.show("backgrounds");
     }
 
     function close(): void {
