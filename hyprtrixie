@@ -197,6 +197,7 @@ cmd_install() {
   parse_run_options "$@"
   start_run install "$@"
   apply_run_config
+  ui_logo
   ui_header "hyprtrixie $HYPRTRIXIE_VERSION" "Debian 13 with Hyprland, set up properly"
   show_machine
   if ! ((ASSUME_YES)) && ui_can_ask; then
@@ -210,6 +211,7 @@ cmd_install() {
 
 cmd_menu() {
   start_run menu
+  ui_logo
   ui_header "hyprtrixie $HYPRTRIXIE_VERSION" "Debian 13 with Hyprland, set up properly"
   show_machine
   if ! ui_can_ask; then

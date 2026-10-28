@@ -42,6 +42,24 @@ ui_fancy() {
   ((UI_GUM)) && [[ -t 1 ]]
 }
 
+ui_columns() {
+  local size columns=""
+  size="$(stty size 2>/dev/null </dev/tty)" && columns="${size#* }"
+  [[ $columns =~ ^[0-9]+$ ]] || columns="${COLUMNS:-80}"
+  printf '%s' "$columns"
+}
+
+ui_logo() {
+  local file="$HYPRTRIXIE_ROOT/system/screensaver.txt" line
+  [[ -t 1 && -f $file ]] || return 0
+  (($(ui_columns) >= 60)) || return 0
+  printf '\n'
+  while IFS= read -r line; do
+    printf '  %s%s%s\n' "$C_ACCENT$C_BOLD" "$line" "$C_RESET"
+  done <"$file"
+  return 0
+}
+
 ui_rule() {
   local text="$1" fill
   fill=$((UI_WIDTH - ${#text} - 4))
