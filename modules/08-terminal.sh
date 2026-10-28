@@ -20,7 +20,7 @@ nerd_font_install() {
 }
 
 nerd_font_present() {
-  fc-list 2>/dev/null | grep -qi 'JetBrainsMono Nerd Font'
+  fc-list -q 'JetBrainsMono Nerd Font' 2>/dev/null
 }
 
 zsh_setup() {

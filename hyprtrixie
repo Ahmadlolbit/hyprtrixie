@@ -299,6 +299,16 @@ collect_system() {
   journalctl -b -p warning --no-pager -n 300
 }
 
+collect_desktop() {
+  local state="$TARGET_HOME/.local/state/omarchy/current"
+  cat "$state/theme.name"
+  ls -l "$state" "$state/theme"
+  printf '\n'
+  pgrep -a -u "$TARGET_USER" -x 'Hyprland|hyprpaper|hypridle|mako|elephant|walker|qs|quickshell'
+  printf '\n'
+  as_user qs log -p "$SHARE_DIR/shell" -t 300
+}
+
 cmd_collect() {
   local name work out
   RUN_MODE=collect
@@ -309,6 +319,7 @@ cmd_collect() {
   mkdir -p "$work/$name"
   collect_files "$work/$name"
   collect_system >"$work/$name/system.txt" 2>&1
+  collect_desktop >"$work/$name/desktop.txt" 2>&1
   out="$TARGET_HOME/$name.tar.gz"
   tar -czf "$out" -C "$work" "$name" || die "cannot write $out"
   chown "$TARGET_USER:" "$out"
