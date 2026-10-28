@@ -1,0 +1,30 @@
+name = "hyprtrixie-system"
+name_pretty = "System"
+icon = "system-shutdown"
+parent = "hyprtrixie"
+fixed_order = true
+
+[[entries]]
+text = "Lock"
+icon = "system-lock-screen"
+actions = { "lock" = "pidof hyprlock || hyprlock" }
+
+[[entries]]
+text = "Suspend"
+icon = "gnome-power-manager"
+actions = { "suspend" = "systemctl suspend" }
+
+[[entries]]
+text = "Log out"
+icon = "system-log-out"
+actions = { "logout" = "hyprctl dispatch 'hl.dsp.exit()'" }
+
+[[entries]]
+text = "Restart"
+icon = "system-reboot"
+actions = { "restart" = "systemctl reboot" }
+
+[[entries]]
+text = "Shut down"
+icon = "system-shutdown"
+actions = { "shutdown" = "systemctl poweroff" }

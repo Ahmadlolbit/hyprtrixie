@@ -1,0 +1,28 @@
+name = "hyprtrixie"
+name_pretty = "Menu"
+icon = "preferences-system"
+fixed_order = true
+
+[[entries]]
+text = "Style"
+subtext = "Theme and background"
+icon = "preferences-desktop-theme"
+submenu = "hyprtrixie-style"
+
+[[entries]]
+text = "Setup"
+subtext = "Wi-Fi, audio, brightness, Bluetooth, power"
+icon = "preferences-system"
+submenu = "hyprtrixie-setup"
+
+[[entries]]
+text = "Capture"
+subtext = "Screenshots"
+icon = "applets-screenshooter"
+submenu = "hyprtrixie-capture"
+
+[[entries]]
+text = "System"
+subtext = "Lock, suspend, log out, restart, shut down"
+icon = "system-shutdown"
+submenu = "hyprtrixie-system"

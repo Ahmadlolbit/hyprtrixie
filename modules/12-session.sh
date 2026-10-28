@@ -12,7 +12,7 @@ option IDLE_SUSPEND_MINUTES --section system --label "Suspend after idle minutes
 
 HYPR_SHARE="$SHARE_DIR/hypr"
 ELEPHANT_LIB=/usr/local/lib/elephant
-ELEPHANT_PROVIDERS=(desktopapplications calc runner files symbols websearch clipboard providerlist unicode)
+ELEPHANT_PROVIDERS=(desktopapplications calc runner files symbols websearch clipboard providerlist unicode menus)
 
 lua_bool() {
   if [[ $1 == yes ]]; then
@@ -127,7 +127,9 @@ walker_install() {
     release_extract "elephant-$provider" "$provider-linux-amd64.so" "$ELEPHANT_LIB/$provider.so" 0644 || return 1
   done
   rm -rf /etc/xdg/walker/themes/hyprtrixie
-  deploy_file "$HYPRTRIXIE_ROOT/system/walker/config.toml" /etc/xdg/walker/config.toml
+  rm -f "$BIN_DIR/hyprtrixie-power-menu"
+  deploy_file "$HYPRTRIXIE_ROOT/system/walker/config.toml" /etc/xdg/walker/config.toml || return 1
+  deploy_tree "$HYPRTRIXIE_ROOT/system/elephant/menus" /etc/xdg/elephant/menus
 }
 
 walker_ready() {
@@ -142,10 +144,6 @@ screenshot_install() {
   deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-screenshot" "$BIN_DIR/hyprtrixie-screenshot" 0755
 }
 
-power_menu_install() {
-  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-power-menu" "$BIN_DIR/hyprtrixie-power-menu" 0755
-}
-
 module_12() {
   run_step "Install session packages" apt_install_list session
   run_step "Install the Hyprland defaults" hyprland_defaults
@@ -157,7 +155,6 @@ module_12() {
   run_step "Set up notifications" mako_setup
   run_step "Install the Walker launcher" walker_install
   run_step "Install the screenshot command" screenshot_install
-  run_step "Install the power menu" power_menu_install
 }
 
 verify_12_packages() {
@@ -194,8 +191,4 @@ verify_12_walker() {
 
 verify_12_screenshot() {
   run_check "The screenshot command is installed" commands_present hyprtrixie-screenshot
-}
-
-verify_12_power_menu() {
-  run_check "The power menu is installed" commands_present hyprtrixie-power-menu
 }
