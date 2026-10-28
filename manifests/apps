@@ -30,3 +30,6 @@ nextcloud files offered debian nextcloud-desktop Nextcloud
 qbittorrent files offered debian qbittorrent qBittorrent
 filezilla files offered debian filezilla FileZilla
 bitwarden security everyday release:bitwarden bitwarden Bitwarden
+keepassxc security offered debian keepassxc KeePassXC
+mullvad security offered extrepo:mullvad mullvad-vpn Mullvad VPN
+protonvpn security offered extrepo:protonvpn proton-vpn-gnome-desktop Proton VPN
