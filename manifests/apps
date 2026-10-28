@@ -13,6 +13,11 @@ teams chat everyday teams teams-for-linux Teams
 thunderbird chat offered debian thunderbird Thunderbird
 slack chat offered extrepo:slack slack-desktop Slack
 libreoffice office everyday debian libreoffice,libreoffice-gtk3 LibreOffice
+obsidian office everyday release:obsidian obsidian Obsidian
+onlyoffice office offered release:onlyoffice onlyoffice-desktopeditors OnlyOffice
+xournalpp office offered debian xournalpp Xournal++
+calibre office offered debian calibre Calibre
+foliate office offered debian foliate Foliate
 vlc viewers everyday debian vlc VLC (videos and music)
 dolphin files minimal debian dolphin,ark,kio-extras,ffmpegthumbs,kde-cli-tools Dolphin (files and archives)
 bitwarden security everyday release:bitwarden bitwarden Bitwarden
