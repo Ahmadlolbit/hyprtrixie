@@ -84,6 +84,10 @@ menu_edit() {
       menu_edit_number "$key" "$label"
       ;;
     multi)
+      if [[ -n ${OPTION_GROUPS[$key]} ]]; then
+        menu_edit_groups "$key"
+        return 0
+      fi
       mapfile -t picked < <(option_items "$key")
       local current="${!key}" out
       out="$(ui_choose_many "$label" "${current// /,}" "${picked[@]}")" || return 0
@@ -100,6 +104,71 @@ menu_edit() {
       fi
       ;;
   esac
+}
+
+menu_group_items() {
+  local key="$1" group="$2" item
+  for item in $(option_items "$key"); do
+    [[ "$("${OPTION_GROUP_OF[$key]}" "$item")" == "$group" ]] && printf '%s\n' "$item"
+  done
+  return 0
+}
+
+menu_group_display() {
+  local key="$1" group="$2" item count=0 total=0
+  for item in $(menu_group_items "$key" "$group"); do
+    total=$((total + 1))
+    option_enabled "$key" "$item" && count=$((count + 1))
+  done
+  printf '%s of %s' "$count" "$total"
+}
+
+menu_edit_group() {
+  local key="$1" group="$2" title="$3" items=() names=() ticked=() picked=() chosen=() item out i name
+  mapfile -t items < <(menu_group_items "$key" "$group")
+  for item in "${items[@]}"; do
+    name="$(option_name "$key" "$item")"
+    names+=("$name")
+    option_enabled "$key" "$item" && ticked+=("$name")
+  done
+  out="$(ui_choose_many "$title" "$(
+    IFS=,
+    printf '%s' "${ticked[*]}"
+  )" "${names[@]}")" || return 0
+  [[ -n $out ]] && mapfile -t picked <<<"$out"
+  for item in $(option_items "$key"); do
+    if [[ "$("${OPTION_GROUP_OF[$key]}" "$item")" != "$group" ]]; then
+      option_enabled "$key" "$item" && chosen+=("$item")
+      continue
+    fi
+    for i in "${!items[@]}"; do
+      [[ ${items[$i]} == "$item" ]] || continue
+      for name in "${picked[@]}"; do
+        [[ $name == "${names[$i]}" ]] && chosen+=("$item")
+      done
+    done
+  done
+  printf -v "$key" '%s' "${chosen[*]}"
+}
+
+menu_edit_groups() {
+  local key="$1" group title choice lines=() groups=() titles=() i
+  while :; do
+    lines=()
+    groups=()
+    titles=()
+    while IFS=$'\t' read -r group title; do
+      groups+=("$group")
+      titles+=("$title")
+      lines+=("$(menu_line "$title" "$(menu_group_display "$key" "$group")")")
+    done < <("${OPTION_GROUPS[$key]}")
+    lines+=("Done")
+    choice="$(ui_choose "$(menu_header "$key")" "" "${lines[@]}")" || return 0
+    [[ -z $choice || $choice == "Done" ]] && return 0
+    for i in "${!lines[@]}"; do
+      [[ ${lines[$i]} == "$choice" ]] && menu_edit_group "$key" "${groups[$i]}" "${titles[$i]}"
+    done
+  done
 }
 
 menu_section() {

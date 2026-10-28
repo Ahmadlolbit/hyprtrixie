@@ -9,6 +9,9 @@ declare -gA OPTION_DEFAULT=()
 declare -gA OPTION_VALUES=()
 declare -gA OPTION_WHEN=()
 declare -gA OPTION_HELP=()
+declare -gA OPTION_GROUPS=()
+declare -gA OPTION_GROUP_OF=()
+declare -gA OPTION_NAMES=()
 
 profile_level() {
   local i
@@ -22,7 +25,7 @@ profile_level() {
 }
 
 option() {
-  local key="$1" section="" label="" type="choice" default="" values="" when="" help=""
+  local key="$1" section="" label="" type="choice" default="" values="" when="" help="" groups="" group_of="" names=""
   shift
   while (($#)); do
     case "$1" in
@@ -33,6 +36,9 @@ option() {
       --values) values="$2" ;;
       --when) when="$2" ;;
       --help) help="$2" ;;
+      --groups) groups="$2" ;;
+      --group-of) group_of="$2" ;;
+      --names) names="$2" ;;
       *) return 1 ;;
     esac
     shift 2
@@ -45,6 +51,9 @@ option() {
   OPTION_VALUES[$key]="$values"
   OPTION_WHEN[$key]="$when"
   OPTION_HELP[$key]="$help"
+  OPTION_GROUPS[$key]="$groups"
+  OPTION_GROUP_OF[$key]="$group_of"
+  OPTION_NAMES[$key]="$names"
   [[ -v $key ]] || printf -v "$key" '%s' "$(option_default "$key")"
 }
 
@@ -152,6 +161,15 @@ config_load() {
   done <"$file"
   config_validate
   return 0
+}
+
+option_name() {
+  local key="$1" item="$2"
+  if [[ -n ${OPTION_NAMES[$key]} ]]; then
+    "${OPTION_NAMES[$key]}" "$item"
+  else
+    printf '%s' "$item"
+  fi
 }
 
 config_save() {

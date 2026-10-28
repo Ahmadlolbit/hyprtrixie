@@ -1,5 +1,9 @@
 register_module 10 "Applications"
 
+APP_CATEGORIES=("browsers|Browsers" "chat|Chat and calls" "office|Office and notes" "viewers|Viewers"
+  "files|Files and sharing" "security|Passwords and VPN" "creative|Creative" "media|Audio and video"
+  "system|System tools" "games|Games")
+
 app_field() {
   local line fields=()
   line="$(manifest_line apps "$1")" || return 1
@@ -12,6 +16,10 @@ app_name() {
   line="$(manifest_line apps "$1")" || return 1
   read -r _ _ _ _ _ line <<<"$line"
   printf '%s' "$line"
+}
+
+app_category() {
+  app_field "$1" 2
 }
 
 app_source() {
@@ -30,7 +38,17 @@ apps_values() {
   awk 'NF >= 6 { printf "%s%s@%s", sep, $1, $3; sep = " " }' "$MANIFEST_DIR/apps"
 }
 
+apps_categories() {
+  local entry
+  for entry in "${APP_CATEGORIES[@]}"; do
+    awk -v c="${entry%%|*}" '$2 == c { found = 1; exit } END { exit !found }' "$MANIFEST_DIR/apps" 2>/dev/null &&
+      printf '%s\t%s\n' "${entry%%|*}" "${entry#*|}"
+  done
+  return 0
+}
+
 option APPS --section apps --label "Applications" --type multi --values "$(apps_values)" \
+  --groups apps_categories --group-of app_category --names app_name \
   --help "Apps to install, by category; untick any you don't want"
 option TEAMS_SOURCE --section apps --label "Install Teams from" --type choice \
   --default apt --values "apt snap" --when teams_wanted \
