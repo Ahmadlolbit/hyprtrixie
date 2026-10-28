@@ -33,6 +33,7 @@ USAGE
   hyprtrixie modules               List the modules and how they last ended
   hyprtrixie config [show|path|edit|reset]
   hyprtrixie collect               Pack the logs, the report and system details for a bug report
+  hyprtrixie verbose [on|off]      Log the desktop in detail from the next login (run it without sudo)
   hyprtrixie version
   hyprtrixie help
 
@@ -327,6 +328,31 @@ cmd_collect() {
   printf 'Saved %s\n' "$out"
 }
 
+cmd_verbose() {
+  local flag="${XDG_CONFIG_HOME:-$HOME/.config}/hyprtrixie/verbose"
+  ((EUID != 0)) || die "run it as yourself, without sudo: hyprtrixie verbose ${1:-status}"
+  case "${1:-status}" in
+    on)
+      if ! mkdir -p "${flag%/*}" || ! touch "$flag"; then
+        die "cannot write $flag"
+      fi
+      printf 'Verbose logging is on from the next login: log out and back in.\n'
+      ;;
+    off)
+      rm -f "$flag"
+      printf 'Verbose logging is off from the next login.\n'
+      ;;
+    status)
+      if [[ -f $flag ]]; then
+        printf 'on\n'
+      else
+        printf 'off\n'
+      fi
+      ;;
+    *) die "usage: hyprtrixie verbose [on|off|status]" ;;
+  esac
+}
+
 main() {
   case "${1:-}" in
     "") cmd_menu ;;
@@ -340,6 +366,10 @@ main() {
       ;;
     modules) cmd_modules ;;
     collect) cmd_collect ;;
+    verbose)
+      shift
+      cmd_verbose "$@"
+      ;;
     config)
       shift
       cmd_config "$@"
