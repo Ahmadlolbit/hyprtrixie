@@ -149,6 +149,11 @@ screenshot_install() {
   deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-screenshot" "$BIN_DIR/hyprtrixie-screenshot" 0755
 }
 
+screensaver_install() {
+  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-screensaver" "$BIN_DIR/hyprtrixie-screensaver" 0755 || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/system/screensaver.txt" "$SHARE_DIR/screensaver.txt"
+}
+
 module_12() {
   run_step "Install session packages" apt_install_list session
   run_step "Install the Hyprland defaults" hyprland_defaults
@@ -161,6 +166,7 @@ module_12() {
   run_step "Set up notifications" mako_setup
   run_step "Install the Walker launcher" walker_install
   run_step "Install the screenshot command" screenshot_install
+  run_step "Install the screensaver" screensaver_install
 }
 
 verify_12_packages() {
@@ -201,4 +207,8 @@ verify_12_start() {
 
 verify_12_screenshot() {
   run_check "The screenshot command is installed" commands_present hyprtrixie-screenshot
+}
+
+verify_12_screensaver() {
+  run_check "The screensaver is installed" commands_present hyprtrixie-screensaver tte
 }
