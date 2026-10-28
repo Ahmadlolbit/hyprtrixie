@@ -1,13 +1,12 @@
 register_module 14 "Themes"
 
 option THEME --section look --label "Theme" --type choice --default catppuccin \
-  --values "catppuccin catppuccin-latte ethereal everforest flexoki-light gruvbox hackerman kanagawa last-horizon lumon lupine matte-black miasma nord osaka-jade retro-82 ristretto rose-pine solitude tokyo-night vantablack white bloodline neon-plum noir cobalt-night navy-mint porcelain dayshift inkwell terracotta marble green-magic roseglass"
+  --values "catppuccin catppuccin-latte ethereal everforest flexoki-light gruvbox hackerman kanagawa last-horizon lumon lupine matte-black miasma nord osaka-jade retro-82 ristretto rose-pine solitude tokyo-night vantablack white"
 
 OMARCHY_DIR="${HYPRTRIXIE_OMARCHY_DIR:-/usr/share/omarchy}"
-COMMUNITY_THEMES=(hermes-bloodline:bloodline hermtang:neon-plum nous-noir:noir portal-vibes:cobalt-night
-  perfect-computer:navy-mint hermachy:porcelain nous-dayshift:dayshift codexy:inkwell claudey:terracotta
-  tonarchy:marble green-magic:green-magic roseglass:roseglass)
 THEME_STATE=.local/state/omarchy/current
+THEME_APPLIED="$STATE_DIR/theme"
+DROPPED_THEMES=(bloodline neon-plum noir cobalt-night navy-mint porcelain dayshift inkwell terracotta marble green-magic roseglass)
 
 theme_copy() {
   local src="$1" dest="$2" old="${3:-}" new="${4:-}" file base
@@ -42,16 +41,12 @@ omarchy_themes_install() {
   source_mark omarchy
 }
 
-community_themes_install() {
-  local pair
-  source_current community-themes && [[ -f $OMARCHY_DIR/LICENSE.community-themes ]] && return 0
-  fetch_git_cached community-themes /themes/ /LICENSE || return 1
-  for pair in "${COMMUNITY_THEMES[@]}"; do
-    theme_copy "$FETCHED_PATH/themes/${pair%%:*}" "$OMARCHY_DIR/themes/${pair#*:}" "${pair%%:*}" "${pair#*:}" || return 1
+dropped_themes_remove() {
+  local name
+  for name in "${DROPPED_THEMES[@]}"; do
+    rm -rf "${OMARCHY_DIR:?}/themes/$name"
   done
-  install -D -m 0644 "$FETCHED_PATH/LICENSE" "$OMARCHY_DIR/LICENSE.community-themes" || return 1
-  rm -rf "$FETCHED_PATH"
-  source_mark community-themes
+  rm -f "$OMARCHY_DIR/LICENSE.community-themes" "$STATE_DIR/sources/community-themes"
 }
 
 themes_present() {
@@ -85,21 +80,32 @@ btop_theme_setup() {
   fi
 }
 
+theme_in_use() {
+  local name
+  name="$(cat "$(user_path "$THEME_STATE/theme.name")" 2>/dev/null)"
+  [[ -n $name && (-d $OMARCHY_DIR/themes/$name || -d "$(user_path ".config/omarchy/themes/$name")") ]]
+}
+
 theme_apply() {
-  as_user env OMARCHY_PATH="$OMARCHY_DIR" "$BIN_DIR/omarchy-theme-set" "$THEME" || return 1
+  if theme_in_use && [[ "$(cat "$THEME_APPLIED" 2>/dev/null)" == "$THEME" ]]; then
+    log info "keeping the theme in use; $THEME was applied before"
+  else
+    as_user env OMARCHY_PATH="$OMARCHY_DIR" "$BIN_DIR/omarchy-theme-set" "$THEME" || return 1
+    mkdir -p "${THEME_APPLIED%/*}" && printf '%s\n' "$THEME" >"$THEME_APPLIED"
+  fi
   if [[ -f "$(user_path .config/mako/config)" ]]; then
     ensure_line "$(user_path .config/mako/config)" "include=~/$THEME_STATE/theme/mako.ini"
   fi
 }
 
 theme_ready() {
-  [[ "$(cat "$(user_path "$THEME_STATE/theme.name")" 2>/dev/null)" == "$THEME" ]]
+  theme_in_use && [[ -f "$(user_path "$THEME_STATE/theme/colors.toml")" ]]
 }
 
 module_14() {
   run_step "Install theme packages" apt_install_list themes
   run_step "Install the Omarchy themes" omarchy_themes_install
-  run_step "Install the community themes" community_themes_install
+  run_step "Remove the dropped community themes" dropped_themes_remove
   run_step "Install the theme switcher" theme_engine_install
   run_step "Point btop at the theme" btop_theme_setup
   run_step "Apply the $THEME theme" theme_apply
@@ -110,5 +116,5 @@ verify_14_themes() {
 }
 
 verify_14_theme() {
-  run_check "The $THEME theme is applied" theme_ready
+  run_check "A theme is applied" theme_ready
 }
