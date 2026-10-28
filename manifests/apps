@@ -10,6 +10,8 @@ signal chat everyday extrepo:signal signal-desktop Signal
 telegram chat everyday debian telegram-desktop/backports Telegram
 vesktop chat everyday release:vesktop vesktop Discord (Vesktop)
 teams chat everyday teams teams-for-linux Teams
+thunderbird chat offered debian thunderbird Thunderbird
+slack chat offered extrepo:slack slack-desktop Slack
 libreoffice office everyday debian libreoffice,libreoffice-gtk3 LibreOffice
 vlc viewers everyday debian vlc VLC (videos and music)
 dolphin files minimal debian dolphin,ark,kio-extras,ffmpegthumbs,kde-cli-tools Dolphin (files and archives)
