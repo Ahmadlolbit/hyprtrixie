@@ -10,21 +10,30 @@ PopupWindow {
   required property var bar
   required property Item owner
   default property alias content: body.data
+  readonly property var window: owner ? owner.QsWindow.window : null
   readonly property bool below: Config.position !== "bottom"
 
   function toggle() {
-    const point = owner.mapToItem(null, 0, 0);
-    anchor.rect.x = point.x;
-    anchor.rect.width = owner.width;
     Popups.toggle(root);
   }
 
-  anchor.window: bar
-  anchor.rect.y: below ? 0 : -6
-  anchor.rect.height: bar ? bar.height + 6 : 0
-  anchor.edges: below ? Edges.Bottom : Edges.Top
-  anchor.gravity: below ? Edges.Bottom : Edges.Top
-  anchor.adjustment: PopupAdjustment.Slide
+  anchor {
+    id: placement
+
+    window: root.window
+    edges: Edges.Top | Edges.Left
+    gravity: Edges.Bottom | Edges.Right
+    adjustment: PopupAdjustment.Slide
+    rect.width: 1
+    rect.height: 1
+    onAnchoring: {
+      if (!root.owner || !root.window)
+        return;
+      const point = root.window.contentItem.mapFromItem(root.owner, root.owner.width / 2 - root.implicitWidth / 2, 0);
+      placement.rect.x = Math.round(Math.max(6, Math.min(point.x, root.window.width - root.implicitWidth - 6)));
+      placement.rect.y = root.below ? root.window.height + 6 : -root.implicitHeight - 6;
+    }
+  }
   visible: Popups.open === root
   color: "transparent"
   implicitWidth: frame.implicitWidth
@@ -34,7 +43,7 @@ PopupWindow {
   Component.onDestruction: Popups.remove(root)
 
   HyprlandFocusGrab {
-    windows: [root, root.bar]
+    windows: root.window ? [root, root.window] : [root]
     active: root.visible
     onCleared: Popups.close(root)
   }
