@@ -1,4 +1,10 @@
 helium browsers minimal extrepo:helium helium-bin Helium
+firefox browsers offered debian firefox-esr Firefox ESR
+chromium browsers offered debian chromium Chromium
+brave browsers offered extrepo:brave_release brave-browser Brave
+chrome browsers offered extrepo:google_chrome google-chrome-stable Google Chrome
+librewolf browsers offered extrepo:librewolf librewolf LibreWolf
+torbrowser browsers offered debian torbrowser-launcher Tor Browser
 whatsapp chat everyday webapp - WhatsApp
 signal chat everyday extrepo:signal signal-desktop Signal
 telegram chat everyday debian telegram-desktop/backports Telegram
