@@ -5,6 +5,8 @@ CURRENT_MODULE=""
 MODULE_FAILED=0
 MODULE_PARTIAL=0
 MODULE_SKIPPED=0
+MODULE_POSITION=0
+MODULE_TOTAL=0
 MODULE_IDS=()
 STEP_FAILURES=()
 STEP_SKIPS=()
@@ -113,11 +115,13 @@ run_check() {
 }
 
 module_begin() {
+  local where=""
   CURRENT_MODULE="$1"
   MODULE_FAILED=0
   MODULE_PARTIAL=0
   MODULE_SKIPPED=0
-  ui_rule "$1  ${MODULE_TITLES[$1]:-}"
+  ((MODULE_TOTAL)) && where="  ·  $MODULE_POSITION of $MODULE_TOTAL"
+  ui_rule "$1  ${MODULE_TITLES[$1]:-}$where"
   log info "module $1 begin: ${MODULE_TITLES[$1]:-}"
 }
 

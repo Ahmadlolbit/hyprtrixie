@@ -162,14 +162,25 @@ parse_run_options() {
   done
 }
 
-run_modules() {
+selected_modules() {
   local id
   for id in "${MODULE_IDS[@]}"; do
     if module_selected "$id"; then
-      run_module "$id"
+      printf '%s\n' "$id"
     else
       log info "module $id not selected"
     fi
+  done
+}
+
+run_modules() {
+  local id ids=()
+  mapfile -t ids < <(selected_modules)
+  MODULE_TOTAL=${#ids[@]}
+  MODULE_POSITION=0
+  for id in "${ids[@]}"; do
+    MODULE_POSITION=$((MODULE_POSITION + 1))
+    run_module "$id"
   done
 }
 
@@ -224,14 +235,17 @@ cmd_menu() {
 }
 
 cmd_verify() {
-  local id
+  local id ids=()
   parse_run_options "$@"
   start_run verify "$@"
   apply_run_config
   apply_run_overrides
   detect_all
-  for id in "${MODULE_IDS[@]}"; do
-    module_selected "$id" || continue
+  mapfile -t ids < <(selected_modules)
+  MODULE_TOTAL=${#ids[@]}
+  MODULE_POSITION=0
+  for id in "${ids[@]}"; do
+    MODULE_POSITION=$((MODULE_POSITION + 1))
     module_begin "$id"
     verify_module "$id"
     module_finish "$id"
