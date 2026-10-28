@@ -1,6 +1,7 @@
 {
   "bar": {
     "position": "{{ POSITION }}",
-    "clock": "{{ CLOCK }}"
+    "clock": "{{ CLOCK }}",
+    "style": "{{ STYLE }}"
   }
 }

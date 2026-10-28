@@ -21,6 +21,7 @@ Singleton {
   readonly property int fontSize: 13
   readonly property int barHeight: 30
   readonly property int spacing: 14
+  readonly property int radius: Config.style === "soft" ? 10 : 0
 
   function parse(text) {
     const colors = {};
