@@ -7,6 +7,7 @@ option TAP_TO_CLICK --section input --label "Tap to click" --type bool --default
 option ANIMATIONS --section look --label "Animations" --type bool --default yes
 option WINDOW_STYLE --section look --label "Window style" --type choice \
   --default sharp --values "sharp soft"
+option SCREENSAVER_MINUTES --section system --label "Start the screensaver after idle minutes (0 = never)" --type number --default 3
 option IDLE_LOCK_MINUTES --section system --label "Lock the screen after idle minutes (0 = never)" --type number --default 5
 option IDLE_SUSPEND_MINUTES --section system --label "Suspend after idle minutes (0 = never)" --type number --default 30
 
@@ -84,10 +85,13 @@ idle_listener() {
 }
 
 hypridle_config() {
-  local lock=$((IDLE_LOCK_MINUTES * 60)) suspend=$((IDLE_SUSPEND_MINUTES * 60))
+  local lock=$((IDLE_LOCK_MINUTES * 60)) suspend=$((IDLE_SUSPEND_MINUTES * 60)) saver=$((SCREENSAVER_MINUTES * 60))
   local on="hyprctl dispatch 'hl.dsp.dpms({action = \"on\"})'" off="hyprctl dispatch 'hl.dsp.dpms({action = \"off\"})'"
   printf 'general {\n    lock_cmd = pidof hyprlock || hyprlock\n    before_sleep_cmd = loginctl lock-session\n'
   printf '    after_sleep_cmd = %s\n}\n' "$on"
+  if ((saver > 0 && (lock == 0 || saver < lock))); then
+    idle_listener "$saver" "hyprtrixie-screensaver start"
+  fi
   if ((lock > 0)); then
     if ((lock > 60)); then
       idle_listener $((lock - 30)) "brightnessctl -s set 10%" "brightnessctl -r"
