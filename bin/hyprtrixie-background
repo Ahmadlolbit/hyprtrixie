@@ -50,7 +50,7 @@ apply() {
   mkdir -p "$STATE" && ln -nsf "$file" "$STATE/background" || return 1
   if pkill -x hyprpaper; then
     timeout 3 pidwait -x hyprpaper
-    setsid -f hyprpaper >/dev/null 2>&1
+    setsid -f hyprtrixie-start hyprpaper >/dev/null 2>&1
   fi
   return 0
 }
