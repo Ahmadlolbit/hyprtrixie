@@ -15,6 +15,7 @@ init_logs_writable() {
 
 module_00() {
   run_step "Install gum for the setup screens" apt_install gum
+  run_step "Install curl for downloads" apt_install curl
   run_step "Record what this run uses" init_record_run
 }
 
@@ -24,4 +25,8 @@ verify_00_logs() {
 
 verify_00_gum() {
   run_check "gum is installed" pkg_installed gum
+}
+
+verify_00_curl() {
+  run_check "curl is installed" pkg_installed curl
 }
