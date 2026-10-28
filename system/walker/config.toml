@@ -4,5 +4,5 @@ selection_wrap = true
 hide_action_hints = true
 
 [providers]
-default = ["desktopapplications", "calc", "runner", "websearch"]
+default = ["desktopapplications", "menus", "calc", "runner", "websearch"]
 empty = ["desktopapplications"]
