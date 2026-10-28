@@ -5,6 +5,7 @@ option THEME --section look --label "Theme" --type choice --default catppuccin \
 
 OMARCHY_DIR="${HYPRTRIXIE_OMARCHY_DIR:-/usr/share/omarchy}"
 THEME_STATE=.local/state/omarchy/current
+THEME_APPLIED="$STATE_DIR/theme"
 DROPPED_THEMES=(bloodline neon-plum noir cobalt-night navy-mint porcelain dayshift inkwell terracotta marble green-magic roseglass)
 
 theme_copy() {
@@ -79,15 +80,26 @@ btop_theme_setup() {
   fi
 }
 
+theme_in_use() {
+  local name
+  name="$(cat "$(user_path "$THEME_STATE/theme.name")" 2>/dev/null)"
+  [[ -n $name && (-d $OMARCHY_DIR/themes/$name || -d "$(user_path ".config/omarchy/themes/$name")") ]]
+}
+
 theme_apply() {
-  as_user env OMARCHY_PATH="$OMARCHY_DIR" "$BIN_DIR/omarchy-theme-set" "$THEME" || return 1
+  if theme_in_use && [[ "$(cat "$THEME_APPLIED" 2>/dev/null)" == "$THEME" ]]; then
+    log info "keeping the theme in use; $THEME was applied before"
+  else
+    as_user env OMARCHY_PATH="$OMARCHY_DIR" "$BIN_DIR/omarchy-theme-set" "$THEME" || return 1
+    mkdir -p "${THEME_APPLIED%/*}" && printf '%s\n' "$THEME" >"$THEME_APPLIED"
+  fi
   if [[ -f "$(user_path .config/mako/config)" ]]; then
     ensure_line "$(user_path .config/mako/config)" "include=~/$THEME_STATE/theme/mako.ini"
   fi
 }
 
 theme_ready() {
-  [[ "$(cat "$(user_path "$THEME_STATE/theme.name")" 2>/dev/null)" == "$THEME" ]]
+  theme_in_use && [[ -f "$(user_path "$THEME_STATE/theme/colors.toml")" ]]
 }
 
 module_14() {
@@ -104,5 +116,5 @@ verify_14_themes() {
 }
 
 verify_14_theme() {
-  run_check "The $THEME theme is applied" theme_ready
+  run_check "A theme is applied" theme_ready
 }
