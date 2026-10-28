@@ -72,7 +72,7 @@ run_step() {
       "$@"
       rc=$?
     else
-      ui_spin_start "$title"
+      ui_spin_start "$title" "$offset"
       step_exec "$@"
       rc=$?
       ui_spin_stop
