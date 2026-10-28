@@ -10,6 +10,10 @@ MODULE_TOTAL=0
 MODULE_IDS=()
 STEP_FAILURES=()
 STEP_SKIPS=()
+STEPS_OK=0
+CHECKS_OK=0
+RUN_STARTED=$SECONDS
+RUN_PACKAGES=""
 declare -gA MODULE_TITLES=()
 declare -gA MODULE_STATUS=()
 
@@ -90,6 +94,11 @@ run_step() {
       ui_spin_stop
     fi
     if ((rc == 0)); then
+      if [[ $STEP_KIND == check ]]; then
+        CHECKS_OK=$((CHECKS_OK + 1))
+      else
+        STEPS_OK=$((STEPS_OK + 1))
+      fi
       ui_status ok "$title"
       return 0
     fi
@@ -193,4 +202,56 @@ status_save() {
 status_of() {
   [[ -f $STATUS_FILE ]] || return 1
   awk -F'|' -v id="$1" '$1 == id { print $2 "|" $3 }' "$STATUS_FILE"
+}
+
+run_duration() {
+  local seconds="$1"
+  if ((seconds >= 3600)); then
+    printf '%d h %d min' $((seconds / 3600)) $((seconds % 3600 / 60))
+  elif ((seconds >= 60)); then
+    printf '%d min %d s' $((seconds / 60)) $((seconds % 60))
+  else
+    printf '%d s' "$seconds"
+  fi
+}
+
+run_count() {
+  local kind="$1" entry count=0
+  shift
+  for entry in "$@"; do
+    [[ $entry == *"|$kind|"* ]] && count=$((count + 1))
+  done
+  printf '%s' "$count"
+}
+
+packages_snapshot() {
+  dpkg-query -W -f='${Package}\n' 2>/dev/null | sort
+}
+
+run_new_packages() {
+  [[ -n $RUN_PACKAGES && -f $RUN_PACKAGES ]] || return 0
+  comm -13 "$RUN_PACKAGES" <(packages_snapshot)
+}
+
+run_summary_lines() {
+  local added=() updated=0 kept=0
+  mapfile -t added < <(run_new_packages)
+  if [[ -n $LOG_FILE && -f $LOG_FILE ]]; then
+    updated="$(grep -c '\] deployed ' "$LOG_FILE")"
+    kept="$(grep -c 'kept local edits in ' "$LOG_FILE")"
+  fi
+  printf 'Took %s\n' "$(run_duration $((SECONDS - RUN_STARTED)))"
+  printf 'Steps: %s passed, %s skipped, %s failed\n' "$STEPS_OK" \
+    "$(run_count step "${STEP_SKIPS[@]}")" "$(run_count step "${STEP_FAILURES[@]}")"
+  printf 'Checks: %s passed, %s failed\n' "$CHECKS_OK" "$(run_count check "${STEP_FAILURES[@]}")"
+  printf 'Packages installed: %s\n' "${#added[@]}"
+  printf 'Files updated: %s, kept with your edits: %s\n' "$updated" "$kept"
+  if [[ " ${added[*]} " == *" linux-image-"* ]]; then
+    printf 'Next: restart to start the new kernel\n'
+  elif [[ -n ${MODULE_STATUS[12]:-}${MODULE_STATUS[13]:-}${MODULE_STATUS[14]:-} ]]; then
+    printf 'Next: log out and back in to start the updated desktop\n'
+  fi
+  ((kept)) && printf 'Files you edited kept your edits; the new versions are next to them as *.hyprtrixie-new\n'
+  ((${#STEP_FAILURES[@]})) && printf 'Something failed: run sudo hyprtrixie collect --verbose and send the file it prints\n'
+  return 0
 }
