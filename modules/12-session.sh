@@ -127,7 +127,8 @@ walker_install() {
     release_extract "elephant-$provider" "$provider-linux-amd64.so" "$ELEPHANT_LIB/$provider.so" 0644 || return 1
   done
   rm -rf /etc/xdg/walker/themes/hyprtrixie
-  deploy_file "$HYPRTRIXIE_ROOT/system/walker/config.toml" /etc/xdg/walker/config.toml
+  deploy_file "$HYPRTRIXIE_ROOT/system/walker/config.toml" /etc/xdg/walker/config.toml || return 1
+  deploy_tree "$HYPRTRIXIE_ROOT/system/elephant/menus" /etc/xdg/elephant/menus
 }
 
 walker_ready() {
