@@ -194,14 +194,14 @@ retint() {
   hyprctl reload >/dev/null 2>&1
   if pkill -x hyprpaper; then
     timeout 3 pidwait -x hyprpaper
-    setsid -f hyprpaper >/dev/null 2>&1
+    setsid -f hyprtrixie-start hyprpaper >/dev/null 2>&1
   fi
   makoctl reload >/dev/null 2>&1
   qs -p /usr/share/hyprtrixie/shell ipc call theme reload >/dev/null 2>&1
   pkill -USR1 -x kitty
   pkill -USR2 -x btop
   if pkill -x walker; then
-    setsid -f walker --gapplication-service >/dev/null 2>&1
+    setsid -f hyprtrixie-start walker >/dev/null 2>&1
   fi
   return 0
 }

@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+LOGS="${XDG_STATE_HOME:-$HOME/.local/state}/hyprtrixie/logs"
+
+usage() {
+  cat <<'EOF'
+Usage: hyprtrixie-start bar|hypridle|hyprpaper|mako|elephant|walker
+
+Starts a program of the desktop session. With verbose logging on
+(hyprtrixie verbose on), it runs with its debug flags and logs to
+~/.local/state/hyprtrixie/logs/<name>.log.
+EOF
+}
+
+name="${1:-}"
+case "$name" in
+  bar)
+    command=(qs -p /usr/share/hyprtrixie/shell)
+    debug=(-vv --log-times)
+    ;;
+  hypridle | hyprpaper)
+    command=("$name")
+    debug=(--verbose)
+    ;;
+  elephant)
+    command=(elephant)
+    debug=(--debug)
+    ;;
+  mako)
+    command=(mako)
+    debug=()
+    ;;
+  walker)
+    command=(walker --gapplication-service)
+    debug=()
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac
+
+if [[ -f $CONFIG_HOME/hyprtrixie/verbose ]]; then
+  mkdir -p "$LOGS" || exit 1
+  printf '==== %s %s\n' "$(date '+%F %T')" "${command[*]} ${debug[*]}" >>"$LOGS/$name.log"
+  exec "${command[@]}" "${debug[@]}" >>"$LOGS/$name.log" 2>&1
+fi
+exec "${command[@]}"

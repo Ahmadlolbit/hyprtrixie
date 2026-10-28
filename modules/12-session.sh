@@ -140,6 +140,10 @@ walker_ready() {
   done
 }
 
+session_start_install() {
+  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-start" "$BIN_DIR/hyprtrixie-start" 0755
+}
+
 screenshot_install() {
   deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-screenshot" "$BIN_DIR/hyprtrixie-screenshot" 0755
 }
@@ -147,6 +151,7 @@ screenshot_install() {
 module_12() {
   run_step "Install session packages" apt_install_list session
   run_step "Install the Hyprland defaults" hyprland_defaults
+  run_step "Install the session starter" session_start_install
   run_step "Apply display and input settings" hyprland_options
   run_step "Set up your Hyprland config" hyprland_user_config
   run_step "Set up the lock screen" hyprlock_setup
@@ -187,6 +192,10 @@ verify_12_notifications() {
 
 verify_12_walker() {
   run_check "Walker and its providers are installed" walker_ready
+}
+
+verify_12_start() {
+  run_check "The session starter is installed" commands_present hyprtrixie-start
 }
 
 verify_12_screenshot() {

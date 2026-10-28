@@ -32,7 +32,9 @@ USAGE
   hyprtrixie verify [--only ...]   Run every check again
   hyprtrixie modules               List the modules and how they last ended
   hyprtrixie config [show|path|edit|reset]
-  hyprtrixie collect               Pack the logs, the report and system details for a bug report
+  hyprtrixie collect [--verbose]   Pack the logs, the report and system details for a bug report;
+                                     --verbose also writes everything to ~/hyprtrixie-log-<time>.txt
+  hyprtrixie verbose [on|off]      Log the desktop in detail from the next login (run it without sudo)
   hyprtrixie version
   hyprtrixie help
 
@@ -309,22 +311,194 @@ collect_desktop() {
   as_user qs log -p "$SHARE_DIR/shell" -t 300
 }
 
+verbose_section() {
+  printf '\n==== %s\n\n' "$1"
+}
+
+hypr_instance() {
+  local dirs=()
+  mapfile -t dirs < <(ls -td /run/user/"$TARGET_UID"/hypr/*/ 2>/dev/null)
+  ((${#dirs[@]})) || return 1
+  basename "${dirs[0]}"
+}
+
+as_hypr() {
+  local instance
+  if ! instance="$(hypr_instance)"; then
+    printf 'Hyprland is not running\n'
+    return 0
+  fi
+  as_user env HYPRLAND_INSTANCE_SIGNATURE="$instance" "$@"
+}
+
+verbose_tail() {
+  if [[ -f $2 ]]; then
+    tail -n "$1" "$2"
+  else
+    printf '(no %s)\n' "$2"
+  fi
+}
+
+last_run_commit() {
+  sed -n 's/.*hyprtrixie [^ ]* (\([0-9a-f]*\)) from .*/\1/p' "$LOG_DIR"/run-*.log 2>/dev/null | tail -n 1
+}
+
+verbose_summary() {
+  local verbose=off
+  [[ -f $TARGET_HOME/.config/hyprtrixie/verbose ]] && verbose=on
+  verbose_section "Summary"
+  printf 'Date          %s\n' "$(date '+%F %T %z')"
+  printf 'hyprtrixie    %s from %s\n' "$HYPRTRIXIE_VERSION" "$HYPRTRIXIE_ROOT"
+  printf 'Repo          %s\n' "$(git -C "$HYPRTRIXIE_ROOT" log -1 --format='%h %s (%D)' 2>/dev/null || printf 'not a git checkout')"
+  printf 'Last install  from %s\n' "$(last_run_commit)"
+  printf 'Verbose       %s\n\n' "$verbose"
+  detect_all
+  detect_summary
+  printf '\n'
+  dpkg-query -W -f '${Package} ${Version}\n' hyprland quickshell hyprpaper hypridle hyprlock mako-notifier sddm 'linux-image-[0-9]*' 2>/dev/null
+  printf 'walker %s\n' "$("$BIN_DIR/walker" --version 2>/dev/null || printf 'not found')"
+  printf 'elephant %s\n' "$("$BIN_DIR/elephant" version 2>/dev/null || printf 'not found')"
+}
+
+verbose_files() {
+  local commit last path hash
+  verbose_section "Installed files"
+  commit="$(git -C "$HYPRTRIXIE_ROOT" rev-parse --short HEAD 2>/dev/null)"
+  last="$(last_run_commit)"
+  if [[ -z $last ]]; then
+    printf 'The installer has not run from this folder yet\n'
+  elif [[ -z $commit ]]; then
+    printf 'The installer last ran from %s; this folder is not a git checkout\n' "$last"
+  elif [[ $commit == "$last"* || $last == "$commit"* ]]; then
+    printf 'The installer last ran from the current commit (%s)\n' "$commit"
+  else
+    printf 'The repo is at %s but the installer last ran from %s: run sudo ./hyprtrixie install\n' "$commit" "$last"
+  fi
+  if [[ -f $FILES_DB ]]; then
+    while IFS=$'\t' read -r path hash; do
+      if [[ ! -e $path ]]; then
+        printf 'missing  %s\n' "$path"
+      elif [[ $(file_hash "$path") != "$hash" ]]; then
+        printf 'edited   %s\n' "$path"
+      fi
+    done <"$FILES_DB"
+  fi
+  find /etc /usr/share/hyprtrixie "$TARGET_HOME/.config" -name '*.hyprtrixie-new' 2>/dev/null
+  verbose_section "Modules"
+  cmd_modules
+}
+
+verbose_desktop() {
+  local state="$TARGET_HOME/.local/state/omarchy/current" request
+  verbose_section "Theme"
+  cat "$state/theme.name"
+  ls -l "$state"
+  verbose_section "Desktop programs"
+  pgrep -a -u "$TARGET_USER" -x 'Hyprland|hyprpaper|hypridle|hyprlock|mako|elephant|walker|qs|quickshell'
+  for request in version monitors workspaces clients layers configerrors; do
+    verbose_section "hyprctl $request"
+    as_hypr hyprctl "$request"
+  done
+  verbose_section "hyprctl hyprpaper listactive"
+  as_hypr hyprctl hyprpaper listactive
+}
+
+verbose_logs() {
+  local file instance bar=()
+  verbose_section "Bar log"
+  mapfile -t bar < <(ls -t /run/user/"$TARGET_UID"/quickshell/by-id/*/log.qslog 2>/dev/null)
+  if ((${#bar[@]})); then
+    printf '%s\n' "${bar[0]}"
+    as_user env NO_COLOR=1 qs log -t 3000 "${bar[0]}"
+  else
+    printf '(no bar log)\n'
+  fi
+  for file in "$TARGET_HOME"/.local/state/hyprtrixie/logs/*.log; do
+    [[ -f $file ]] || continue
+    verbose_section "Program log ${file##*/}"
+    tail -n 400 "$file"
+  done
+  verbose_section "Session log"
+  verbose_tail 400 "$TARGET_HOME/.local/share/sddm/wayland-session.log"
+  verbose_section "Hyprland log"
+  if instance="$(hypr_instance)"; then
+    verbose_tail 600 "/run/user/$TARGET_UID/hypr/$instance/hyprland.log"
+  else
+    printf 'Hyprland is not running\n'
+  fi
+  verbose_section "Your journal (this boot)"
+  journalctl -b _UID="$TARGET_UID" --no-pager -n 400
+  verbose_section "System warnings (this boot)"
+  journalctl -b -p warning --no-pager -n 200
+  verbose_section "Kernel errors and warnings"
+  dmesg --level=err,warn 2>/dev/null | tail -n 100
+  verbose_section "Last install run"
+  verbose_tail 80 "$LOG_DIR/latest.log"
+}
+
+collect_verbose() {
+  verbose_summary
+  verbose_files
+  verbose_desktop
+  verbose_logs
+}
+
 cmd_collect() {
-  local name work out
+  local name work out stamp logfile="" verbose=0
+  case "${1:-}" in
+    "") ;;
+    --verbose) verbose=1 ;;
+    *) die "usage: hyprtrixie collect [--verbose]" ;;
+  esac
   RUN_MODE=collect
   require_root
   detect_target_user || die "cannot tell whose desktop this is; run it with sudo from your own account"
-  name="hyprtrixie-collect-$(date +%Y%m%d-%H%M%S)"
+  stamp="$(date +%Y%m%d-%H%M%S)"
+  name="hyprtrixie-collect-$stamp"
   work="$(mktemp -d)" || die "cannot create a temporary folder"
   mkdir -p "$work/$name"
   collect_files "$work/$name"
   collect_system >"$work/$name/system.txt" 2>&1
   collect_desktop >"$work/$name/desktop.txt" 2>&1
+  if ((verbose)); then
+    logfile="$TARGET_HOME/hyprtrixie-log-$stamp.txt"
+    collect_verbose >"$logfile" 2>&1
+    chown "$TARGET_USER:" "$logfile"
+    cp "$logfile" "$work/$name/"
+  fi
   out="$TARGET_HOME/$name.tar.gz"
   tar -czf "$out" -C "$work" "$name" || die "cannot write $out"
   chown "$TARGET_USER:" "$out"
   rm -rf "$work"
   printf 'Saved %s\n' "$out"
+  if [[ -n $logfile ]]; then
+    printf 'Log: %s\n' "$logfile"
+  fi
+}
+
+cmd_verbose() {
+  local flag="${XDG_CONFIG_HOME:-$HOME/.config}/hyprtrixie/verbose"
+  ((EUID != 0)) || die "run it as yourself, without sudo: hyprtrixie verbose ${1:-status}"
+  case "${1:-status}" in
+    on)
+      if ! mkdir -p "${flag%/*}" || ! touch "$flag"; then
+        die "cannot write $flag"
+      fi
+      printf 'Verbose logging is on from the next login: log out and back in.\n'
+      ;;
+    off)
+      rm -f "$flag"
+      printf 'Verbose logging is off from the next login.\n'
+      ;;
+    status)
+      if [[ -f $flag ]]; then
+        printf 'on\n'
+      else
+        printf 'off\n'
+      fi
+      ;;
+    *) die "usage: hyprtrixie verbose [on|off|status]" ;;
+  esac
 }
 
 main() {
@@ -339,7 +513,14 @@ main() {
       cmd_verify "$@"
       ;;
     modules) cmd_modules ;;
-    collect) cmd_collect ;;
+    collect)
+      shift
+      cmd_collect "$@"
+      ;;
+    verbose)
+      shift
+      cmd_verbose "$@"
+      ;;
     config)
       shift
       cmd_config "$@"
