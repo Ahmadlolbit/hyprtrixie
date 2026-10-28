@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-set -uo pipefail
-
-choice="$(omarchy-theme-set --list | walker --dmenu --placeholder "Theme" --width 360 --maxheight 560)" || exit 0
-[[ -n $choice ]] || exit 0
-if ! error="$(omarchy-theme-set "$choice" 2>&1)"; then
-  notify-send --app-name=Theme --urgency=critical "Could not apply $choice" "$error"
-fi
