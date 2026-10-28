@@ -9,4 +9,6 @@ ShellRoot {
   }
 
   Osd {}
+
+  Picker {}
 }
