@@ -2,6 +2,7 @@
 set -uo pipefail
 
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+OFF="$CONFIG_HOME/hyprtrixie/screensaver-off"
 CLASS=hyprtrixie.screensaver
 EFFECTS=(beams binarypath blackhole bouncyballs bubbles burn colorshift crumble decrypt errorcorrect expand fireworks
   highlight laseretch matrix middleout orbittingvolley overflow pour print rain randomsequence rings scattered slice
@@ -9,9 +10,11 @@ EFFECTS=(beams binarypath blackhole bouncyballs bubbles burn colorshift crumble 
 
 usage() {
   cat <<'EOF'
-Usage: hyprtrixie-screensaver start
+Usage: hyprtrixie-screensaver start|toggle|status
 
-Shows the screensaver on every monitor (the idle timer runs this).
+start   shows the screensaver on every monitor (the idle timer runs this)
+toggle  turns the screensaver off or back on for your account
+status  prints on or off
 
 The text comes from ~/.config/hyprtrixie/screensaver.txt when it exists,
 otherwise from /usr/share/hyprtrixie/screensaver.txt.
@@ -32,6 +35,7 @@ running() {
 
 start() {
   local monitor monitors=()
+  [[ -e $OFF ]] && return 0
   running && return 0
   pidof hyprlock >/dev/null && return 0
   mapfile -t monitors < <(hyprctl monitors -j | jq -r 'sort_by(.focused) | .[].name')
@@ -70,9 +74,27 @@ run() {
   done
 }
 
+toggle() {
+  if [[ -e $OFF ]]; then
+    rm -f "$OFF"
+    notify-send --app-name=Screensaver "Screensaver on"
+  else
+    mkdir -p "${OFF%/*}" && touch "$OFF"
+    notify-send --app-name=Screensaver "Screensaver off"
+  fi
+}
+
 case "${1:-}" in
   start) start ;;
   run) run ;;
+  toggle) toggle ;;
+  status)
+    if [[ -e $OFF ]]; then
+      printf 'off\n'
+    else
+      printf 'on\n'
+    fi
+    ;;
   -h | --help) usage ;;
   *)
     usage >&2
