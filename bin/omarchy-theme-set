@@ -224,7 +224,7 @@ apply() {
   pick_background "$name" "$previous"
   link_apps
   desktop_settings
-  retint
+  return 0
 }
 
 case "${1:-}" in
@@ -256,4 +256,6 @@ fi
 mkdir -p "$STATE" || exit 1
 exec 9>"$STATE/.lock"
 flock 9
-apply "$name"
+apply "$name" || exit 1
+exec 9>&-
+retint
