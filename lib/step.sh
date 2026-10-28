@@ -36,8 +36,16 @@ step_show_output() {
   done < <(log_tail_since "$offset" 12)
 }
 
+step_show_log() {
+  local offset="$1" file
+  file="$(mktemp)" || return 1
+  log_tail_since "$offset" 100000 >"$file"
+  ui_pager "$file" >&2
+  rm -f "$file"
+}
+
 step_choice() {
-  local title="$1" pick
+  local title="$1" offset="${2:-0}" pick
   case "${FAILURE_MODE:-ask}" in
     halt | continue)
       printf '%s' "${FAILURE_MODE:-ask}"
@@ -48,7 +56,11 @@ step_choice() {
     printf 'continue'
     return 0
   fi
-  pick="$(ui_choose "\"$title\" failed. What now?" "" Retry Skip Continue Halt)" || pick="Halt"
+  while :; do
+    pick="$(ui_choose "\"$title\" failed. What now?" "" Retry Skip Continue Halt "Show log")" || pick="Halt"
+    [[ $pick == "Show log" ]] || break
+    step_show_log "$offset"
+  done
   printf '%s' "${pick,,}"
 }
 
@@ -84,7 +96,7 @@ run_step() {
     log error "$STEP_KIND failed (exit $rc): $title"
     ui_status fail "$title"
     step_show_output "$offset"
-    choice="$(step_choice "$title")"
+    choice="$(step_choice "$title" "$offset")"
     case "$choice" in
       retry)
         log info "retrying: $title"
