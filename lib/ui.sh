@@ -42,6 +42,24 @@ ui_fancy() {
   ((UI_GUM)) && [[ -t 1 ]]
 }
 
+ui_columns() {
+  local size columns=""
+  size="$(stty size 2>/dev/null </dev/tty)" && columns="${size#* }"
+  [[ $columns =~ ^[0-9]+$ ]] || columns="${COLUMNS:-80}"
+  printf '%s' "$columns"
+}
+
+ui_logo() {
+  local file="$HYPRTRIXIE_ROOT/system/screensaver.txt" line
+  [[ -t 1 && -f $file ]] || return 0
+  (($(ui_columns) >= 60)) || return 0
+  printf '\n'
+  while IFS= read -r line; do
+    printf '  %s%s%s\n' "$C_ACCENT$C_BOLD" "$line" "$C_RESET"
+  done <"$file"
+  return 0
+}
+
 ui_rule() {
   local text="$1" fill
   fill=$((UI_WIDTH - ${#text} - 4))
@@ -86,14 +104,32 @@ ui_note() {
   printf '         %s%s%s\n' "$C_DIM" "$*" "$C_RESET"
 }
 
+ui_spin_tail() {
+  local offset="$1" width="$2" line
+  log_tail_since "$offset" 3 | tr -d '\r' | sed -e 's/\x1b\[[0-9;?]*[A-Za-z]//g' -e 's/\t/  /g' |
+    while IFS= read -r line; do
+      printf '%s\n' "${line:0:width}"
+    done
+}
+
 ui_spin_start() {
   ((UI_INTERACTIVE)) || return 0
-  local text="$1"
+  local text="$1" offset="${2:-}"
   (
     trap 'exit 0' TERM
-    local frames="|/-\\" i=0
+    local frames="|/-\\" i=0 width slot lines=()
+    width=$(($(ui_columns) - 12))
     while :; do
-      printf '\r  %s[ %s  ]%s %s' "$C_ACCENT" "${frames:i%4:1}" "$C_RESET" "$text"
+      if [[ -n $offset ]] && ((i % 4 == 0)); then
+        mapfile -t lines < <(ui_spin_tail "$offset" "$width")
+      fi
+      printf '\r\e[K  %s[ %s  ]%s %s' "$C_ACCENT" "${frames:i%4:1}" "$C_RESET" "$text"
+      if [[ -n $offset ]]; then
+        for slot in 0 1 2; do
+          printf '\n\e[K         %s%s%s' "$C_DIM" "${lines[slot]:-}" "$C_RESET"
+        done
+        printf '\e[3A'
+      fi
       i=$((i + 1))
       sleep 0.15
     done
@@ -106,7 +142,7 @@ ui_spin_stop() {
   kill "$UI_SPIN_PID" 2>/dev/null
   wait "$UI_SPIN_PID" 2>/dev/null
   UI_SPIN_PID=""
-  printf '\r\e[K'
+  printf '\r\e[J'
 }
 
 ui_confirm() {

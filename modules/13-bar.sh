@@ -1,9 +1,11 @@
 register_module 13 "Bar"
 
 option BAR_POSITION --section look --label "Bar position" --type choice \
-  --default top --values "top bottom"
+  --default top --values "top bottom" \
+  --help "The bar at the top or the bottom of the screen"
 option CLOCK_FORMAT --section look --label "Clock" --type choice \
-  --default 24h --values "24h 12h"
+  --default 24h --values "24h 12h" \
+  --help "24-hour or 12-hour time in the bar and on the lock screen"
 
 BAR_DIR="$SHARE_DIR/shell"
 

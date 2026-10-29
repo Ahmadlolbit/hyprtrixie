@@ -1,7 +1,8 @@
 register_module 08 "Terminal and shell"
 
 option SHELL_PROMPT --section shell --label "Prompt" --type choice \
-  --default starship --values "starship powerlevel10k"
+  --default starship --values "starship powerlevel10k" \
+  --help "How the terminal prompt looks: Starship or Powerlevel10k"
 
 FONT_DIR="${HYPRTRIXIE_FONT_DIR:-/usr/local/share/fonts/jetbrains-mono-nerd}"
 ZSH_SHARE="$SHARE_DIR/zsh"

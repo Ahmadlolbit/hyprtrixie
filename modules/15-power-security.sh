@@ -1,9 +1,13 @@
 register_module 15 "Power and security"
 
-option FIREWALL --section security --label "Firewall that blocks incoming connections" --type bool --default yes
-option AUTO_UPDATES --section security --label "Install security updates automatically" --type bool --default yes
-option SSH_POLICY --section security --label "SSH" --type choice --default client --values "client leave"
-option NM_HANDOVER --section security --label "Let NetworkManager manage every connection" --type bool --default yes
+option FIREWALL --section security --label "Firewall" --type bool --default yes \
+  --help "Blocks connections from other computers; your own connections still work"
+option AUTO_UPDATES --section security --label "Automatic security updates" --type bool --default yes \
+  --help "Debian's security fixes install on their own in the background"
+option SSH_POLICY --section security --label "SSH" --type choice --default client --values "client leave" \
+  --help "Client: the SSH server doesn't start at boot. Leave: keep it as it is"
+option NM_HANDOVER --section security --label "NetworkManager for everything" --type bool --default yes \
+  --help "Wi-Fi and wired connections move to NetworkManager, so the bar manages them"
 
 INTERFACES=/etc/network/interfaces
 

@@ -1,15 +1,23 @@
 register_module 12 "Desktop session"
 
 option DISPLAY_SCALE --section input --label "Display scale" --type choice \
-  --default auto --values "auto 1 1.25 1.5 1.75 2"
-option NATURAL_SCROLL --section input --label "Natural scrolling" --type bool --default no
-option TAP_TO_CLICK --section input --label "Tap to click" --type bool --default yes
-option ANIMATIONS --section look --label "Animations" --type bool --default yes
+  --default auto --values "auto 1 1.25 1.5 1.75 2" \
+  --help "Size of everything on screen; auto picks it from the screen's density"
+option NATURAL_SCROLL --section input --label "Natural scrolling" --type bool --default no \
+  --help "Content follows your fingers on the touchpad, like on a phone"
+option TAP_TO_CLICK --section input --label "Tap to click" --type bool --default yes \
+  --help "Tap the touchpad to click instead of pressing it down"
+option ANIMATIONS --section look --label "Animations" --type bool --default yes \
+  --help "Windows and workspaces animate as they open, close and move"
 option WINDOW_STYLE --section look --label "Window style" --type choice \
-  --default sharp --values "sharp soft"
-option SCREENSAVER_MINUTES --section system --label "Start the screensaver after idle minutes (0 = never)" --type number --default 3
-option IDLE_LOCK_MINUTES --section system --label "Lock the screen after idle minutes (0 = never)" --type number --default 5
-option IDLE_SUSPEND_MINUTES --section system --label "Suspend after idle minutes (0 = never)" --type number --default 30
+  --default sharp --values "sharp soft" \
+  --help "Sharp corners with thin gaps, or soft rounded corners"
+option SCREENSAVER_MINUTES --section system --label "Screensaver after (minutes)" --type number --default 3 \
+  --help "An animated logo on every screen; a key or mouse move ends it; 0 = never"
+option IDLE_LOCK_MINUTES --section system --label "Lock after (minutes)" --type number --default 5 \
+  --help "Lock the screen when you're away; it turns off 30 s later; 0 = never"
+option IDLE_SUSPEND_MINUTES --section system --label "Suspend after (minutes)" --type number --default 30 \
+  --help "Put the laptop to sleep when you're away; 0 = never"
 
 HYPR_SHARE="$SHARE_DIR/hypr"
 ELEPHANT_LIB=/usr/local/lib/elephant

@@ -74,7 +74,7 @@ module_selected() {
 }
 
 print_summary() {
-  local id status width=${UI_WIDTH:-64}
+  local id status width=${UI_WIDTH:-64} lines=()
   ((${#MODULE_STATUS[@]})) || return 0
   ui_rule "Summary"
   for id in "${MODULE_IDS[@]}"; do
@@ -87,8 +87,14 @@ print_summary() {
     esac
     printf '  %s  %-*s %s\n' "$id" "$((width - 16))" "${MODULE_TITLES[$id]}" "$status"
   done
+  if [[ $RUN_MODE == install || $RUN_MODE == menu ]]; then
+    mapfile -t lines < <(run_summary_lines)
+    printf '\n'
+    ui_box "${lines[@]}"
+  fi
   printf '\n  Log: %s\n' "${LOG_FILE:-none}"
   [[ -n $USER_LOG ]] && printf '  Copy: %s\n' "$USER_LOG"
+  [[ -n ${TARGET_HOME:-} && -f $TARGET_HOME/runbook-report.md ]] && printf '  Report: %s\n' "$TARGET_HOME/runbook-report.md"
   return 0
 }
 
@@ -100,6 +106,7 @@ on_exit() {
     write_report >/dev/null 2>&1 || log warn "could not write the report"
   fi
   print_summary
+  [[ -n $RUN_PACKAGES ]] && rm -f "$RUN_PACKAGES"
   log info "finished with exit code $rc"
   exit "$rc"
 }
@@ -119,6 +126,8 @@ start_run() {
   bootstrap_gum
   ui_init
   log_init "$RUN_MODE $*" || die "cannot write logs to $LOG_DIR"
+  RUN_STARTED=$SECONDS
+  RUN_PACKAGES="$(mktemp)" && packages_snapshot >"$RUN_PACKAGES"
   [[ -f $CONFIG_FILE ]] && config_load "$CONFIG_FILE"
   if detect_target_user; then
     log_attach_user "$TARGET_HOME" "$TARGET_USER"
@@ -162,14 +171,25 @@ parse_run_options() {
   done
 }
 
-run_modules() {
+selected_modules() {
   local id
   for id in "${MODULE_IDS[@]}"; do
     if module_selected "$id"; then
-      run_module "$id"
+      printf '%s\n' "$id"
     else
       log info "module $id not selected"
     fi
+  done
+}
+
+run_modules() {
+  local id ids=()
+  mapfile -t ids < <(selected_modules)
+  MODULE_TOTAL=${#ids[@]}
+  MODULE_POSITION=0
+  for id in "${ids[@]}"; do
+    MODULE_POSITION=$((MODULE_POSITION + 1))
+    run_module "$id"
   done
 }
 
@@ -197,6 +217,7 @@ cmd_install() {
   parse_run_options "$@"
   start_run install "$@"
   apply_run_config
+  ui_logo
   ui_header "hyprtrixie $HYPRTRIXIE_VERSION" "Debian 13 with Hyprland, set up properly"
   show_machine
   if ! ((ASSUME_YES)) && ui_can_ask; then
@@ -210,6 +231,7 @@ cmd_install() {
 
 cmd_menu() {
   start_run menu
+  ui_logo
   ui_header "hyprtrixie $HYPRTRIXIE_VERSION" "Debian 13 with Hyprland, set up properly"
   show_machine
   if ! ui_can_ask; then
@@ -222,14 +244,17 @@ cmd_menu() {
 }
 
 cmd_verify() {
-  local id
+  local id ids=()
   parse_run_options "$@"
   start_run verify "$@"
   apply_run_config
   apply_run_overrides
   detect_all
-  for id in "${MODULE_IDS[@]}"; do
-    module_selected "$id" || continue
+  mapfile -t ids < <(selected_modules)
+  MODULE_TOTAL=${#ids[@]}
+  MODULE_POSITION=0
+  for id in "${ids[@]}"; do
+    MODULE_POSITION=$((MODULE_POSITION + 1))
     module_begin "$id"
     verify_module "$id"
     module_finish "$id"
