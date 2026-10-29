@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage: hyprtrixie-terminal [--wait] COMMAND [ARGUMENT...]
+
+Runs COMMAND in a floating terminal in the middle of the screen.
+--wait keeps the terminal open when COMMAND ends, until a key is pressed.
+USAGE
+}
+
+inside() {
+  local wait="$1" status
+  shift
+  "$@"
+  status=$?
+  ((wait)) || exit "$status"
+  printf '\n'
+  if ((status == 0)); then
+    printf 'Done. Press any key to close.'
+  else
+    printf 'It ended with an error (exit %s). Press any key to close.' "$status"
+  fi
+  read -rsn1
+  exit "$status"
+}
+
+wait=0
+case "${1:-}" in
+  --inside)
+    shift
+    inside "$@"
+    ;;
+  --wait)
+    wait=1
+    shift
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+esac
+(($#)) || {
+  usage >&2
+  exit 2
+}
+exec kitty --class hyprtrixie.floating -e "$0" --inside "$wait" "$@"

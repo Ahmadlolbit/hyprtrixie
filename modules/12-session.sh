@@ -165,6 +165,10 @@ command_ready() {
   [[ "$(readlink -f "$BIN_DIR/hyprtrixie")" == "$(readlink -f "$HYPRTRIXIE_ROOT/hyprtrixie")" ]]
 }
 
+terminal_install() {
+  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-terminal" "$BIN_DIR/hyprtrixie-terminal" 0755
+}
+
 screenshot_install() {
   deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-screenshot" "$BIN_DIR/hyprtrixie-screenshot" 0755
 }
@@ -179,6 +183,7 @@ module_12() {
   run_step "Install the Hyprland defaults" hyprland_defaults
   run_step "Install the session starter" session_start_install
   run_step "Put the hyprtrixie command on the PATH" command_install
+  run_step "Install the floating terminal" terminal_install
   run_step "Apply display and input settings" hyprland_options
   run_step "Set up your Hyprland config" hyprland_user_config
   run_step "Set up the lock screen" hyprlock_setup
@@ -228,6 +233,10 @@ verify_12_start() {
 
 verify_12_command() {
   run_check "The hyprtrixie command points at this folder" command_ready
+}
+
+verify_12_terminal() {
+  run_check "The floating terminal is installed" commands_present hyprtrixie-terminal
 }
 
 verify_12_screenshot() {
