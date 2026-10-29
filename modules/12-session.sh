@@ -18,6 +18,8 @@ option TIPS_TERMINAL --section look --label "Tips in new terminals" --type bool 
   --help "A short tip under the prompt in every new terminal"
 option TIPS_WELCOME --section look --label "Tips on the welcome screen" --type bool --default yes \
   --help "A tip at the bottom of the welcome screen"
+option TIPS_NOTIFY --section look --label "Tip notifications" --type bool --default yes \
+  --help "Now and then a tip as a notification, at most once a day"
 option IDLE_LOCK_MINUTES --section system --label "Lock after (minutes)" --type number --default 5 \
   --help "Lock the screen when you're away; it turns off 30 s later; 0 = never"
 option IDLE_SUSPEND_MINUTES --section system --label "Suspend after (minutes)" --type number --default 30 \
@@ -181,7 +183,13 @@ tips_install() {
   deploy_file "$HYPRTRIXIE_ROOT/system/tips.txt" "$SHARE_DIR/tips.txt" || return 1
   deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-tip" "$BIN_DIR/hyprtrixie-tip" 0755 || return 1
   deploy_rendered "$HYPRTRIXIE_ROOT/system/tips.conf" /etc/hyprtrixie/tips 0644 root "TERMINAL=$TIPS_TERMINAL" \
-    "WELCOME=$TIPS_WELCOME"
+    "WELCOME=$TIPS_WELCOME" "NOTIFY=$TIPS_NOTIFY"
+}
+
+tips_timer_install() {
+  deploy_file "$HYPRTRIXIE_ROOT/system/systemd/hyprtrixie-tip.service" /etc/systemd/user/hyprtrixie-tip.service || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/system/systemd/hyprtrixie-tip.timer" /etc/systemd/user/hyprtrixie-tip.timer || return 1
+  systemctl --global enable hyprtrixie-tip.timer
 }
 
 screenshot_install() {
@@ -201,6 +209,7 @@ module_12() {
   run_step "Install the floating terminal" terminal_install
   run_step "Install the package picker" package_picker_install
   run_step "Install the tips" tips_install
+  run_step "Show a tip now and then" tips_timer_install
   run_step "Apply display and input settings" hyprland_options
   run_step "Set up your Hyprland config" hyprland_user_config
   run_step "Set up the lock screen" hyprlock_setup
@@ -262,6 +271,10 @@ verify_12_picker() {
 
 verify_12_tips() {
   run_check "The tips are installed" commands_present hyprtrixie-tip
+}
+
+verify_12_tip_timer() {
+  run_check "Tip notifications are scheduled" test -L /etc/systemd/user/timers.target.wants/hyprtrixie-tip.timer
 }
 
 verify_12_screenshot() {

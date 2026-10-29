@@ -2,17 +2,19 @@
 set -uo pipefail
 
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
 TIPS=/usr/share/hyprtrixie/tips.txt
 SWITCHES=/etc/hyprtrixie/tips
 
 usage() {
   cat <<'USAGE'
-Usage: hyprtrixie-tip [terminal|welcome]
+Usage: hyprtrixie-tip [terminal|welcome|notify]
 
 Prints one tip at random. The tips come from /usr/share/hyprtrixie/tips.txt
 and ~/.config/hyprtrixie/tips.txt, one tip per line.
 terminal prints it dimmed, unless tips in new terminals are turned off;
-welcome prints it unless tips on the welcome screen are turned off.
+welcome prints it unless tips on the welcome screen are turned off;
+notify shows it as a notification, at most once a day, unless tip notifications are off.
 USAGE
 }
 
@@ -38,10 +40,21 @@ tip() {
   printf '%s\n' "${tips[RANDOM % ${#tips[@]}]}"
 }
 
+notify_tip() {
+  local stamp="$STATE_HOME/hyprtrixie/tip-shown" today line
+  enabled notify || return 0
+  today="$(date +%F)"
+  [[ "$(cat "$stamp" 2>/dev/null)" == "$today" ]] && return 0
+  line="$(tip)" || return 0
+  notify-send --app-name=Tips "Tip" "$line" || return 1
+  mkdir -p "${stamp%/*}" && printf '%s\n' "$today" >"$stamp"
+}
+
 case "${1:-}" in
   "") tip ;;
   terminal) terminal_tip ;;
   welcome) enabled welcome && tip ;;
+  notify) notify_tip ;;
   -h | --help) usage ;;
   *)
     usage >&2
