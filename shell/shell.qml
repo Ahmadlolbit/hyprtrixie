@@ -11,4 +11,6 @@ ShellRoot {
   Osd {}
 
   Picker {}
+
+  KeySheet {}
 }
