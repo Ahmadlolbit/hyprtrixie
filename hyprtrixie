@@ -37,6 +37,7 @@ USAGE
   hyprtrixie verbose [on|off]      Log the desktop in detail from the next login (run it without sudo)
   hyprtrixie guide                 Read the guide in the terminal
   hyprtrixie update                Pull the newest hyprtrixie and run the installer (run it without sudo)
+  hyprtrixie changes               Show what the last hyprtrixie update changed
   hyprtrixie app list              List the apps you can install, by category (* = installed)
   hyprtrixie app install|remove APP
                                    Install or remove one app and tick or untick it in the configuration
@@ -563,14 +564,56 @@ cmd_guide() {
   done
 }
 
+changes_dir() {
+  printf '%s/hyprtrixie' "${XDG_STATE_HOME:-$HOME/.local/state}"
+}
+
+changes_between() {
+  local old="$1" new="$2" commit first second subject title number others
+  git -C "$HYPRTRIXIE_ROOT" log --first-parent --merges --format='%H %P' "$old..$new" |
+    while read -r commit first second; do
+      subject="$(git -C "$HYPRTRIXIE_ROOT" log -1 --format=%s "$commit")"
+      title="$(git -C "$HYPRTRIXIE_ROOT" log -1 --format=%b "$commit" | sed -n '/./{p;q}')"
+      number="$(sed -n 's/^Merge pull request #\([0-9]*\) .*/\1/p' <<<"$subject")"
+      printf '%s\n' "${number:+#$number }${title:-$subject}"
+      git -C "$HYPRTRIXIE_ROOT" log --no-merges --format='  - %s' "$first..$second"
+    done
+  others="$(git -C "$HYPRTRIXIE_ROOT" log --first-parent --no-merges --format='  - %s' "$old..$new")"
+  [[ -n $others ]] && printf 'Other changes\n%s\n' "$others"
+  return 0
+}
+
 cmd_update() {
+  local old new dir
   ((EUID != 0)) || die "run it as yourself, without sudo: hyprtrixie update"
   git -C "$HYPRTRIXIE_ROOT" rev-parse --git-dir >/dev/null 2>&1 ||
     die "$HYPRTRIXIE_ROOT is not a git clone, so it can't update itself"
+  old="$(git -C "$HYPRTRIXIE_ROOT" rev-parse HEAD)"
   printf 'Updating %s\n' "$HYPRTRIXIE_ROOT"
   git -C "$HYPRTRIXIE_ROOT" pull --ff-only ||
     die "git pull failed: the folder has local changes, or its branch has no upstream"
+  new="$(git -C "$HYPRTRIXIE_ROOT" rev-parse HEAD)"
+  if [[ $old == "$new" ]]; then
+    printf 'hyprtrixie is already up to date.\n'
+    return 0
+  fi
+  dir="$(changes_dir)"
+  mkdir -p "$dir" && changes_between "$old" "$new" >"$dir/changes.txt" && touch "$dir/changes-unseen"
+  printf '\nWhat changed:\n'
+  cat "$dir/changes.txt"
+  printf '\n'
   exec sudo "$HYPRTRIXIE_ROOT/hyprtrixie" install
+}
+
+cmd_changes() {
+  local dir
+  dir="$(changes_dir)"
+  if [[ -s $dir/changes.txt ]]; then
+    cat "$dir/changes.txt"
+  else
+    printf 'No update notes yet. hyprtrixie update writes them.\n'
+  fi
+  rm -f "$dir/changes-unseen"
 }
 
 app_untick() {
@@ -634,6 +677,7 @@ main() {
       ;;
     guide) cmd_guide ;;
     update) cmd_update ;;
+    changes) cmd_changes ;;
     config)
       shift
       cmd_config "$@"
