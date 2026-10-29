@@ -38,6 +38,7 @@ the terminal's, the bar's and the lock screen's; ui-font is the apps'.
 Glass makes terminals and panels see-through, with blur behind them.
 auto switches to the light theme by day and the dark one at night, at
 sunrise and sunset (sun) or at set times like 07:00 and 19:00 (times).
+While it's on, a theme you pick becomes the light or the dark one.
 sun prints the day's sunrise and sunset where your time zone's main city
 is, or at the location you set.
 USAGE
@@ -247,6 +248,15 @@ tick() {
   HYPRTRIXIE_LOOK_AUTO=1 "$(command_path omarchy-theme-set)" "$theme"
 }
 
+remember() {
+  [[ -n $1 ]] || return 2
+  if [[ $2 == light ]]; then
+    put light "$1"
+  else
+    put dark "$1"
+  fi
+}
+
 retick() {
   rm -f "$LOOK_STATE/period"
   tick
@@ -336,6 +346,7 @@ case "${1:-}" in
     set_times "$@"
     ;;
   tick) tick ;;
+  remember) remember "${2:-}" "${3:-}" ;;
   location) location "${2:-}" ;;
   -h | --help) usage ;;
   *)
