@@ -40,7 +40,7 @@ USAGE
   hyprtrixie guide                 Read the guide in the terminal
   hyprtrixie update                Pull the newest hyprtrixie and run the installer (run it without sudo)
   hyprtrixie changes               Show what the last hyprtrixie update changed
-  hyprtrixie doctor                Check the system and say how to fix what it finds (run it with sudo)
+  hyprtrixie doctor                Check the system and offer the safe fixes (run it with sudo)
   hyprtrixie app list              List the apps you can install, by category (* = installed)
   hyprtrixie app install|remove APP
                                    Install or remove one app and tick or untick it in the configuration
@@ -644,6 +644,19 @@ cmd_changes() {
 }
 
 POWER_SUPPLY_DIR="${HYPRTRIXIE_POWER_SUPPLY:-/sys/class/power_supply}"
+DOCTOR_QUESTIONS=()
+DOCTOR_COMMANDS=()
+
+doctor_offer() {
+  local question="$1"
+  shift
+  DOCTOR_QUESTIONS+=("$question")
+  DOCTOR_COMMANDS+=("$(printf '%q ' "$@")")
+}
+
+doctor_restart() {
+  as_hypr hyprctl dispatch "hl.dsp.exec_cmd([[hyprtrixie-start $1]])"
+}
 
 doctor_check_desktop() {
   local spec name missing=()
@@ -662,6 +675,9 @@ doctor_check_desktop() {
   fi
   ui_status fail "Not running: ${missing[*]}"
   ui_note "Fix: log out and back in, or let the doctor start them again"
+  for name in "${missing[@]}"; do
+    doctor_offer "Start $name again" doctor_restart "$name"
+  done
 }
 
 doctor_check_services() {
@@ -675,6 +691,13 @@ doctor_check_services() {
   fi
   ui_status fail "Failed services: ${units[*]}"
   ui_note "Fix: systemctl status NAME says why; restarting often helps"
+  for unit in "${units[@]}"; do
+    if [[ $unit == user:* ]]; then
+      doctor_offer "Restart ${unit#user:}" as_user env XDG_RUNTIME_DIR="/run/user/$TARGET_UID" systemctl --user restart "${unit#user:}"
+    else
+      doctor_offer "Restart $unit" systemctl restart "$unit"
+    fi
+  done
 }
 
 doctor_check_snapshots() {
@@ -686,6 +709,7 @@ doctor_check_snapshots() {
   if ! service_active snapper-timeline.timer || ! service_active snapper-cleanup.timer; then
     ui_status fail "The snapshot timers aren't running"
     ui_note "Fix: systemctl enable --now snapper-timeline.timer snapper-cleanup.timer"
+    doctor_offer "Turn the snapshot timers back on" systemctl enable --now snapper-timeline.timer snapper-cleanup.timer
     return 0
   fi
   last="$(snapper --csvout --no-headers -c root list --columns date 2>/dev/null | tail -n 1)"
@@ -702,13 +726,20 @@ doctor_check_snapshots() {
   fi
 }
 
+doctor_free_space() {
+  apt-get clean
+  command -v snapper >/dev/null 2>&1 && snapper -c root cleanup number
+  journalctl --vacuum-time=2weeks
+}
+
 doctor_check_disk() {
-  local mount use
+  local mount use offered=0
   while read -r mount use; do
     use="${use%\%}"
     if ((use >= 85)); then
       ui_status "$( ((use >= 95)) && printf fail || printf warn)" "$mount is $use% full"
       ui_note "Fix: clear the package cache, trim old snapshots and old logs"
+      ((offered++)) || doctor_offer "Free space: clear the package cache, trim old snapshots and old logs" doctor_free_space
     else
       ui_status ok "$mount is $use% full"
     fi
@@ -797,12 +828,33 @@ doctor_check_installer() {
   fi
 }
 
+doctor_fixes() {
+  local i
+  if ((${#DOCTOR_QUESTIONS[@]} == 0)); then
+    printf '\nNothing for the doctor to fix.\n'
+    return 0
+  fi
+  if ! ui_can_ask; then
+    printf '\nRun it in a terminal to apply the fixes it offers.\n'
+    return 0
+  fi
+  printf '\n'
+  for i in "${!DOCTOR_QUESTIONS[@]}"; do
+    ui_confirm "${DOCTOR_QUESTIONS[$i]}?" no || continue
+    if eval "${DOCTOR_COMMANDS[$i]}"; then
+      ui_status ok "${DOCTOR_QUESTIONS[$i]}"
+    else
+      ui_status fail "${DOCTOR_QUESTIONS[$i]}"
+    fi
+  done
+}
+
 cmd_doctor() {
   require_root
   ui_init
   detect_target_user || die "cannot tell whose desktop this is; run it with sudo from your own account"
   [[ -f $CONFIG_FILE ]] && config_load "$CONFIG_FILE"
-  ui_header "hyprtrixie doctor" "Checks the system and says how to fix what it finds"
+  ui_header "hyprtrixie doctor" "Checks the system and offers the safe fixes"
   ui_rule "Desktop"
   doctor_check_desktop
   doctor_check_services
@@ -816,6 +868,7 @@ cmd_doctor() {
   ui_rule "hyprtrixie"
   doctor_check_files
   doctor_check_installer
+  doctor_fixes
 }
 
 app_untick() {
