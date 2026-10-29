@@ -1,5 +1,6 @@
 register_module 10 "Applications"
 
+APPS_NEW_IN_2="imv evince obsidian localsend calculator"
 APP_CATEGORIES=("browsers|Browsers" "chat|Chat and calls" "office|Office and notes" "viewers|Viewers"
   "files|Files and sharing" "security|Passwords and VPN" "creative|Creative" "media|Audio and video"
   "system|System tools" "games|Games")
@@ -61,6 +62,17 @@ app_wanted() {
 teams_wanted() {
   app_wanted teams
 }
+
+apps_add_new_defaults() {
+  local id defaults
+  defaults=" $(option_default APPS) "
+  for id in $APPS_NEW_IN_2; do
+    [[ $defaults == *" $id "* ]] || continue
+    app_wanted "$id" || APPS="${APPS:+$APPS }$id"
+  done
+}
+
+config_migration 2 apps_add_new_defaults
 
 helium_default() {
   as_user xdg-mime default helium.desktop x-scheme-handler/http x-scheme-handler/https text/html application/xhtml+xml

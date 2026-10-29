@@ -1,6 +1,9 @@
 CONFIG_FILE="${HYPRTRIXIE_CONFIG:-/etc/hyprtrixie/hyprtrixie.conf}"
 CONFIG_CHARS='[A-Za-z0-9 ._:/@+,-]'
 PROFILES=(minimal everyday developer)
+CONFIG_VERSION=2
+CONFIG_LOADED_VERSION=""
+CONFIG_MIGRATIONS=()
 OPTION_KEYS=()
 declare -gA OPTION_SECTION=()
 declare -gA OPTION_LABEL=()
@@ -145,6 +148,7 @@ config_validate() {
 config_load() {
   local file="${1:-$CONFIG_FILE}" line key
   [[ -f $file ]] || return 1
+  CONFIG_LOADED_VERSION=""
   while IFS= read -r line || [[ -n $line ]]; do
     [[ -z $line ]] && continue
     if [[ ! $line =~ ^([A-Z][A-Z0-9_]*)=\"($CONFIG_CHARS*)\"$ ]]; then
@@ -152,7 +156,10 @@ config_load() {
       continue
     fi
     key="${BASH_REMATCH[1]}"
-    [[ $key == HYPRTRIXIE_CONFIG_VERSION ]] && continue
+    if [[ $key == HYPRTRIXIE_CONFIG_VERSION ]]; then
+      CONFIG_LOADED_VERSION="${BASH_REMATCH[2]}"
+      continue
+    fi
     if [[ -z ${OPTION_TYPE[$key]+set} ]]; then
       log warn "ignoring unknown setting $key in $file"
       continue
@@ -160,6 +167,23 @@ config_load() {
     printf -v "$key" '%s' "${BASH_REMATCH[2]}"
   done <"$file"
   config_validate
+  config_migrate "${CONFIG_LOADED_VERSION:-1}"
+  return 0
+}
+
+config_migration() {
+  CONFIG_MIGRATIONS+=("$1 $2")
+}
+
+config_migrate() {
+  local from="$1" entry version fn
+  [[ $from =~ ^[0-9]+$ ]] || from=1
+  for entry in "${CONFIG_MIGRATIONS[@]}"; do
+    read -r version fn <<<"$entry"
+    ((version > from)) || continue
+    log info "updating the configuration for version $version: $fn"
+    "$fn"
+  done
   return 0
 }
 
@@ -177,7 +201,7 @@ config_save() {
   mkdir -p "${file%/*}" || return 1
   tmp="$(mktemp "$file.XXXXXX")" || return 1
   {
-    printf 'HYPRTRIXIE_CONFIG_VERSION="1"\n'
+    printf 'HYPRTRIXIE_CONFIG_VERSION="%s"\n' "$CONFIG_VERSION"
     for key in "${OPTION_KEYS[@]}"; do
       [[ ${!key} =~ ^$CONFIG_CHARS*$ ]] || continue
       printf '%s="%s"\n' "$key" "${!key}"
