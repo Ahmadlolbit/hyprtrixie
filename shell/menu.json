@@ -124,6 +124,17 @@
       "see-through"
     ]
   },
+  "toggle.corners": {
+    "glyph": "\udb81\ude07",
+    "label": "Rounded corners",
+    "action": "hyprtrixie-look corners toggle",
+    "state": "test \"$(hyprtrixie-look corners)\" = yes",
+    "keywords": [
+      "corners",
+      "rounded",
+      "screen"
+    ]
+  },
   "toggle.dnd": {
     "glyph": "\udb80\udc9b",
     "label": "Do not disturb",
