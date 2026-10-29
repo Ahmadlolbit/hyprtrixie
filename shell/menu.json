@@ -235,6 +235,41 @@
       "workspace"
     ]
   },
+  "style.bar": {
+    "glyph": "\udb82\udea5",
+    "label": "Bar layout",
+    "keywords": [
+      "bar",
+      "panel",
+      "layout",
+      "vertical",
+      "floating"
+    ]
+  },
+  "style.bar.full": {
+    "glyph": "\udb82\udfa5",
+    "label": "Full width",
+    "action": "hyprtrixie-look bar full",
+    "state": "test \"$(hyprtrixie-look bar)\" = full"
+  },
+  "style.bar.floating": {
+    "glyph": "\udb84\udf65",
+    "label": "Floating",
+    "action": "hyprtrixie-look bar floating",
+    "state": "test \"$(hyprtrixie-look bar)\" = floating"
+  },
+  "style.bar.minimal": {
+    "glyph": "\udb83\ude6e",
+    "label": "Minimal",
+    "action": "hyprtrixie-look bar minimal",
+    "state": "test \"$(hyprtrixie-look bar)\" = minimal"
+  },
+  "style.bar.vertical": {
+    "glyph": "\udb82\udfa3",
+    "label": "Down the left side",
+    "action": "hyprtrixie-look bar vertical",
+    "state": "test \"$(hyprtrixie-look bar)\" = vertical"
+  },
   "style.accent": {
     "glyph": "\udb80\udfd8",
     "label": "Accent",
