@@ -16,6 +16,8 @@ option SCREENSAVER_MINUTES --section system --label "Screensaver after (minutes)
   --help "An animated logo on every screen; a key or mouse move ends it; 0 = never"
 option TIPS_TERMINAL --section look --label "Tips in new terminals" --type bool --default yes \
   --help "A short tip under the prompt in every new terminal"
+option TIPS_WELCOME --section look --label "Tips on the welcome screen" --type bool --default yes \
+  --help "A tip at the bottom of the welcome screen"
 option IDLE_LOCK_MINUTES --section system --label "Lock after (minutes)" --type number --default 5 \
   --help "Lock the screen when you're away; it turns off 30 s later; 0 = never"
 option IDLE_SUSPEND_MINUTES --section system --label "Suspend after (minutes)" --type number --default 30 \
@@ -178,7 +180,8 @@ package_picker_install() {
 tips_install() {
   deploy_file "$HYPRTRIXIE_ROOT/system/tips.txt" "$SHARE_DIR/tips.txt" || return 1
   deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-tip" "$BIN_DIR/hyprtrixie-tip" 0755 || return 1
-  deploy_rendered "$HYPRTRIXIE_ROOT/system/tips.conf" /etc/hyprtrixie/tips 0644 root "TERMINAL=$TIPS_TERMINAL"
+  deploy_rendered "$HYPRTRIXIE_ROOT/system/tips.conf" /etc/hyprtrixie/tips 0644 root "TERMINAL=$TIPS_TERMINAL" \
+    "WELCOME=$TIPS_WELCOME"
 }
 
 screenshot_install() {
