@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import qs.common
 
 ShellRoot {
   Variants {
@@ -21,4 +22,9 @@ ShellRoot {
   Look {}
 
   Corners {}
+
+  Loader {
+    active: Theme.video !== ""
+    source: "VideoWallpaper.qml"
+  }
 }
