@@ -116,7 +116,6 @@ ui_spin_start() {
   ((UI_INTERACTIVE)) || return 0
   local text="$1" offset="${2:-}"
   (
-    trap 'exit 0' TERM
     local frames="|/-\\" i=0 width slot lines=()
     width=$(($(ui_columns) - 12))
     while :; do
