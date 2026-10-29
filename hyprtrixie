@@ -616,9 +616,24 @@ cmd_update() {
   exec sudo "$HYPRTRIXIE_ROOT/hyprtrixie" install --changes "$dir/changes.txt"
 }
 
+changes_notify() {
+  local dir="$1" count action
+  [[ -f $dir/changes-unseen && -s $dir/changes.txt ]] || return 0
+  rm -f "$dir/changes-unseen"
+  count="$(grep -c '^  - ' "$dir/changes.txt")"
+  action="$(notify-send --app-name=hyprtrixie --action=read=Read "hyprtrixie was updated" \
+    "$count changes since the last update. Menu › Update › What changed shows them too.")"
+  [[ $action == read ]] && exec hyprtrixie-terminal --wait "$HYPRTRIXIE_ROOT/hyprtrixie" changes
+  return 0
+}
+
 cmd_changes() {
   local dir
   dir="$(changes_dir)"
+  if [[ ${1:-} == --notify ]]; then
+    changes_notify "$dir"
+    return
+  fi
   if [[ -s $dir/changes.txt ]]; then
     cat "$dir/changes.txt"
   else
@@ -688,7 +703,10 @@ main() {
       ;;
     guide) cmd_guide ;;
     update) cmd_update ;;
-    changes) cmd_changes ;;
+    changes)
+      shift
+      cmd_changes "$@"
+      ;;
     config)
       shift
       cmd_config "$@"
