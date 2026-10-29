@@ -8,6 +8,7 @@ ASSUME_YES=0
 ONLY=""
 SKIP=""
 RUN_MODE=""
+RUN_CHANGES=""
 
 for lib in log ui config step user apt files fetch detect service btrfs menu; do
   source "$HYPRTRIXIE_ROOT/lib/$lib.sh"
@@ -29,6 +30,7 @@ USAGE
                                      --skip 10,11       leave these modules out
                                      --yes              ask nothing, use the configuration as is
                                      --on-failure MODE  ask | halt | continue
+                                     --changes FILE     show these update notes in the summary
   hyprtrixie verify [--only ...]   Run every check again
   hyprtrixie modules               List the modules and how they last ended
   hyprtrixie config [show|path|edit|reset]
@@ -37,6 +39,7 @@ USAGE
   hyprtrixie verbose [on|off]      Log the desktop in detail from the next login (run it without sudo)
   hyprtrixie guide                 Read the guide in the terminal
   hyprtrixie update                Pull the newest hyprtrixie and run the installer (run it without sudo)
+  hyprtrixie changes               Show what the last hyprtrixie update changed
   hyprtrixie app list              List the apps you can install, by category (* = installed)
   hyprtrixie app install|remove APP
                                    Install or remove one app and tick or untick it in the configuration
@@ -96,6 +99,11 @@ print_summary() {
     mapfile -t lines < <(run_summary_lines)
     printf '\n'
     ui_box "${lines[@]}"
+  fi
+  if [[ -n $RUN_CHANGES && -s $RUN_CHANGES ]]; then
+    ui_rule "What changed in this update"
+    head -n 30 "$RUN_CHANGES" | sed 's/^/  /'
+    (($(wc -l <"$RUN_CHANGES") > 30)) && printf '  … the rest: hyprtrixie changes\n'
   fi
   printf '\n  Log: %s\n' "${LOG_FILE:-none}"
   [[ -n $USER_LOG ]] && printf '  Copy: %s\n' "$USER_LOG"
@@ -160,6 +168,10 @@ parse_run_options() {
         shift
         ;;
       --yes | -y) ASSUME_YES=1 ;;
+      --changes)
+        RUN_CHANGES="${2:-}"
+        shift
+        ;;
       --on-failure)
         value="${2:-}"
         [[ $value == ask || $value == halt || $value == continue ]] || die "--on-failure takes ask, halt or continue"
@@ -563,14 +575,71 @@ cmd_guide() {
   done
 }
 
+changes_dir() {
+  printf '%s/hyprtrixie' "${XDG_STATE_HOME:-$HOME/.local/state}"
+}
+
+changes_between() {
+  local old="$1" new="$2" commit first second subject title number others
+  git -C "$HYPRTRIXIE_ROOT" log --first-parent --merges --format='%H %P' "$old..$new" |
+    while read -r commit first second; do
+      subject="$(git -C "$HYPRTRIXIE_ROOT" log -1 --format=%s "$commit")"
+      title="$(git -C "$HYPRTRIXIE_ROOT" log -1 --format=%b "$commit" | sed -n '/./{p;q}')"
+      number="$(sed -n 's/^Merge pull request #\([0-9]*\) .*/\1/p' <<<"$subject")"
+      printf '%s\n' "${number:+#$number }${title:-$subject}"
+      git -C "$HYPRTRIXIE_ROOT" log --no-merges --format='  - %s' "$first..$second"
+    done
+  others="$(git -C "$HYPRTRIXIE_ROOT" log --first-parent --no-merges --format='  - %s' "$old..$new")"
+  [[ -n $others ]] && printf 'Other changes\n%s\n' "$others"
+  return 0
+}
+
 cmd_update() {
+  local old new dir
   ((EUID != 0)) || die "run it as yourself, without sudo: hyprtrixie update"
   git -C "$HYPRTRIXIE_ROOT" rev-parse --git-dir >/dev/null 2>&1 ||
     die "$HYPRTRIXIE_ROOT is not a git clone, so it can't update itself"
+  old="$(git -C "$HYPRTRIXIE_ROOT" rev-parse HEAD)"
   printf 'Updating %s\n' "$HYPRTRIXIE_ROOT"
   git -C "$HYPRTRIXIE_ROOT" pull --ff-only ||
     die "git pull failed: the folder has local changes, or its branch has no upstream"
-  exec sudo "$HYPRTRIXIE_ROOT/hyprtrixie" install
+  new="$(git -C "$HYPRTRIXIE_ROOT" rev-parse HEAD)"
+  if [[ $old == "$new" ]]; then
+    printf 'hyprtrixie is already up to date.\n'
+    return 0
+  fi
+  dir="$(changes_dir)"
+  mkdir -p "$dir" && changes_between "$old" "$new" >"$dir/changes.txt" && touch "$dir/changes-unseen"
+  printf '\nWhat changed:\n'
+  cat "$dir/changes.txt"
+  printf '\n'
+  exec sudo "$HYPRTRIXIE_ROOT/hyprtrixie" install --changes "$dir/changes.txt"
+}
+
+changes_notify() {
+  local dir="$1" count action
+  [[ -f $dir/changes-unseen && -s $dir/changes.txt ]] || return 0
+  rm -f "$dir/changes-unseen"
+  count="$(grep -c '^  - ' "$dir/changes.txt")"
+  action="$(notify-send --app-name=hyprtrixie --action=read=Read "hyprtrixie was updated" \
+    "$count changes since the last update. Menu › Update › What changed shows them too.")"
+  [[ $action == read ]] && exec hyprtrixie-terminal --wait "$HYPRTRIXIE_ROOT/hyprtrixie" changes
+  return 0
+}
+
+cmd_changes() {
+  local dir
+  dir="$(changes_dir)"
+  if [[ ${1:-} == --notify ]]; then
+    changes_notify "$dir"
+    return
+  fi
+  if [[ -s $dir/changes.txt ]]; then
+    cat "$dir/changes.txt"
+  else
+    printf 'No update notes yet. hyprtrixie update writes them.\n'
+  fi
+  rm -f "$dir/changes-unseen"
 }
 
 app_untick() {
@@ -634,6 +703,10 @@ main() {
       ;;
     guide) cmd_guide ;;
     update) cmd_update ;;
+    changes)
+      shift
+      cmd_changes "$@"
+      ;;
     config)
       shift
       cmd_config "$@"

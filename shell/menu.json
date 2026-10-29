@@ -308,6 +308,17 @@
       "bios"
     ]
   },
+  "update.changes": {
+    "glyph": "\udb82\udf0a",
+    "label": "What changed",
+    "action": "hyprtrixie-terminal --wait hyprtrixie changes",
+    "keywords": [
+      "changes",
+      "news",
+      "update",
+      "what changed"
+    ]
+  },
   "about": {
     "glyph": "\uea74",
     "label": "About",
