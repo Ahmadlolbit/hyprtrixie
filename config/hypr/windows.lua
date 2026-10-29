@@ -41,3 +41,11 @@ hl.window_rule({
   match = { class = "^hyprtrixie\\.screensaver$" },
   fullscreen = true,
 })
+
+hl.window_rule({
+  name = "floating-terminal",
+  match = { class = "^hyprtrixie\\.floating$" },
+  float = true,
+  center = true,
+  size = { "(monitor_w*0.66)", "(monitor_h*0.66)" },
+})

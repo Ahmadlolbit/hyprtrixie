@@ -35,6 +35,8 @@ USAGE
   hyprtrixie collect [--verbose]   Pack the logs, the report and system details for a bug report;
                                      --verbose also writes everything to ~/hyprtrixie-log-<time>.txt
   hyprtrixie verbose [on|off]      Log the desktop in detail from the next login (run it without sudo)
+  hyprtrixie guide                 Read the guide in the terminal
+  hyprtrixie update                Pull the newest hyprtrixie and run the installer (run it without sudo)
   hyprtrixie app list              List the apps you can install, by category (* = installed)
   hyprtrixie app install|remove APP
                                    Install or remove one app and tick or untick it in the configuration
@@ -529,6 +531,48 @@ cmd_verbose() {
   esac
 }
 
+guide_title() {
+  local line
+  line="$(grep -m1 '^# ' "$1")"
+  if [[ -n $line ]]; then
+    printf '%s' "${line#\# }"
+  else
+    basename "$1" .md
+  fi
+}
+
+cmd_guide() {
+  local dir="$HYPRTRIXIE_ROOT/docs/guide" pages=() titles=() page choice i
+  mapfile -t pages < <(find "$dir" -maxdepth 1 -name '*.md' 2>/dev/null | sort)
+  if ((${#pages[@]} == 0)); then
+    printf 'The guide has no pages yet. They go in %s, one Markdown file per topic.\n' "$dir"
+    return 0
+  fi
+  if ! command -v gum >/dev/null 2>&1 || [[ ! -t 1 ]]; then
+    cat "${pages[@]}"
+    return 0
+  fi
+  for page in "${pages[@]}"; do
+    titles+=("$(guide_title "$page")")
+  done
+  while :; do
+    choice="$(gum choose --header "Guide · pick a topic, Esc to leave" --cursor "> " "${titles[@]}")" || return 0
+    for i in "${!titles[@]}"; do
+      [[ ${titles[$i]} == "$choice" ]] && gum format <"${pages[$i]}" | gum pager
+    done
+  done
+}
+
+cmd_update() {
+  ((EUID != 0)) || die "run it as yourself, without sudo: hyprtrixie update"
+  git -C "$HYPRTRIXIE_ROOT" rev-parse --git-dir >/dev/null 2>&1 ||
+    die "$HYPRTRIXIE_ROOT is not a git clone, so it can't update itself"
+  printf 'Updating %s\n' "$HYPRTRIXIE_ROOT"
+  git -C "$HYPRTRIXIE_ROOT" pull --ff-only ||
+    die "git pull failed: the folder has local changes, or its branch has no upstream"
+  exec sudo "$HYPRTRIXIE_ROOT/hyprtrixie" install
+}
+
 app_untick() {
   local id="$1" item rest=()
   for item in $APPS; do
@@ -588,6 +632,8 @@ main() {
       shift
       cmd_app "$@"
       ;;
+    guide) cmd_guide ;;
+    update) cmd_update ;;
     config)
       shift
       cmd_config "$@"

@@ -21,7 +21,7 @@ option IDLE_SUSPEND_MINUTES --section system --label "Suspend after (minutes)" -
 
 HYPR_SHARE="$SHARE_DIR/hypr"
 ELEPHANT_LIB=/usr/local/lib/elephant
-ELEPHANT_PROVIDERS=(desktopapplications calc runner files symbols websearch clipboard providerlist unicode menus)
+ELEPHANT_PROVIDERS=(desktopapplications calc runner files symbols websearch clipboard providerlist unicode)
 
 lua_bool() {
   if [[ $1 == yes ]]; then
@@ -140,9 +140,9 @@ walker_install() {
   done
   rm -rf /etc/xdg/walker/themes/hyprtrixie
   rm -f "$BIN_DIR/hyprtrixie-power-menu"
-  rm -f /etc/xdg/elephant/menus/themes.lua /etc/xdg/elephant/menus/backgrounds.lua
-  deploy_file "$HYPRTRIXIE_ROOT/system/walker/config.toml" /etc/xdg/walker/config.toml || return 1
-  deploy_tree "$HYPRTRIXIE_ROOT/system/elephant/menus" /etc/xdg/elephant/menus
+  rm -rf /etc/xdg/elephant/menus
+  rm -f "$ELEPHANT_LIB/menus.so"
+  deploy_file "$HYPRTRIXIE_ROOT/system/walker/config.toml" /etc/xdg/walker/config.toml
 }
 
 walker_ready() {
@@ -155,6 +155,22 @@ walker_ready() {
 
 session_start_install() {
   deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-start" "$BIN_DIR/hyprtrixie-start" 0755
+}
+
+command_install() {
+  mkdir -p "$BIN_DIR" && ln -sfn "$HYPRTRIXIE_ROOT/hyprtrixie" "$BIN_DIR/hyprtrixie"
+}
+
+command_ready() {
+  [[ "$(readlink -f "$BIN_DIR/hyprtrixie")" == "$(readlink -f "$HYPRTRIXIE_ROOT/hyprtrixie")" ]]
+}
+
+terminal_install() {
+  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-terminal" "$BIN_DIR/hyprtrixie-terminal" 0755
+}
+
+package_picker_install() {
+  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-pkg" "$BIN_DIR/hyprtrixie-pkg" 0755
 }
 
 screenshot_install() {
@@ -170,6 +186,9 @@ module_12() {
   run_step "Install session packages" apt_install_list session
   run_step "Install the Hyprland defaults" hyprland_defaults
   run_step "Install the session starter" session_start_install
+  run_step "Put the hyprtrixie command on the PATH" command_install
+  run_step "Install the floating terminal" terminal_install
+  run_step "Install the package picker" package_picker_install
   run_step "Apply display and input settings" hyprland_options
   run_step "Set up your Hyprland config" hyprland_user_config
   run_step "Set up the lock screen" hyprlock_setup
@@ -215,6 +234,18 @@ verify_12_walker() {
 
 verify_12_start() {
   run_check "The session starter is installed" commands_present hyprtrixie-start
+}
+
+verify_12_command() {
+  run_check "The hyprtrixie command points at this folder" command_ready
+}
+
+verify_12_terminal() {
+  run_check "The floating terminal is installed" commands_present hyprtrixie-terminal
+}
+
+verify_12_picker() {
+  run_check "The package picker is installed" commands_present hyprtrixie-pkg
 }
 
 verify_12_screenshot() {

@@ -1,0 +1,369 @@
+{
+  "apps": {
+    "glyph": "\udb80\udc3b",
+    "label": "Apps",
+    "list": "apps",
+    "keywords": [
+      "apps",
+      "programs",
+      "launch"
+    ]
+  },
+  "learn": {
+    "glyph": "\udb82\uddd1",
+    "label": "Learn"
+  },
+  "learn.guide": {
+    "glyph": "\udb80\uded7",
+    "label": "Guide",
+    "action": "hyprtrixie-terminal --wait hyprtrixie guide",
+    "keywords": [
+      "guide",
+      "help",
+      "docs",
+      "manual"
+    ]
+  },
+  "learn.keys": {
+    "glyph": "\uf11c",
+    "label": "Keys",
+    "action": "qs -p /usr/share/hyprtrixie/shell ipc call keys open",
+    "keywords": [
+      "keys",
+      "shortcuts",
+      "bindings"
+    ]
+  },
+  "capture": {
+    "glyph": "\uf030",
+    "label": "Capture"
+  },
+  "capture.region": {
+    "glyph": "\udb80\udd9e",
+    "label": "Screenshot of a region",
+    "action": "sleep 0.3; hyprtrixie-screenshot region",
+    "keywords": [
+      "screenshot",
+      "capture"
+    ]
+  },
+  "capture.window": {
+    "glyph": "\udb81\uddaf",
+    "label": "Screenshot of a window",
+    "action": "sleep 0.3; hyprtrixie-screenshot window",
+    "keywords": [
+      "screenshot",
+      "capture"
+    ]
+  },
+  "capture.screen": {
+    "glyph": "\udb80\udf79",
+    "label": "Screenshot of the screen",
+    "action": "sleep 0.3; hyprtrixie-screenshot screen",
+    "keywords": [
+      "screenshot",
+      "capture"
+    ]
+  },
+  "toggle": {
+    "glyph": "\udb81\udd21",
+    "label": "Toggle"
+  },
+  "toggle.screensaver": {
+    "glyph": "\udb84\udd04",
+    "label": "Screensaver",
+    "action": "hyprtrixie-screensaver toggle",
+    "state": "test \"$(hyprtrixie-screensaver status)\" = on",
+    "keywords": [
+      "screensaver",
+      "idle"
+    ]
+  },
+  "toggle.awake": {
+    "glyph": "\udb80\udd76",
+    "label": "Stay awake",
+    "shell": "awake",
+    "keywords": [
+      "awake",
+      "idle",
+      "lock",
+      "caffeine"
+    ]
+  },
+  "toggle.nightlight": {
+    "glyph": "\udb81\udd94",
+    "label": "Night light",
+    "action": "pkill -x hyprsunset || setsid -f hyprsunset -t 4500 >/dev/null 2>&1",
+    "state": "pgrep -x hyprsunset >/dev/null",
+    "keywords": [
+      "night",
+      "light",
+      "warm",
+      "blue light"
+    ]
+  },
+  "toggle.dnd": {
+    "glyph": "\udb80\udc9b",
+    "label": "Do not disturb",
+    "action": "makoctl mode -t do-not-disturb",
+    "state": "makoctl mode | grep -qx do-not-disturb",
+    "keywords": [
+      "notifications",
+      "quiet",
+      "dnd"
+    ]
+  },
+  "toggle.wifi": {
+    "glyph": "\udb81\udda9",
+    "label": "Wi-Fi",
+    "action": "if nmcli radio wifi | grep -qx enabled; then nmcli radio wifi off; else nmcli radio wifi on; fi",
+    "state": "nmcli radio wifi | grep -qx enabled",
+    "keywords": [
+      "wifi",
+      "wireless",
+      "network"
+    ]
+  },
+  "toggle.bluetooth": {
+    "glyph": "\udb80\udcaf",
+    "label": "Bluetooth",
+    "action": "if bluetoothctl show | grep -q 'Powered: yes'; then bluetoothctl power off; else bluetoothctl power on; fi",
+    "state": "bluetoothctl show | grep -q 'Powered: yes'",
+    "keywords": [
+      "bluetooth"
+    ]
+  },
+  "style": {
+    "glyph": "\uebcf",
+    "label": "Style"
+  },
+  "style.theme": {
+    "glyph": "\udb83\ude0c",
+    "label": "Theme",
+    "action": "qs -p /usr/share/hyprtrixie/shell ipc call picker themes",
+    "keywords": [
+      "theme",
+      "colors",
+      "look"
+    ]
+  },
+  "style.background": {
+    "glyph": "\uf03e",
+    "label": "Background",
+    "action": "qs -p /usr/share/hyprtrixie/shell ipc call picker backgrounds",
+    "keywords": [
+      "background",
+      "wallpaper"
+    ]
+  },
+  "style.next": {
+    "glyph": "\udb81\udc50",
+    "label": "Next background",
+    "action": "hyprtrixie-background next",
+    "keywords": [
+      "background",
+      "wallpaper"
+    ]
+  },
+  "setup": {
+    "glyph": "\ue615",
+    "label": "Setup"
+  },
+  "setup.wifi": {
+    "glyph": "\udb81\udda9",
+    "label": "Wi-Fi",
+    "action": "qs -p /usr/share/hyprtrixie/shell ipc call popup toggle wifi",
+    "keywords": [
+      "wifi",
+      "wireless",
+      "network",
+      "internet"
+    ]
+  },
+  "setup.audio": {
+    "glyph": "\udb81\udd7e",
+    "label": "Audio",
+    "action": "qs -p /usr/share/hyprtrixie/shell ipc call popup toggle audio",
+    "keywords": [
+      "audio",
+      "sound",
+      "volume",
+      "speaker",
+      "microphone"
+    ]
+  },
+  "setup.brightness": {
+    "glyph": "\udb80\udcdf",
+    "label": "Brightness",
+    "action": "qs -p /usr/share/hyprtrixie/shell ipc call popup toggle brightness",
+    "keywords": [
+      "brightness",
+      "screen",
+      "backlight",
+      "keyboard"
+    ]
+  },
+  "setup.bluetooth": {
+    "glyph": "\udb80\udcaf",
+    "label": "Bluetooth",
+    "action": "blueman-manager",
+    "keywords": [
+      "bluetooth",
+      "headphones",
+      "pair"
+    ]
+  },
+  "setup.power": {
+    "glyph": "\udb80\udc79",
+    "label": "Power",
+    "action": "qs -p /usr/share/hyprtrixie/shell ipc call popup toggle battery",
+    "keywords": [
+      "battery",
+      "power",
+      "profile",
+      "performance"
+    ]
+  },
+  "install": {
+    "glyph": "\udb80\ude49",
+    "label": "Install",
+    "list": "install",
+    "keywords": [
+      "install",
+      "add"
+    ]
+  },
+  "install.package": {
+    "glyph": "\udb80\udfd7",
+    "label": "Any Debian package",
+    "action": "hyprtrixie-terminal --wait hyprtrixie-pkg install",
+    "keywords": [
+      "install",
+      "package",
+      "apt"
+    ]
+  },
+  "remove": {
+    "glyph": "\udb82\udf4c",
+    "label": "Remove",
+    "list": "remove",
+    "keywords": [
+      "remove",
+      "uninstall"
+    ]
+  },
+  "remove.package": {
+    "glyph": "\udb80\udfd7",
+    "label": "Any package",
+    "action": "hyprtrixie-terminal --wait hyprtrixie-pkg remove",
+    "keywords": [
+      "remove",
+      "uninstall",
+      "package",
+      "apt"
+    ]
+  },
+  "update": {
+    "glyph": "\uf021",
+    "label": "Update"
+  },
+  "update.hyprtrixie": {
+    "glyph": "\udb81\udeb0",
+    "label": "hyprtrixie",
+    "action": "hyprtrixie-terminal --wait hyprtrixie update",
+    "keywords": [
+      "update",
+      "upgrade",
+      "hyprtrixie"
+    ]
+  },
+  "update.debian": {
+    "glyph": "\uf306",
+    "label": "Debian packages",
+    "action": "hyprtrixie-terminal --wait sh -c 'sudo apt update && sudo apt full-upgrade'",
+    "keywords": [
+      "update",
+      "upgrade",
+      "apt",
+      "packages"
+    ]
+  },
+  "update.firmware": {
+    "glyph": "\udb81\ude1a",
+    "label": "Firmware",
+    "action": "hyprtrixie-terminal --wait sh -c 'fwupdmgr refresh --force; fwupdmgr update'",
+    "keywords": [
+      "update",
+      "firmware",
+      "bios"
+    ]
+  },
+  "about": {
+    "glyph": "\uea74",
+    "label": "About",
+    "action": "hyprtrixie-terminal --wait sh -c 'fastfetch; hyprtrixie version'",
+    "keywords": [
+      "about",
+      "system",
+      "version"
+    ]
+  },
+  "system": {
+    "glyph": "\uf011",
+    "label": "System"
+  },
+  "system.lock": {
+    "glyph": "\uf023",
+    "label": "Lock",
+    "action": "pidof hyprlock || hyprlock",
+    "keywords": [
+      "lock"
+    ]
+  },
+  "system.screensaver": {
+    "glyph": "\udb84\udd04",
+    "label": "Screensaver",
+    "action": "sleep 0.3; hyprtrixie-screensaver start",
+    "keywords": [
+      "screensaver"
+    ]
+  },
+  "system.suspend": {
+    "glyph": "\udb81\udcb2",
+    "label": "Suspend",
+    "action": "systemctl suspend",
+    "keywords": [
+      "suspend",
+      "sleep"
+    ]
+  },
+  "system.logout": {
+    "glyph": "\udb80\udf43",
+    "label": "Log out",
+    "action": "hyprctl dispatch 'hl.dsp.exit()'",
+    "keywords": [
+      "log out",
+      "logout",
+      "exit"
+    ]
+  },
+  "system.restart": {
+    "glyph": "\udb81\udf09",
+    "label": "Restart",
+    "action": "systemctl reboot",
+    "keywords": [
+      "restart",
+      "reboot"
+    ]
+  },
+  "system.shutdown": {
+    "glyph": "\udb81\udc25",
+    "label": "Shut down",
+    "action": "systemctl poweroff",
+    "keywords": [
+      "shut down",
+      "power off",
+      "shutdown"
+    ]
+  }
+}

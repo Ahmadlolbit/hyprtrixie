@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage: hyprtrixie-pkg install|remove
+
+install  search every Debian package and install the ones you pick
+remove   search the installed packages and remove the ones you pick
+
+Tab picks several, Enter goes ahead, Esc leaves without changing anything.
+USAGE
+}
+
+pick() {
+  fzf --multi --layout reverse --prompt "$1 > " --header "Tab picks several, Enter goes ahead, Esc leaves" \
+    --preview 'apt-cache show {1} 2>/dev/null | awk "NF == 0 { exit } { print }"' --preview-window 'right,60%,wrap'
+}
+
+packages=()
+case "${1:-}" in
+  install)
+    mapfile -t packages < <(apt-cache pkgnames | sort | pick Install)
+    ((${#packages[@]})) || exit 0
+    sudo apt-get install "${packages[@]}"
+    ;;
+  remove)
+    mapfile -t packages < <(dpkg-query -W -f='${db:Status-Status}\t${Package}\n' | awk -F '\t' '$1 == "installed" { print $2 }' | sort | pick Remove)
+    ((${#packages[@]})) || exit 0
+    sudo apt-get remove "${packages[@]}"
+    ;;
+  -h | --help) usage ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac
