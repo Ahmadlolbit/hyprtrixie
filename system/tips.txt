@@ -18,3 +18,4 @@ Super+Q closes the window you're in.
 Snapshots are taken before system changes. Press Esc at boot to start an older one.
 Put your own tips in ~/.config/hyprtrixie/tips.txt, one per line.
 Menu › Learn › Guide opens the guide right in the terminal.
+sudo hyprtrixie doctor checks the system and says how to fix what it finds.

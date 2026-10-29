@@ -40,6 +40,7 @@ USAGE
   hyprtrixie guide                 Read the guide in the terminal
   hyprtrixie update                Pull the newest hyprtrixie and run the installer (run it without sudo)
   hyprtrixie changes               Show what the last hyprtrixie update changed
+  hyprtrixie doctor                Check the system and say how to fix what it finds (run it with sudo)
   hyprtrixie app list              List the apps you can install, by category (* = installed)
   hyprtrixie app install|remove APP
                                    Install or remove one app and tick or untick it in the configuration
@@ -642,6 +643,49 @@ cmd_changes() {
   rm -f "$dir/changes-unseen"
 }
 
+doctor_check_desktop() {
+  local spec name missing=()
+  if ! pgrep -u "$TARGET_UID" -x Hyprland >/dev/null; then
+    ui_status skip "Desktop programs: Hyprland isn't running for $TARGET_USER"
+    return 0
+  fi
+  for spec in "bar|qs -p /usr/share/hyprtrixie/shell" "hyprpaper|^hyprpaper" "mako|^mako" "elephant|^elephant" \
+    "walker|walker --gapplication-service" "hypridle|^hypridle"; do
+    name="${spec%%|*}"
+    pgrep -u "$TARGET_UID" -f "${spec#*|}" >/dev/null || missing+=("$name")
+  done
+  if ((${#missing[@]} == 0)); then
+    ui_status ok "The bar, wallpaper, notifications, launcher and idle timer are running"
+    return 0
+  fi
+  ui_status fail "Not running: ${missing[*]}"
+  ui_note "Fix: log out and back in, or let the doctor start them again"
+}
+
+doctor_check_services() {
+  local units=() unit
+  mapfile -t units < <(systemctl --failed --no-legend --plain 2>/dev/null | awk '{ print $1 }')
+  mapfile -t -O "${#units[@]}" units < <(as_user env XDG_RUNTIME_DIR="/run/user/$TARGET_UID" \
+    systemctl --user --failed --no-legend --plain 2>/dev/null | awk '{ print "user:" $1 }')
+  if ((${#units[@]} == 0)); then
+    ui_status ok "No service has failed"
+    return 0
+  fi
+  ui_status fail "Failed services: ${units[*]}"
+  ui_note "Fix: systemctl status NAME says why; restarting often helps"
+}
+
+cmd_doctor() {
+  require_root
+  ui_init
+  detect_target_user || die "cannot tell whose desktop this is; run it with sudo from your own account"
+  [[ -f $CONFIG_FILE ]] && config_load "$CONFIG_FILE"
+  ui_header "hyprtrixie doctor" "Checks the system and says how to fix what it finds"
+  ui_rule "Desktop"
+  doctor_check_desktop
+  doctor_check_services
+}
+
 app_untick() {
   local id="$1" item rest=()
   for item in $APPS; do
@@ -702,6 +746,7 @@ main() {
       cmd_app "$@"
       ;;
     guide) cmd_guide ;;
+    doctor) cmd_doctor ;;
     update) cmd_update ;;
     changes)
       shift
