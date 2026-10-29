@@ -156,7 +156,7 @@ look() {
 }
 
 accent_override() {
-  local accent
+  local accent original="${COLORS[accent]}"
   accent="$(look accent theme)"
   if [[ $accent =~ ^#[0-9A-Fa-f]{6}$ ]]; then
     COLORS[accent]="$accent"
@@ -170,6 +170,7 @@ accent_override() {
   else
     printf 'accent = "%s"\n' "${COLORS[accent]}" >>"$1"
   fi
+  printf 'theme_accent = "%s"\n' "$original" >>"$1"
 }
 
 render() {
