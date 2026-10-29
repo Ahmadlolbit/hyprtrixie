@@ -13,4 +13,7 @@ ShellRoot {
   Picker {}
 
   KeySheet {}
+
+  Menu {}
+
 }
