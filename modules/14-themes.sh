@@ -118,7 +118,7 @@ follow_install() {
   deploy_file "$HYPRTRIXIE_ROOT/system/plymouth/hyprtrixie.script" "$FOLLOW_SHARE/hyprtrixie.script" || return 1
   deploy_file "$HYPRTRIXIE_ROOT/system/grub/theme.txt" "$FOLLOW_SHARE/theme.txt" || return 1
   deploy_rendered "$HYPRTRIXIE_ROOT/system/follow-theme.conf" /etc/hyprtrixie/follow-theme 0644 root \
-    "USER=$TARGET_USER" "SPLASH=$BOOT_SPLASH" "MENU=$BOOT_MENU_THEME" "CONSOLE=$CONSOLE_THEME"
+    "USER=$TARGET_USER" "SPLASH=$BOOT_SPLASH" "MENU=$BOOT_MENU_THEME" "CONSOLE=$CONSOLE_THEME" "CLOCK=$CLOCK_FORMAT"
 }
 
 splash_file() {
@@ -204,8 +204,8 @@ module_14() {
   run_step "Theme the boot menu" grub_theme_install
   run_step "Set up the boot menu" grub_settings
   run_step "Theme the text consoles" console_theme_install
-  run_step "Paint the boot screens in the theme's colours" follow_run
-  run_step "Follow theme switches at boot" follow_watch
+  run_step "Paint the boot and login screens in the theme's colours" follow_run
+  run_step "Follow theme switches on the boot and login screens" follow_watch
 }
 
 verify_14_themes() {
