@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+SETTINGS="${HYPRTRIXIE_FOLLOW_SETTINGS:-/etc/hyprtrixie/follow-theme}"
+TEMPLATES="${HYPRTRIXIE_FOLLOW_TEMPLATES:-/usr/share/hyprtrixie/follow}"
+PLYMOUTH_DIR="${HYPRTRIXIE_PLYMOUTH_DIR:-/usr/share/plymouth/themes/hyprtrixie}"
+GRUB_DIR="${HYPRTRIXIE_GRUB_THEME_DIR:-/boot/grub/themes/hyprtrixie}"
+VTRGB="${HYPRTRIXIE_VTRGB:-/etc/hyprtrixie/vtrgb}"
+
+usage() {
+  cat <<'USAGE'
+Usage: hyprtrixie-follow-theme [--initramfs]
+
+Paints the boot splash, the boot menu and the text consoles in the colours of
+the theme the desktop user has picked.
+--initramfs rebuilds the initramfs even when the colours didn't change.
+Run as root; the installer and a theme switch run it for you.
+USAGE
+}
+
+setting() {
+  sed -n "s/^$1=//p" "$SETTINGS" 2>/dev/null | head -n 1
+}
+
+color() {
+  sed -n "s/^$1 *= *\"\\(#[0-9a-fA-F]\\{6\\}\\)\".*/\\1/p" "$COLORS" | head -n 1
+}
+
+floats() {
+  local hex="${1#\#}" part out=() value
+  for part in 0 2 4; do
+    value=$((16#${hex:part:2} * 1000 / 255))
+    out+=("$(printf '%d.%03d' $((value / 1000)) $((value % 1000)))")
+  done
+  printf '%s, %s, %s' "${out[@]}"
+}
+
+blend() {
+  local fg="${1#\#}" bg="${2#\#}" part mixed=""
+  for part in 0 2 4; do
+    mixed+="$(printf '%02x' $(((16#${fg:part:2} * 3 + 16#${bg:part:2} * 2) / 5)))"
+  done
+  printf '#%s' "$mixed"
+}
+
+console_palette() {
+  local key value reds=() greens=() blues=()
+  for key in background red green yellow blue magenta cyan foreground muted bright_red bright_green bright_yellow \
+    bright_blue bright_magenta bright_cyan bright_foreground; do
+    value="$(color "$key")"
+    [[ -n $value || $key != bright_* ]] || value="$(color "${key#bright_}")"
+    value="${value:-$foreground}"
+    value="${value#\#}"
+    reds+=("$((16#${value:0:2}))")
+    greens+=("$((16#${value:2:2}))")
+    blues+=("$((16#${value:4:2}))")
+  done
+  (
+    IFS=,
+    printf '%s\n%s\n%s\n' "${reds[*]}" "${greens[*]}" "${blues[*]}"
+  )
+}
+
+render() {
+  local template="$1" dest="$2" pair tmp
+  shift 2
+  tmp="$(mktemp)" || return 2
+  cp "$template" "$tmp" || return 2
+  for pair in "$@"; do
+    sed -i "s|{{ ${pair%%=*} }}|${pair#*=}|g" "$tmp"
+  done
+  if cmp -s "$tmp" "$dest"; then
+    rm -f "$tmp"
+    return 1
+  fi
+  install -D -m 0644 "$tmp" "$dest"
+  rm -f "$tmp"
+}
+
+initramfs=0
+case "${1:-}" in
+  "") ;;
+  --initramfs) initramfs=1 ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac
+
+user="$(setting user)"
+home="$(getent passwd "$user" | cut -d: -f6)"
+COLORS="$home/.local/state/omarchy/current/theme/colors.toml"
+if [[ -z $user || ! -f $COLORS ]]; then
+  printf 'No theme to follow yet (%s)\n' "${COLORS}"
+  exit 0
+fi
+background="$(color background)"
+foreground="$(color foreground)"
+accent="$(color accent)"
+background="${background:-#1e1e2e}"
+foreground="${foreground:-#cdd6f4}"
+muted="$(blend "$foreground" "$background")"
+accent="${accent:-#89b4fa}"
+
+if [[ "$(setting splash)" == yes ]]; then
+  render "$TEMPLATES/hyprtrixie.script" "$PLYMOUTH_DIR/hyprtrixie.script" "BACKGROUND=$(floats "$background")" \
+    "FOREGROUND=$(floats "$foreground")" "ACCENT=$(floats "$accent")"
+  case $? in
+    0) initramfs=1 ;;
+    2) exit 1 ;;
+  esac
+  if ((initramfs)); then
+    update-initramfs -u -k all || exit 1
+  fi
+fi
+
+if [[ "$(setting menu)" == yes && -d $GRUB_DIR ]]; then
+  render "$TEMPLATES/theme.txt" "$GRUB_DIR/theme.txt" "BACKGROUND=$background" "FOREGROUND=$foreground" \
+    "ACCENT=$accent" "MUTED=$muted"
+  [[ $? == 2 ]] && exit 1
+fi
+
+if [[ "$(setting console)" == yes ]]; then
+  palette="$(mktemp)" || exit 1
+  console_palette >"$palette"
+  if ! cmp -s "$palette" "$VTRGB"; then
+    install -D -m 0644 "$palette" "$VTRGB"
+    setvtrgb "$VTRGB" 2>/dev/null
+  fi
+  rm -f "$palette"
+fi
+exit 0

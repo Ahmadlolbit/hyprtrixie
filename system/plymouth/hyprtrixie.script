@@ -1,0 +1,55 @@
+Window.SetBackgroundTopColor({{ BACKGROUND }});
+Window.SetBackgroundBottomColor({{ BACKGROUND }});
+
+logo_lines[0] = "    __                     __       _      _";
+logo_lines[1] = "   / /_  __  ______  _____/ /______(_)  __(_)__";
+logo_lines[2] = "  / __ \\/ / / / __ \\/ ___/ __/ ___/ / |/_/ / _ \\";
+logo_lines[3] = " / / / / /_/ / /_/ / /  / /_/ /  / />  </ /  __/";
+logo_lines[4] = "/_/ /_/\\__, / .___/_/   \\__/_/  /_/_/|_/_/\\___/";
+logo_lines[5] = "      /____/_/";
+logo_count = 6;
+widest = 0;
+for (i = 0; i < logo_count; i++) {
+  logo_images[i] = Image.Text(logo_lines[i], {{ ACCENT }}, 1, "Monospace 16");
+  if (logo_images[i].GetWidth() > widest)
+    widest = logo_images[i].GetWidth();
+}
+line_height = logo_images[0].GetHeight();
+top = Window.GetHeight() / 2 - line_height * logo_count;
+for (i = 0; i < logo_count; i++) {
+  logo_sprites[i] = Sprite(logo_images[i]);
+  logo_sprites[i].SetPosition(Window.GetWidth() / 2 - widest / 2, top + i * line_height, 1);
+}
+
+prompt_sprite = Sprite();
+bullet_sprite = Sprite();
+message_sprite = Sprite();
+
+fun centre(sprite, image, y) {
+  sprite.SetImage(image);
+  sprite.SetPosition(Window.GetWidth() / 2 - image.GetWidth() / 2, y, 2);
+  sprite.SetOpacity(1);
+}
+
+fun display_password(prompt, bullets) {
+  dots = "";
+  for (i = 0; i < bullets; i++)
+    dots = dots + "• ";
+  if (prompt == "")
+    prompt = "Password";
+  centre(prompt_sprite, Image.Text(prompt, {{ FOREGROUND }}, 1, "Sans 13"), top + line_height * logo_count + 60);
+  centre(bullet_sprite, Image.Text(dots + "_", {{ ACCENT }}, 1, "Sans 18"), top + line_height * logo_count + 100);
+}
+
+fun display_normal() {
+  prompt_sprite.SetOpacity(0);
+  bullet_sprite.SetOpacity(0);
+}
+
+fun display_message(text) {
+  centre(message_sprite, Image.Text(text, {{ FOREGROUND }}, 1, "Sans 12"), Window.GetHeight() - 80);
+}
+
+Plymouth.SetDisplayPasswordFunction(display_password);
+Plymouth.SetDisplayNormalFunction(display_normal);
+Plymouth.SetMessageFunction(display_message);

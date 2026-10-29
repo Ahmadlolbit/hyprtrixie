@@ -3,11 +3,21 @@ register_module 14 "Themes"
 option THEME --section look --label "Theme" --type choice --default catppuccin \
   --values "catppuccin catppuccin-latte ethereal everforest flexoki-light gruvbox hackerman kanagawa last-horizon lumon lupine matte-black miasma nord osaka-jade retro-82 ristretto rose-pine solitude tokyo-night vantablack white" \
   --help "Colours, wallpaper and icons for every app; Super+Ctrl+T changes it later"
+option BOOT_SPLASH --section look --label "Boot splash" --type bool --default yes \
+  --help "The logo and the disk password prompt in your theme's colours while it boots"
+option BOOT_MENU_THEME --section look --label "Boot menu in the theme" --type bool --default yes \
+  --help "The boot menu, where the snapshots are, in your theme's colours"
+option CONSOLE_THEME --section look --label "Console colours and font" --type bool --default no \
+  --help "The text consoles (Ctrl+Alt+F3) in your theme's colours, with a larger font"
 
 OMARCHY_DIR="${HYPRTRIXIE_OMARCHY_DIR:-/usr/share/omarchy}"
 THEME_STATE=.local/state/omarchy/current
 THEME_APPLIED="$STATE_DIR/theme"
 DROPPED_THEMES=(bloodline neon-plum noir cobalt-night navy-mint porcelain dayshift inkwell terracotta marble green-magic roseglass)
+FOLLOW_SHARE="$SHARE_DIR/follow"
+GRUB_SETTINGS=/etc/default/grub.d/hyprtrixie.cfg
+GRUB_THEME_DIR="${HYPRTRIXIE_GRUB_THEME_DIR:-/boot/grub/themes/hyprtrixie}"
+FOLLOW_INITRAMFS=0
 
 theme_copy() {
   local src="$1" dest="$2" old="${3:-}" new="${4:-}" file base
@@ -103,6 +113,85 @@ theme_ready() {
   theme_in_use && [[ -f "$(user_path "$THEME_STATE/theme/colors.toml")" ]]
 }
 
+follow_install() {
+  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-follow-theme" "$BIN_DIR/hyprtrixie-follow-theme" 0755 || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/system/plymouth/hyprtrixie.script" "$FOLLOW_SHARE/hyprtrixie.script" || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/system/grub/theme.txt" "$FOLLOW_SHARE/theme.txt" || return 1
+  deploy_rendered "$HYPRTRIXIE_ROOT/system/follow-theme.conf" /etc/hyprtrixie/follow-theme 0644 root \
+    "USER=$TARGET_USER" "SPLASH=$BOOT_SPLASH" "MENU=$BOOT_MENU_THEME" "CONSOLE=$CONSOLE_THEME"
+}
+
+splash_file() {
+  deploy_file "$HYPRTRIXIE_ROOT/system/$1" "$2" || return 1
+  ((DEPLOY_CHANGED)) && FOLLOW_INITRAMFS=1
+  return 0
+}
+
+boot_splash_install() {
+  [[ $BOOT_SPLASH == yes ]] || return 0
+  apt_install_list boot-splash || return 1
+  splash_file plymouth/hyprtrixie.plymouth /usr/share/plymouth/themes/hyprtrixie/hyprtrixie.plymouth || return 1
+  splash_file plymouth/plymouthd.conf /etc/plymouth/plymouthd.conf || return 1
+  splash_file initramfs/splash.conf /etc/initramfs-tools/conf.d/hyprtrixie-splash
+}
+
+grub_theme_install() {
+  local size
+  [[ $BOOT_MENU_THEME == yes ]] || return 0
+  apt_install fonts-dejavu-core || return 1
+  mkdir -p "$GRUB_THEME_DIR" || return 1
+  for size in 16 20 28; do
+    [[ -f $GRUB_THEME_DIR/dejavu-$size.pf2 ]] && continue
+    grub-mkfont -s "$size" -o "$GRUB_THEME_DIR/dejavu-$size.pf2" /usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf || return 1
+  done
+}
+
+grub_settings() {
+  local tmp rc
+  tmp="$(mktemp)" || return 1
+  [[ $BOOT_SPLASH == yes ]] && cat "$HYPRTRIXIE_ROOT/system/grub/splash.cfg" >>"$tmp"
+  [[ $BOOT_MENU_THEME == yes ]] && cat "$HYPRTRIXIE_ROOT/system/grub/theme.cfg" >>"$tmp"
+  cat "$HYPRTRIXIE_ROOT/system/grub/hidden.cfg" >>"$tmp"
+  deploy_file "$tmp" "$GRUB_SETTINGS"
+  rc=$?
+  rm -f "$tmp"
+  ((rc == 0)) || return 1
+  if ((DEPLOY_CHANGED)) && command -v update-grub >/dev/null 2>&1; then
+    update-grub
+  fi
+}
+
+console_theme_install() {
+  if [[ $CONSOLE_THEME != yes ]]; then
+    service_disable hyprtrixie-console.service
+    return
+  fi
+  apt_install kbd console-setup || return 1
+  conf_set /etc/default/console-setup FONTFACE '"Terminus"' || return 1
+  conf_set /etc/default/console-setup FONTSIZE '"16x32"' || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/system/systemd/hyprtrixie-console.service" \
+    /etc/systemd/system/hyprtrixie-console.service || return 1
+  systemctl daemon-reload || return 1
+  service_enable hyprtrixie-console.service
+}
+
+follow_run() {
+  if ((FOLLOW_INITRAMFS)); then
+    "$BIN_DIR/hyprtrixie-follow-theme" --initramfs
+  else
+    "$BIN_DIR/hyprtrixie-follow-theme"
+  fi
+}
+
+follow_watch() {
+  deploy_file "$HYPRTRIXIE_ROOT/system/systemd/hyprtrixie-follow-theme.service" \
+    /etc/systemd/system/hyprtrixie-follow-theme.service || return 1
+  deploy_rendered "$HYPRTRIXIE_ROOT/system/systemd/hyprtrixie-follow-theme.path" \
+    /etc/systemd/system/hyprtrixie-follow-theme.path 0644 root "HOME=$TARGET_HOME" || return 1
+  systemctl daemon-reload || return 1
+  service_start hyprtrixie-follow-theme.path
+}
+
 module_14() {
   run_step "Install theme packages" apt_install_list themes
   run_step "Install the Omarchy themes" omarchy_themes_install
@@ -110,6 +199,13 @@ module_14() {
   run_step "Install the theme switcher" theme_engine_install
   run_step "Point btop at the theme" btop_theme_setup
   run_step "Apply the $THEME theme" theme_apply
+  run_step "Install the theme follower" follow_install
+  run_step "Show a boot splash in the theme's colours" boot_splash_install
+  run_step "Theme the boot menu" grub_theme_install
+  run_step "Set up the boot menu" grub_settings
+  run_step "Theme the text consoles" console_theme_install
+  run_step "Paint the boot screens in the theme's colours" follow_run
+  run_step "Follow theme switches at boot" follow_watch
 }
 
 verify_14_themes() {
@@ -118,4 +214,18 @@ verify_14_themes() {
 
 verify_14_theme() {
   run_check "A theme is applied" theme_ready
+}
+
+verify_14_splash() {
+  [[ $BOOT_SPLASH == yes ]] || return 0
+  run_check "The boot splash is in the theme's colours" test -f /usr/share/plymouth/themes/hyprtrixie/hyprtrixie.script
+}
+
+verify_14_boot_menu() {
+  [[ $BOOT_MENU_THEME == yes ]] || return 0
+  run_check "The boot menu is in the theme's colours" test -f "$GRUB_THEME_DIR/theme.txt"
+}
+
+verify_14_follow() {
+  run_check "Theme switches reach the boot screens" service_enabled hyprtrixie-follow-theme.path
 }

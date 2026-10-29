@@ -1,0 +1,6 @@
+[Unit]
+Description=Paint the boot and login screens in the theme's colours
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/hyprtrixie-follow-theme
