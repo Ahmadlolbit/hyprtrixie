@@ -7,20 +7,23 @@ USER_LOOK="$CONFIG_HOME/hyprtrixie/look.conf"
 SYSTEM_LOOK="${HYPRTRIXIE_LOOK_SYSTEM:-/etc/hyprtrixie/look.conf}"
 CURRENT="$STATE_HOME/omarchy/current"
 HERE="$(dirname "$(readlink -f "$0")")"
-KEYS=(accent)
-declare -A DEFAULT=([accent]=theme)
+KEYS=(accent font ui_font)
+declare -A DEFAULT=([accent]=theme [font]="JetBrainsMono Nerd Font" [ui_font]=default)
 ACCENTS=" theme red orange yellow green cyan blue magenta "
 
 usage() {
   cat <<'USAGE'
 Usage: hyprtrixie-look
        hyprtrixie-look accent [theme|red|orange|yellow|green|cyan|blue|magenta|#rrggbb]
+       hyprtrixie-look font [FAMILY|default]
+       hyprtrixie-look ui-font [FAMILY|default]
        hyprtrixie-look get SETTING
 
 Shows and changes how the desktop looks. Your settings are kept in
 ~/.config/hyprtrixie/look.conf and win over the setup menu's in
 /etc/hyprtrixie/look.conf. With no value, a command prints the setting.
-An accent named after a colour uses that colour of each theme.
+An accent named after a colour uses that colour of each theme. font is
+the terminal's, the bar's and the lock screen's; ui-font is the apps'.
 USAGE
 }
 
@@ -77,6 +80,26 @@ accent() {
   put accent "$value" && reapply
 }
 
+font_installed() {
+  command -v fc-list >/dev/null || return 0
+  [[ -n "$(fc-list --format '%{family[0]}\n' ":family=${1//-/\\-}" 2>/dev/null)" ]]
+}
+
+font() {
+  local key="$1" value="$2"
+  if [[ -z $value ]]; then
+    get "$key"
+    return 0
+  fi
+  if [[ $value == default ]]; then
+    value="${DEFAULT[$key]}"
+  elif [[ ! $value =~ ^[[:alnum:]][[:alnum:]\ ._+-]*$ ]] || ! font_installed "$value"; then
+    printf 'no installed font family named %s (see: fc-list : family)\n' "$value" >&2
+    return 2
+  fi
+  put "$key" "$value" && reapply
+}
+
 case "${1:-}" in
   "")
     for key in "${KEYS[@]}"; do
@@ -91,6 +114,8 @@ case "${1:-}" in
     get "$2"
     ;;
   accent) accent "${2:-}" ;;
+  font) font font "${2:-}" ;;
+  ui-font) font ui_font "${2:-}" ;;
   -h | --help) usage ;;
   *)
     usage >&2

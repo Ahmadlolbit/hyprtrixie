@@ -1,3 +1,4 @@
+$font = {{ font }}
 $text = rgb({{ foreground_strip }})
 $accent = rgb({{ accent_strip }})
 $check = rgb({{ green_strip }})

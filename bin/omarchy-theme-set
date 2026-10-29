@@ -218,28 +218,35 @@ link_apps() {
 
 interface() {
   if [[ -n ${DBUS_SESSION_BUS_ADDRESS:-} ]]; then
-    gsettings set org.gnome.desktop.interface "$1" "$2"
+    gsettings "$1" org.gnome.desktop.interface "${@:2}"
   else
-    dbus-run-session -- gsettings set org.gnome.desktop.interface "$1" "$2" 2>/dev/null
+    dbus-run-session -- gsettings "$1" org.gnome.desktop.interface "${@:2}" 2>/dev/null
   fi
 }
 
 desktop_settings() {
-  local mode="${COLORS[mode]}" icons=""
+  local mode="${COLORS[mode]}" icons="" ui
   command -v gsettings >/dev/null || return 0
-  interface color-scheme "prefer-$mode"
+  interface set color-scheme "prefer-$mode"
   if [[ $mode == light ]]; then
-    interface gtk-theme Adwaita
+    interface set gtk-theme Adwaita
   else
-    interface gtk-theme Adwaita-dark
+    interface set gtk-theme Adwaita-dark
+  fi
+  interface set monospace-font-name "${COLORS[font]} 11"
+  ui="$(look ui_font default)"
+  if [[ $ui == default ]]; then
+    interface reset font-name
+  else
+    interface set font-name "$ui 11"
   fi
   [[ -f $STATE/theme/icons.theme ]] && icons="$(head -n 1 "$STATE/theme/icons.theme")"
   if [[ ! $icons =~ ^[A-Za-z0-9._-]+$ || ! -d /usr/share/icons/$icons ]]; then
     icons=Yaru
     [[ $mode == dark ]] && icons=Yaru-dark
   fi
-  interface icon-theme "$icons"
-  interface cursor-theme Bibata-Modern-Ice
+  interface set icon-theme "$icons"
+  interface set cursor-theme Bibata-Modern-Ice
 }
 
 retint() {
@@ -274,6 +281,8 @@ apply() {
   fi
   resolve_colors
   accent_override "$next/colors.toml"
+  COLORS[font]="$(look font 'JetBrainsMono Nerd Font')"
+  [[ ${COLORS[font]} =~ ^[[:alnum:]][[:alnum:]\ ._+-]*$ ]] || COLORS[font]="JetBrainsMono Nerd Font"
   render "$next" || return 1
   rm -rf "$STATE/theme"
   mv "$next" "$STATE/theme" || return 1

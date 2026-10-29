@@ -1,3 +1,5 @@
+font_family {{ font }}
+
 foreground {{ foreground }}
 background {{ background }}
 selection_foreground {{ selection_foreground }}

@@ -11,6 +11,7 @@ hl.config({
       border_inactive = "rgba({{ muted_strip }}aa)",
     },
     groupbar = {
+      font_family = "{{ font }}",
       text_color = "rgb({{ foreground_strip }})",
       col = {
         active = "rgba({{ accent_strip }}55)",
