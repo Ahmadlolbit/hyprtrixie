@@ -40,6 +40,74 @@
       "capture"
     ]
   },
+  "toggle": {
+    "glyph": "\udb81\udd21",
+    "label": "Toggle"
+  },
+  "toggle.screensaver": {
+    "glyph": "\udb84\udd04",
+    "label": "Screensaver",
+    "action": "hyprtrixie-screensaver toggle",
+    "state": "test \"$(hyprtrixie-screensaver status)\" = on",
+    "keywords": [
+      "screensaver",
+      "idle"
+    ]
+  },
+  "toggle.awake": {
+    "glyph": "\udb80\udd76",
+    "label": "Stay awake",
+    "shell": "awake",
+    "keywords": [
+      "awake",
+      "idle",
+      "lock",
+      "caffeine"
+    ]
+  },
+  "toggle.nightlight": {
+    "glyph": "\udb81\udd94",
+    "label": "Night light",
+    "action": "pkill -x hyprsunset || setsid -f hyprsunset -t 4500 >/dev/null 2>&1",
+    "state": "pgrep -x hyprsunset >/dev/null",
+    "keywords": [
+      "night",
+      "light",
+      "warm",
+      "blue light"
+    ]
+  },
+  "toggle.dnd": {
+    "glyph": "\udb80\udc9b",
+    "label": "Do not disturb",
+    "action": "makoctl mode -t do-not-disturb",
+    "state": "makoctl mode | grep -qx do-not-disturb",
+    "keywords": [
+      "notifications",
+      "quiet",
+      "dnd"
+    ]
+  },
+  "toggle.wifi": {
+    "glyph": "\udb81\udda9",
+    "label": "Wi-Fi",
+    "action": "if nmcli radio wifi | grep -qx enabled; then nmcli radio wifi off; else nmcli radio wifi on; fi",
+    "state": "nmcli radio wifi | grep -qx enabled",
+    "keywords": [
+      "wifi",
+      "wireless",
+      "network"
+    ]
+  },
+  "toggle.bluetooth": {
+    "glyph": "\udb80\udcaf",
+    "label": "Bluetooth",
+    "action": "if bluetoothctl show | grep -q 'Powered: yes'; then bluetoothctl power off; else bluetoothctl power on; fi",
+    "state": "bluetoothctl show | grep -q 'Powered: yes'",
+    "keywords": [
+      "bluetooth"
+    ]
+  },
   "style": {
     "glyph": "\uebcf",
     "label": "Style"
@@ -129,15 +197,6 @@
       "power",
       "profile",
       "performance"
-    ]
-  },
-  "setup.screensaver": {
-    "glyph": "\udb84\udd04",
-    "label": "Screensaver",
-    "action": "hyprtrixie-screensaver toggle",
-    "keywords": [
-      "screensaver",
-      "idle"
     ]
   },
   "system": {
