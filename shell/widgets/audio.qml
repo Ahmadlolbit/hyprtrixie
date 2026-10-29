@@ -33,11 +33,23 @@ Label {
     return node.description || node.nickname || node.name;
   }
 
+  function streams() {
+    return Pipewire.nodes.values.filter(node => node.audio && node.isStream && node.isSink);
+  }
+
+  function appName(node) {
+    return node.properties["application.name"] || node.description || node.name;
+  }
+
   text: icon() + " " + Math.round(volume * 100) + "%"
   color: muted ? Theme.subtext : Theme.text
 
   PwObjectTracker {
     objects: [root.sink, root.source]
+  }
+
+  PwObjectTracker {
+    objects: root.streams()
   }
 
   MouseArea {
@@ -114,6 +126,62 @@ Label {
         label: root.title(modelData)
         selected: modelData === root.sink
         onClicked: Pipewire.preferredDefaultAudioSink = modelData
+      }
+    }
+
+    Label {
+      visible: root.streams().length > 0
+      text: "Apps"
+      font.bold: true
+    }
+
+    Repeater {
+      model: root.streams()
+
+      RowLayout {
+        id: app
+
+        required property PwNode modelData
+        readonly property bool muted: modelData.audio ? modelData.audio.muted : false
+        readonly property real volume: modelData.audio ? modelData.audio.volume : 0
+
+        Layout.fillWidth: true
+        spacing: 10
+
+        Label {
+          text: app.muted ? "\u{f075b}" : "\u{f075a}"
+          color: app.muted ? Theme.subtext : Theme.text
+
+          MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+              if (app.modelData.audio)
+                app.modelData.audio.muted = !app.muted;
+            }
+          }
+        }
+
+        Label {
+          Layout.preferredWidth: 90
+          text: root.appName(app.modelData)
+          elide: Text.ElideRight
+        }
+
+        Slider {
+          Layout.fillWidth: true
+          value: app.volume
+          onMoved: level => {
+            if (app.modelData.audio)
+              app.modelData.audio.volume = level;
+          }
+        }
+
+        Label {
+          Layout.preferredWidth: 36
+          horizontalAlignment: Text.AlignRight
+          text: Math.round(app.volume * 100) + "%"
+        }
       }
     }
 
