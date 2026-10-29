@@ -275,6 +275,7 @@ retint() {
   if pkill -x hyprpaper; then
     timeout 3 pidwait -x hyprpaper
     setsid -f hyprtrixie-start hyprpaper >/dev/null 2>&1
+    setsid -f sh -c 'sleep 1; exec hyprtrixie-background workspaces' >/dev/null 2>&1
   fi
   makoctl reload >/dev/null 2>&1
   qs -p /usr/share/hyprtrixie/shell ipc call theme reload >/dev/null 2>&1

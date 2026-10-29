@@ -11,9 +11,9 @@ OMARCHY_PATH="${OMARCHY_PATH:-/usr/share/omarchy}"
 HERE="$(dirname "$(readlink -f "$0")")"
 ZONEINFO="${HYPRTRIXIE_ZONEINFO:-/usr/share/zoneinfo}"
 LOCALTIME="${HYPRTRIXIE_LOCALTIME:-/etc/localtime}"
-KEYS=(accent font ui_font glass auto light dark light_at dark_at location rotate)
+KEYS=(accent font ui_font glass auto light dark light_at dark_at location rotate workspaces)
 declare -A DEFAULT=([accent]=theme [font]="JetBrainsMono Nerd Font" [ui_font]=default [glass]=no [auto]=off
-  [light]=catppuccin-latte [dark]=catppuccin [light_at]=07:00 [dark_at]=19:00 [location]=zone [rotate]=0)
+  [light]=catppuccin-latte [dark]=catppuccin [light_at]=07:00 [dark_at]=19:00 [location]=zone [rotate]=0 [workspaces]=no)
 ACCENTS=" theme red orange yellow green cyan blue magenta "
 
 usage() {
@@ -29,6 +29,7 @@ Usage: hyprtrixie-look
        hyprtrixie-look sun [DATE]
        hyprtrixie-look location [LATITUDE,LONGITUDE|zone]
        hyprtrixie-look rotate [MINUTES|off|toggle]
+       hyprtrixie-look workspaces [on|off|toggle]
        hyprtrixie-look get SETTING
 
 Shows and changes how the desktop looks. Your settings are kept in
@@ -43,6 +44,7 @@ While it's on, a theme you pick becomes the light or the dark one.
 sun prints the day's sunrise and sunset where your time zone's main city
 is, or at the location you set. rotate changes the wallpaper every so
 many minutes; toggle switches between off and every 30 minutes.
+workspaces gives each workspace its own wallpaper.
 USAGE
 }
 
@@ -275,6 +277,30 @@ rotate_tick() {
   "$(command_path hyprtrixie-background)" next >/dev/null
 }
 
+workspaces() {
+  local background
+  case "${1,,}" in
+    "") get workspaces ;;
+    on | yes) put workspaces yes && "$(command_path hyprtrixie-background)" workspaces ;;
+    off | no)
+      put workspaces no || return 1
+      background="$(readlink "$CURRENT/background" 2>/dev/null)"
+      [[ -z $background ]] || "$(command_path hyprtrixie-background)" "$background"
+      ;;
+    toggle)
+      if [[ "$(get workspaces)" == yes ]]; then
+        workspaces off
+      else
+        workspaces on
+      fi
+      ;;
+    *)
+      printf 'workspaces takes on, off or toggle\n' >&2
+      return 2
+      ;;
+  esac
+}
+
 tick() {
   auto_tick
   rotate_tick
@@ -392,6 +418,7 @@ case "${1:-}" in
   tick) tick ;;
   remember) remember "${2:-}" "${3:-}" ;;
   rotate) rotate "${2:-}" ;;
+  workspaces) workspaces "${2:-}" ;;
   location) location "${2:-}" ;;
   -h | --help) usage ;;
   *)

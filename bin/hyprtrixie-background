@@ -3,6 +3,7 @@ set -uo pipefail
 
 STATE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/current"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+HERE="$(dirname "$(readlink -f "$0")")"
 
 usage() {
   cat <<'EOF'
@@ -10,9 +11,12 @@ Usage: hyprtrixie-background <file>
        hyprtrixie-background next
        hyprtrixie-background --list
        hyprtrixie-background --current
+       hyprtrixie-background workspaces
 
 Sets the wallpaper. Backgrounds come from the current theme and from
-~/.config/omarchy/backgrounds/<theme>.
+~/.config/omarchy/backgrounds/<theme>. With a wallpaper per workspace on
+(hyprtrixie-look workspaces on), each workspace shows the next one along,
+and workspaces shows each monitor's.
 EOF
 }
 
@@ -41,6 +45,28 @@ next() {
   printf '%s\n' "${found[0]}"
 }
 
+per_workspace() {
+  local command=hyprtrixie-look
+  [[ -x $HERE/$command ]] && command="$HERE/$command"
+  [[ "$("$command" get workspaces 2>/dev/null)" == yes ]]
+}
+
+workspaces() {
+  local found=() current offset=0 index monitor id
+  [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]] || return 1
+  mapfile -t found < <(backgrounds)
+  ((${#found[@]})) || return 0
+  current="$(readlink "$STATE/background" 2>/dev/null)"
+  for index in "${!found[@]}"; do
+    [[ ${found[index]} == "$current" ]] && offset="$index"
+  done
+  while IFS=$'\t' read -r monitor id; do
+    [[ $id =~ ^-?[0-9]+$ ]] || continue
+    ((id > 0)) || id=1
+    hyprctl hyprpaper wallpaper "$monitor,${found[(id - 1 + offset) % ${#found[@]}]},cover" >/dev/null 2>&1 || return 1
+  done < <(hyprctl monitors -j 2>/dev/null | jq -r '.[] | [.name, .activeWorkspace.id] | @tsv' 2>/dev/null)
+}
+
 over_ipc() {
   local file="$1" monitor monitors=()
   [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]] || return 1
@@ -58,7 +84,11 @@ apply() {
     return 1
   fi
   mkdir -p "$STATE" && ln -nsf "$file" "$STATE/background" || return 1
-  over_ipc "$file" && return 0
+  if per_workspace; then
+    workspaces && return 0
+  else
+    over_ipc "$file" && return 0
+  fi
   if pkill -x hyprpaper; then
     timeout 3 pidwait -x hyprpaper
     setsid -f hyprtrixie-start hyprpaper >/dev/null 2>&1
@@ -79,6 +109,10 @@ case "${1:-}" in
     ;;
   --current)
     readlink "$STATE/background"
+    ;;
+  workspaces)
+    per_workspace || exit 0
+    workspaces
     ;;
   next)
     file="$(next)" || {
