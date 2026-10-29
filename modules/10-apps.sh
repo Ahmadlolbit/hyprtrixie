@@ -1,9 +1,16 @@
 register_module 10 "Applications"
 
+APPLICATIONS_DIR="${HYPRTRIXIE_APPLICATIONS_DIR:-/usr/share/applications}"
 APPS_NEW_IN_2="imv evince obsidian localsend calculator"
 APP_CATEGORIES=("browsers|Browsers" "chat|Chat and calls" "office|Office and notes" "viewers|Viewers"
   "files|Files and sharing" "security|Passwords and VPN" "creative|Creative" "media|Audio and video"
   "system|System tools" "games|Games")
+IMAGE_TYPES=(image/png image/jpeg image/gif image/webp image/bmp image/tiff image/svg+xml image/avif image/heif)
+VIDEO_TYPES=(video/mp4 video/x-matroska video/webm video/quicktime video/x-msvideo video/mpeg video/ogg)
+AUDIO_TYPES=(audio/mpeg audio/ogg audio/flac audio/x-wav audio/mp4 audio/aac audio/opus)
+ARCHIVE_TYPES=(application/zip application/x-tar application/gzip application/x-compressed-tar
+  application/x-7z-compressed application/vnd.rar application/x-rar application/x-xz
+  application/x-xz-compressed-tar application/zstd application/x-bzip2)
 
 app_field() {
   local line fields=()
@@ -153,6 +160,26 @@ app_present() {
   esac
 }
 
+default_app_set() {
+  local name="$1" desktop="$2" stamp="$STATE_DIR/defaults/$1"
+  shift 2
+  [[ -f $stamp ]] && return 0
+  [[ -f $APPLICATIONS_DIR/$desktop ]] || return 0
+  as_user xdg-mime default "$desktop" "$@" || return 1
+  mkdir -p "${stamp%/*}" && printf '%s\n' "$desktop" >"$stamp"
+}
+
+default_apps_set() {
+  default_app_set images imv.desktop "${IMAGE_TYPES[@]}" || return 1
+  if app_wanted evince; then
+    default_app_set pdf org.gnome.Evince.desktop application/pdf || return 1
+  else
+    default_app_set pdf okularApplication_pdf.desktop application/pdf || return 1
+  fi
+  default_app_set videos vlc.desktop "${VIDEO_TYPES[@]}" "${AUDIO_TYPES[@]}" || return 1
+  default_app_set archives org.kde.ark.desktop "${ARCHIVE_TYPES[@]}"
+}
+
 apps_missing() {
   local id missing=()
   for id in $(option_items APPS); do
@@ -171,6 +198,7 @@ module_10() {
     run_step "Install $(app_name "$id")" app_install "$id"
   done
   app_wanted helium && run_step "Make Helium the default browser" helium_default
+  run_step "Choose the apps that open images, PDFs, videos and archives" default_apps_set
   return 0
 }
 
