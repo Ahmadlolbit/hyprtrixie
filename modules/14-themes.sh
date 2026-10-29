@@ -8,6 +8,21 @@ option ACCENT_COLOR --section look --label "Accent colour" --type choice --defau
   --help "The theme's own accent, or another of its colours, for borders and highlights"
 option GLASS --section look --label "Glass mode" --type bool --default no \
   --help "See-through terminals and panels, with the wallpaper blurred behind them"
+option AUTO_THEME --section look --label "Automatic light and dark" --type choice --default off \
+  --values "off sun times" \
+  --help "A light theme by day and a dark one at night: by the sun or at set times"
+option LIGHT_THEME --section look --label "Light theme" --type choice --default catppuccin-latte \
+  --values "${OPTION_VALUES[THEME]}" --when auto_theme_on \
+  --help "The theme for the day"
+option DARK_THEME --section look --label "Dark theme" --type choice --default catppuccin \
+  --values "${OPTION_VALUES[THEME]}" --when auto_theme_on \
+  --help "The theme for the night"
+option LIGHT_AT --section look --label "Light from" --type choice --default 07:00 \
+  --values "05:00 06:00 07:00 08:00 09:00" --when auto_theme_times \
+  --help "When the light theme starts"
+option DARK_AT --section look --label "Dark from" --type choice --default 19:00 \
+  --values "17:00 18:00 19:00 20:00 21:00 22:00" --when auto_theme_times \
+  --help "When the dark theme starts"
 option BOOT_SPLASH --section look --label "Boot splash" --type bool --default yes \
   --help "The logo and the disk password prompt in your theme's colours while it boots"
 option BOOT_MENU_THEME --section look --label "Boot menu in the theme" --type bool --default yes \
@@ -105,9 +120,19 @@ theme_in_use() {
 }
 
 look_install() {
-  deploy_rendered "$HYPRTRIXIE_ROOT/system/look.conf" "$LOOK_CONF" 0644 root "ACCENT=$ACCENT_COLOR" "GLASS=$GLASS" || return 1
-  ((DEPLOY_CHANGED)) && LOOK_CHANGED=1
-  return 0
+  deploy_rendered "$HYPRTRIXIE_ROOT/system/look.conf" "$LOOK_CONF" 0644 root "ACCENT=$ACCENT_COLOR" "GLASS=$GLASS" \
+    "AUTO=$AUTO_THEME" "LIGHT=$LIGHT_THEME" "DARK=$DARK_THEME" "LIGHT_AT=$LIGHT_AT" "DARK_AT=$DARK_AT" || return 1
+  ((DEPLOY_CHANGED)) || return 0
+  LOOK_CHANGED=1
+  rm -f "$(user_path .local/state/hyprtrixie/look/period)"
+}
+
+auto_theme_on() {
+  [[ $AUTO_THEME != off ]]
+}
+
+auto_theme_times() {
+  [[ $AUTO_THEME == times ]]
 }
 
 theme_apply() {
