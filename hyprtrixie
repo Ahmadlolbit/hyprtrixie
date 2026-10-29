@@ -643,6 +643,8 @@ cmd_changes() {
   rm -f "$dir/changes-unseen"
 }
 
+POWER_SUPPLY_DIR="${HYPRTRIXIE_POWER_SUPPLY:-/sys/class/power_supply}"
+
 doctor_check_desktop() {
   local spec name missing=()
   if ! pgrep -u "$TARGET_UID" -x Hyprland >/dev/null; then
@@ -713,6 +715,50 @@ doctor_check_disk() {
   done < <(df -P / /home 2>/dev/null | awk 'NR > 1 && !seen[$1]++ { print $6, $5 }')
 }
 
+doctor_check_battery() {
+  local battery full design health found=0
+  for battery in "$POWER_SUPPLY_DIR"/BAT*; do
+    [[ -d $battery ]] || continue
+    full="$(cat "$battery/energy_full" 2>/dev/null || cat "$battery/charge_full" 2>/dev/null)"
+    design="$(cat "$battery/energy_full_design" 2>/dev/null || cat "$battery/charge_full_design" 2>/dev/null)"
+    [[ $full =~ ^[0-9]+$ && $design =~ ^[1-9][0-9]*$ ]] || continue
+    found=1
+    health=$((full * 100 / design))
+    if ((health < 70)); then
+      ui_status warn "Battery ${battery##*/} holds $health% of what it did when new"
+      ui_note "Fix: none needed yet; a replacement brings the runtime back"
+    else
+      ui_status ok "Battery ${battery##*/} holds $health% of what it did when new"
+    fi
+  done
+  ((found)) || ui_status skip "No battery found"
+  return 0
+}
+
+doctor_check_firmware() {
+  local errors=() firmware=()
+  mapfile -t errors < <(journalctl -k -b -p 3 --no-pager -q -o cat 2>/dev/null | sort -u)
+  mapfile -t firmware < <(printf '%s\n' "${errors[@]}" | grep -i firmware)
+  if ((${#firmware[@]})); then
+    ui_status warn "Firmware or driver errors since boot: ${#firmware[@]}"
+    printf '%s\n' "${firmware[@]:0:3}" | while IFS= read -r line; do ui_note "$line"; done
+    ui_note "Fix: sudo hyprtrixie collect --verbose and send the file it prints"
+  else
+    ui_status ok "No firmware errors since boot (${#errors[@]} other kernel errors)"
+  fi
+}
+
+doctor_check_updates() {
+  local count
+  count="$(apt list --upgradable 2>/dev/null | grep -c upgradable)"
+  if ((count)); then
+    ui_status warn "$count package updates are waiting"
+    ui_note "Fix: Menu › Update › Debian packages, or sudo apt full-upgrade"
+  else
+    ui_status ok "Packages are up to date"
+  fi
+}
+
 cmd_doctor() {
   require_root
   ui_init
@@ -725,6 +771,10 @@ cmd_doctor() {
   ui_rule "Storage"
   doctor_check_snapshots
   doctor_check_disk
+  ui_rule "Hardware and packages"
+  doctor_check_battery
+  doctor_check_firmware
+  doctor_check_updates
 }
 
 app_untick() {
