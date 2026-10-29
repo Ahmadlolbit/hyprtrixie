@@ -47,3 +47,10 @@ shotcut media offered debian shotcut Shotcut
 obs media offered debian obs-studio OBS Studio
 handbrake media offered debian handbrake HandBrake
 kooha media offered debian kooha Kooha (screen recorder)
+calculator system minimal debian gnome-calculator Calculator
+disks system offered debian gnome-disk-utility Disks
+gparted system offered debian gparted GParted
+baobab system offered debian baobab Disk usage
+camera system offered debian gnome-snapshot Camera
+scanner system offered debian simple-scan Scanner
+remmina system offered debian remmina Remmina (remote desktop)
