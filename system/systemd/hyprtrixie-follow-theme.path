@@ -1,0 +1,8 @@
+[Unit]
+Description=Follow theme switches on the boot and login screens
+
+[Path]
+PathChanged={{ HOME }}/.local/state/omarchy/current/theme.name
+
+[Install]
+WantedBy=multi-user.target

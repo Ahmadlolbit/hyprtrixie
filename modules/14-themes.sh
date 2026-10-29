@@ -167,6 +167,15 @@ follow_run() {
   fi
 }
 
+follow_watch() {
+  deploy_file "$HYPRTRIXIE_ROOT/system/systemd/hyprtrixie-follow-theme.service" \
+    /etc/systemd/system/hyprtrixie-follow-theme.service || return 1
+  deploy_rendered "$HYPRTRIXIE_ROOT/system/systemd/hyprtrixie-follow-theme.path" \
+    /etc/systemd/system/hyprtrixie-follow-theme.path 0644 root "HOME=$TARGET_HOME" || return 1
+  systemctl daemon-reload || return 1
+  service_start hyprtrixie-follow-theme.path
+}
+
 module_14() {
   run_step "Install theme packages" apt_install_list themes
   run_step "Install the Omarchy themes" omarchy_themes_install
@@ -179,6 +188,7 @@ module_14() {
   run_step "Theme the boot menu" grub_theme_install
   run_step "Set up the boot menu" grub_settings
   run_step "Paint the boot screens in the theme's colours" follow_run
+  run_step "Follow theme switches at boot" follow_watch
 }
 
 verify_14_themes() {
@@ -197,4 +207,8 @@ verify_14_splash() {
 verify_14_boot_menu() {
   [[ $BOOT_MENU_THEME == yes ]] || return 0
   run_check "The boot menu is in the theme's colours" test -f "$GRUB_THEME_DIR/theme.txt"
+}
+
+verify_14_follow() {
+  run_check "Theme switches reach the boot screens" service_enabled hyprtrixie-follow-theme.path
 }
