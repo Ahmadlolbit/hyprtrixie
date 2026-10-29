@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=hyprtrixie
+Description=The hyprtrixie logo in the colours of your theme
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/hyprtrixie
+ScriptFile=/usr/share/plymouth/themes/hyprtrixie/hyprtrixie.script
