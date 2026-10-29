@@ -333,6 +333,17 @@
     "glyph": "\uf011",
     "label": "System"
   },
+  "system.doctor": {
+    "glyph": "\uf0f1",
+    "label": "Check the system",
+    "action": "hyprtrixie-terminal --wait sudo hyprtrixie doctor",
+    "keywords": [
+      "doctor",
+      "check",
+      "health",
+      "problems"
+    ]
+  },
   "system.lock": {
     "glyph": "\uf023",
     "label": "Lock",
