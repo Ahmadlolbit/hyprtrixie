@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+TIPS=/usr/share/hyprtrixie/tips.txt
+
+usage() {
+  cat <<'USAGE'
+Usage: hyprtrixie-tip
+
+Prints one tip at random. The tips come from /usr/share/hyprtrixie/tips.txt
+and ~/.config/hyprtrixie/tips.txt, one tip per line.
+USAGE
+}
+
+tip() {
+  local file tips=()
+  for file in "$TIPS" "$CONFIG_HOME/hyprtrixie/tips.txt"; do
+    [[ -f $file ]] || continue
+    mapfile -t -O "${#tips[@]}" tips < <(grep -v '^[[:space:]]*$' "$file")
+  done
+  ((${#tips[@]})) || return 1
+  printf '%s\n' "${tips[RANDOM % ${#tips[@]}]}"
+}
+
+case "${1:-}" in
+  "") tip ;;
+  -h | --help) usage ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac
