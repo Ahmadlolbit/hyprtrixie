@@ -1,4 +1,14 @@
 {
+  "apps": {
+    "glyph": "\udb80\udc3b",
+    "label": "Apps",
+    "list": "apps",
+    "keywords": [
+      "apps",
+      "programs",
+      "launch"
+    ]
+  },
   "capture": {
     "glyph": "\uf030",
     "label": "Capture"
