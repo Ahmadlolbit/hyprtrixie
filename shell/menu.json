@@ -298,6 +298,16 @@
       "bios"
     ]
   },
+  "about": {
+    "glyph": "\uea74",
+    "label": "About",
+    "action": "hyprtrixie-terminal --wait sh -c 'fastfetch; hyprtrixie version'",
+    "keywords": [
+      "about",
+      "system",
+      "version"
+    ]
+  },
   "system": {
     "glyph": "\uf011",
     "label": "System"
