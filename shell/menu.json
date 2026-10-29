@@ -224,6 +224,80 @@
       "performance"
     ]
   },
+  "install": {
+    "glyph": "\udb80\ude49",
+    "label": "Install",
+    "list": "install",
+    "keywords": [
+      "install",
+      "add"
+    ]
+  },
+  "install.package": {
+    "glyph": "\udb80\udfd7",
+    "label": "Any Debian package",
+    "action": "hyprtrixie-terminal --wait hyprtrixie-pkg install",
+    "keywords": [
+      "install",
+      "package",
+      "apt"
+    ]
+  },
+  "remove": {
+    "glyph": "\udb82\udf4c",
+    "label": "Remove",
+    "list": "remove",
+    "keywords": [
+      "remove",
+      "uninstall"
+    ]
+  },
+  "remove.package": {
+    "glyph": "\udb80\udfd7",
+    "label": "Any package",
+    "action": "hyprtrixie-terminal --wait hyprtrixie-pkg remove",
+    "keywords": [
+      "remove",
+      "uninstall",
+      "package",
+      "apt"
+    ]
+  },
+  "update": {
+    "glyph": "\uf021",
+    "label": "Update"
+  },
+  "update.hyprtrixie": {
+    "glyph": "\udb81\udeb0",
+    "label": "hyprtrixie",
+    "action": "hyprtrixie-terminal --wait hyprtrixie update",
+    "keywords": [
+      "update",
+      "upgrade",
+      "hyprtrixie"
+    ]
+  },
+  "update.debian": {
+    "glyph": "\uf306",
+    "label": "Debian packages",
+    "action": "hyprtrixie-terminal --wait sh -c 'sudo apt update && sudo apt full-upgrade'",
+    "keywords": [
+      "update",
+      "upgrade",
+      "apt",
+      "packages"
+    ]
+  },
+  "update.firmware": {
+    "glyph": "\udb81\ude1a",
+    "label": "Firmware",
+    "action": "hyprtrixie-terminal --wait sh -c 'fwupdmgr refresh --force; fwupdmgr update'",
+    "keywords": [
+      "update",
+      "firmware",
+      "bios"
+    ]
+  },
   "system": {
     "glyph": "\uf011",
     "label": "System"
