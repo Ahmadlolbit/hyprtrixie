@@ -5,13 +5,14 @@ SETTINGS="${HYPRTRIXIE_FOLLOW_SETTINGS:-/etc/hyprtrixie/follow-theme}"
 TEMPLATES="${HYPRTRIXIE_FOLLOW_TEMPLATES:-/usr/share/hyprtrixie/follow}"
 PLYMOUTH_DIR="${HYPRTRIXIE_PLYMOUTH_DIR:-/usr/share/plymouth/themes/hyprtrixie}"
 GRUB_DIR="${HYPRTRIXIE_GRUB_THEME_DIR:-/boot/grub/themes/hyprtrixie}"
+VTRGB="${HYPRTRIXIE_VTRGB:-/etc/hyprtrixie/vtrgb}"
 
 usage() {
   cat <<'USAGE'
 Usage: hyprtrixie-follow-theme [--initramfs]
 
-Paints the boot splash and the boot menu in the colours of the theme the desktop
-user has picked.
+Paints the boot splash, the boot menu and the text consoles in the colours of
+the theme the desktop user has picked.
 --initramfs rebuilds the initramfs even when the colours didn't change.
 Run as root; the installer and a theme switch run it for you.
 USAGE
@@ -40,6 +41,24 @@ blend() {
     mixed+="$(printf '%02x' $(((16#${fg:part:2} * 3 + 16#${bg:part:2} * 2) / 5)))"
   done
   printf '#%s' "$mixed"
+}
+
+console_palette() {
+  local key value reds=() greens=() blues=()
+  for key in background red green yellow blue magenta cyan foreground muted bright_red bright_green bright_yellow \
+    bright_blue bright_magenta bright_cyan bright_foreground; do
+    value="$(color "$key")"
+    [[ -n $value || $key != bright_* ]] || value="$(color "${key#bright_}")"
+    value="${value:-$foreground}"
+    value="${value#\#}"
+    reds+=("$((16#${value:0:2}))")
+    greens+=("$((16#${value:2:2}))")
+    blues+=("$((16#${value:4:2}))")
+  done
+  (
+    IFS=,
+    printf '%s\n%s\n%s\n' "${reds[*]}" "${greens[*]}" "${blues[*]}"
+  )
 }
 
 render() {
@@ -103,5 +122,15 @@ if [[ "$(setting menu)" == yes && -d $GRUB_DIR ]]; then
   render "$TEMPLATES/theme.txt" "$GRUB_DIR/theme.txt" "BACKGROUND=$background" "FOREGROUND=$foreground" \
     "ACCENT=$accent" "MUTED=$muted"
   [[ $? == 2 ]] && exit 1
+fi
+
+if [[ "$(setting console)" == yes ]]; then
+  palette="$(mktemp)" || exit 1
+  console_palette >"$palette"
+  if ! cmp -s "$palette" "$VTRGB"; then
+    install -D -m 0644 "$palette" "$VTRGB"
+    setvtrgb "$VTRGB" 2>/dev/null
+  fi
+  rm -f "$palette"
 fi
 exit 0

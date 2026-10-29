@@ -7,6 +7,8 @@ option BOOT_SPLASH --section look --label "Boot splash" --type bool --default ye
   --help "The logo and the disk password prompt in your theme's colours while it boots"
 option BOOT_MENU_THEME --section look --label "Boot menu in the theme" --type bool --default yes \
   --help "The boot menu, where the snapshots are, in your theme's colours"
+option CONSOLE_THEME --section look --label "Console colours and font" --type bool --default no \
+  --help "The text consoles (Ctrl+Alt+F3) in your theme's colours, with a larger font"
 
 OMARCHY_DIR="${HYPRTRIXIE_OMARCHY_DIR:-/usr/share/omarchy}"
 THEME_STATE=.local/state/omarchy/current
@@ -116,7 +118,7 @@ follow_install() {
   deploy_file "$HYPRTRIXIE_ROOT/system/plymouth/hyprtrixie.script" "$FOLLOW_SHARE/hyprtrixie.script" || return 1
   deploy_file "$HYPRTRIXIE_ROOT/system/grub/theme.txt" "$FOLLOW_SHARE/theme.txt" || return 1
   deploy_rendered "$HYPRTRIXIE_ROOT/system/follow-theme.conf" /etc/hyprtrixie/follow-theme 0644 root \
-    "USER=$TARGET_USER" "SPLASH=$BOOT_SPLASH" "MENU=$BOOT_MENU_THEME"
+    "USER=$TARGET_USER" "SPLASH=$BOOT_SPLASH" "MENU=$BOOT_MENU_THEME" "CONSOLE=$CONSOLE_THEME"
 }
 
 splash_file() {
@@ -159,6 +161,20 @@ grub_settings() {
   fi
 }
 
+console_theme_install() {
+  if [[ $CONSOLE_THEME != yes ]]; then
+    service_disable hyprtrixie-console.service
+    return
+  fi
+  apt_install kbd console-setup || return 1
+  conf_set /etc/default/console-setup FONTFACE '"Terminus"' || return 1
+  conf_set /etc/default/console-setup FONTSIZE '"16x32"' || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/system/systemd/hyprtrixie-console.service" \
+    /etc/systemd/system/hyprtrixie-console.service || return 1
+  systemctl daemon-reload || return 1
+  service_enable hyprtrixie-console.service
+}
+
 follow_run() {
   if ((FOLLOW_INITRAMFS)); then
     "$BIN_DIR/hyprtrixie-follow-theme" --initramfs
@@ -187,6 +203,7 @@ module_14() {
   run_step "Show a boot splash in the theme's colours" boot_splash_install
   run_step "Theme the boot menu" grub_theme_install
   run_step "Set up the boot menu" grub_settings
+  run_step "Theme the text consoles" console_theme_install
   run_step "Paint the boot screens in the theme's colours" follow_run
   run_step "Follow theme switches at boot" follow_watch
 }

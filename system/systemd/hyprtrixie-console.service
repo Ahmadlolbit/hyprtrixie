@@ -1,0 +1,10 @@
+[Unit]
+Description=Paint the text consoles in the theme's colours
+After=console-setup.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/setvtrgb /etc/hyprtrixie/vtrgb
+
+[Install]
+WantedBy=multi-user.target
