@@ -8,6 +8,7 @@ ASSUME_YES=0
 ONLY=""
 SKIP=""
 RUN_MODE=""
+RUN_CHANGES=""
 
 for lib in log ui config step user apt files fetch detect service btrfs menu; do
   source "$HYPRTRIXIE_ROOT/lib/$lib.sh"
@@ -29,6 +30,7 @@ USAGE
                                      --skip 10,11       leave these modules out
                                      --yes              ask nothing, use the configuration as is
                                      --on-failure MODE  ask | halt | continue
+                                     --changes FILE     show these update notes in the summary
   hyprtrixie verify [--only ...]   Run every check again
   hyprtrixie modules               List the modules and how they last ended
   hyprtrixie config [show|path|edit|reset]
@@ -98,6 +100,11 @@ print_summary() {
     printf '\n'
     ui_box "${lines[@]}"
   fi
+  if [[ -n $RUN_CHANGES && -s $RUN_CHANGES ]]; then
+    ui_rule "What changed in this update"
+    head -n 30 "$RUN_CHANGES" | sed 's/^/  /'
+    (($(wc -l <"$RUN_CHANGES") > 30)) && printf '  … the rest: hyprtrixie changes\n'
+  fi
   printf '\n  Log: %s\n' "${LOG_FILE:-none}"
   [[ -n $USER_LOG ]] && printf '  Copy: %s\n' "$USER_LOG"
   [[ -n ${TARGET_HOME:-} && -f $TARGET_HOME/runbook-report.md ]] && printf '  Report: %s\n' "$TARGET_HOME/runbook-report.md"
@@ -161,6 +168,10 @@ parse_run_options() {
         shift
         ;;
       --yes | -y) ASSUME_YES=1 ;;
+      --changes)
+        RUN_CHANGES="${2:-}"
+        shift
+        ;;
       --on-failure)
         value="${2:-}"
         [[ $value == ask || $value == halt || $value == continue ]] || die "--on-failure takes ask, halt or continue"
@@ -602,7 +613,7 @@ cmd_update() {
   printf '\nWhat changed:\n'
   cat "$dir/changes.txt"
   printf '\n'
-  exec sudo "$HYPRTRIXIE_ROOT/hyprtrixie" install
+  exec sudo "$HYPRTRIXIE_ROOT/hyprtrixie" install --changes "$dir/changes.txt"
 }
 
 cmd_changes() {
