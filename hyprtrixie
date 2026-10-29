@@ -35,6 +35,9 @@ USAGE
   hyprtrixie collect [--verbose]   Pack the logs, the report and system details for a bug report;
                                      --verbose also writes everything to ~/hyprtrixie-log-<time>.txt
   hyprtrixie verbose [on|off]      Log the desktop in detail from the next login (run it without sudo)
+  hyprtrixie app list              List the apps you can install, by category (* = installed)
+  hyprtrixie app install|remove APP
+                                   Install or remove one app and tick or untick it in the configuration
   hyprtrixie version
   hyprtrixie help
 
@@ -526,6 +529,41 @@ cmd_verbose() {
   esac
 }
 
+app_untick() {
+  local id="$1" item rest=()
+  for item in $APPS; do
+    [[ $item == "$id" ]] || rest+=("$item")
+  done
+  APPS="${rest[*]}"
+}
+
+cmd_app() {
+  local action="${1:-list}" id="${2:-}"
+  case "$action" in
+    list)
+      [[ -f $CONFIG_FILE ]] && config_load "$CONFIG_FILE"
+      apps_list "$id"
+      ;;
+    install | remove)
+      [[ -n $id ]] || die "usage: sudo hyprtrixie app $action APP (see: hyprtrixie app list)"
+      manifest_line apps "$id" >/dev/null || die "no app named $id (see: hyprtrixie app list)"
+      start_run "app-$action" "$id"
+      if [[ $action == install ]]; then
+        app_wanted "$id" || APPS="${APPS:+$APPS }$id"
+        config_save
+        run_step "Install $(app_name "$id")" app_install "$id"
+        run_step "Choose the apps that open images, PDFs, videos and archives" default_apps_set
+      else
+        app_untick "$id"
+        config_save
+        run_step "Remove $(app_name "$id")" app_remove "$id"
+      fi
+      ((${#STEP_FAILURES[@]} == 0))
+      ;;
+    *) die "usage: hyprtrixie app [list [installed|available] | install APP | remove APP]" ;;
+  esac
+}
+
 main() {
   case "${1:-}" in
     "") cmd_menu ;;
@@ -545,6 +583,10 @@ main() {
     verbose)
       shift
       cmd_verbose "$@"
+      ;;
+    app)
+      shift
+      cmd_app "$@"
       ;;
     config)
       shift

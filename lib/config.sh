@@ -1,6 +1,9 @@
 CONFIG_FILE="${HYPRTRIXIE_CONFIG:-/etc/hyprtrixie/hyprtrixie.conf}"
 CONFIG_CHARS='[A-Za-z0-9 ._:/@+,-]'
 PROFILES=(minimal everyday developer)
+CONFIG_VERSION=2
+CONFIG_LOADED_VERSION=""
+CONFIG_MIGRATIONS=()
 OPTION_KEYS=()
 declare -gA OPTION_SECTION=()
 declare -gA OPTION_LABEL=()
@@ -9,6 +12,9 @@ declare -gA OPTION_DEFAULT=()
 declare -gA OPTION_VALUES=()
 declare -gA OPTION_WHEN=()
 declare -gA OPTION_HELP=()
+declare -gA OPTION_GROUPS=()
+declare -gA OPTION_GROUP_OF=()
+declare -gA OPTION_NAMES=()
 
 profile_level() {
   local i
@@ -22,7 +28,7 @@ profile_level() {
 }
 
 option() {
-  local key="$1" section="" label="" type="choice" default="" values="" when="" help=""
+  local key="$1" section="" label="" type="choice" default="" values="" when="" help="" groups="" group_of="" names=""
   shift
   while (($#)); do
     case "$1" in
@@ -33,6 +39,9 @@ option() {
       --values) values="$2" ;;
       --when) when="$2" ;;
       --help) help="$2" ;;
+      --groups) groups="$2" ;;
+      --group-of) group_of="$2" ;;
+      --names) names="$2" ;;
       *) return 1 ;;
     esac
     shift 2
@@ -45,6 +54,9 @@ option() {
   OPTION_VALUES[$key]="$values"
   OPTION_WHEN[$key]="$when"
   OPTION_HELP[$key]="$help"
+  OPTION_GROUPS[$key]="$groups"
+  OPTION_GROUP_OF[$key]="$group_of"
+  OPTION_NAMES[$key]="$names"
   [[ -v $key ]] || printf -v "$key" '%s' "$(option_default "$key")"
 }
 
@@ -69,6 +81,7 @@ option_default() {
     for item in ${OPTION_VALUES[$key]}; do
       tag="${item#*@}"
       [[ $tag == "$item" ]] && tag="${PROFILES[0]}"
+      [[ $tag == offered ]] && continue
       if (($(profile_level "$tag") <= $(profile_level "${PROFILE:-developer}"))); then
         out+=("${item%@*}")
       fi
@@ -135,6 +148,7 @@ config_validate() {
 config_load() {
   local file="${1:-$CONFIG_FILE}" line key
   [[ -f $file ]] || return 1
+  CONFIG_LOADED_VERSION=""
   while IFS= read -r line || [[ -n $line ]]; do
     [[ -z $line ]] && continue
     if [[ ! $line =~ ^([A-Z][A-Z0-9_]*)=\"($CONFIG_CHARS*)\"$ ]]; then
@@ -142,7 +156,10 @@ config_load() {
       continue
     fi
     key="${BASH_REMATCH[1]}"
-    [[ $key == HYPRTRIXIE_CONFIG_VERSION ]] && continue
+    if [[ $key == HYPRTRIXIE_CONFIG_VERSION ]]; then
+      CONFIG_LOADED_VERSION="${BASH_REMATCH[2]}"
+      continue
+    fi
     if [[ -z ${OPTION_TYPE[$key]+set} ]]; then
       log warn "ignoring unknown setting $key in $file"
       continue
@@ -150,7 +167,33 @@ config_load() {
     printf -v "$key" '%s' "${BASH_REMATCH[2]}"
   done <"$file"
   config_validate
+  config_migrate "${CONFIG_LOADED_VERSION:-1}"
   return 0
+}
+
+config_migration() {
+  CONFIG_MIGRATIONS+=("$1 $2")
+}
+
+config_migrate() {
+  local from="$1" entry version fn
+  [[ $from =~ ^[0-9]+$ ]] || from=1
+  for entry in "${CONFIG_MIGRATIONS[@]}"; do
+    read -r version fn <<<"$entry"
+    ((version > from)) || continue
+    log info "updating the configuration for version $version: $fn"
+    "$fn"
+  done
+  return 0
+}
+
+option_name() {
+  local key="$1" item="$2"
+  if [[ -n ${OPTION_NAMES[$key]} ]]; then
+    "${OPTION_NAMES[$key]}" "$item"
+  else
+    printf '%s' "$item"
+  fi
 }
 
 config_save() {
@@ -158,7 +201,7 @@ config_save() {
   mkdir -p "${file%/*}" || return 1
   tmp="$(mktemp "$file.XXXXXX")" || return 1
   {
-    printf 'HYPRTRIXIE_CONFIG_VERSION="1"\n'
+    printf 'HYPRTRIXIE_CONFIG_VERSION="%s"\n' "$CONFIG_VERSION"
     for key in "${OPTION_KEYS[@]}"; do
       [[ ${!key} =~ ^$CONFIG_CHARS*$ ]] || continue
       printf '%s="%s"\n' "$key" "${!key}"

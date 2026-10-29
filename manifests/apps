@@ -1,0 +1,57 @@
+helium browsers minimal extrepo:helium helium-bin Helium
+firefox browsers offered debian firefox-esr Firefox ESR
+chromium browsers offered debian chromium Chromium
+brave browsers offered extrepo:brave_release brave-browser Brave
+chrome browsers offered extrepo:google_chrome google-chrome-stable Google Chrome
+librewolf browsers offered extrepo:librewolf librewolf LibreWolf
+torbrowser browsers offered debian torbrowser-launcher Tor Browser
+whatsapp chat everyday webapp - WhatsApp
+signal chat everyday extrepo:signal signal-desktop Signal
+telegram chat everyday debian telegram-desktop/backports Telegram
+vesktop chat everyday release:vesktop vesktop Discord (Vesktop)
+teams chat everyday teams teams-for-linux Teams
+thunderbird chat offered debian thunderbird Thunderbird
+slack chat offered extrepo:slack slack-desktop Slack
+libreoffice office everyday debian libreoffice,libreoffice-gtk3 LibreOffice
+obsidian office everyday release:obsidian obsidian Obsidian
+onlyoffice office offered release:onlyoffice onlyoffice-desktopeditors OnlyOffice
+xournalpp office offered debian xournalpp Xournal++
+calibre office offered debian calibre Calibre
+foliate office offered debian foliate Foliate
+imv viewers minimal debian imv imv (images)
+evince viewers minimal debian evince Evince (PDFs)
+vlc viewers everyday debian vlc VLC (videos and music)
+okular viewers offered debian okular Okular (PDFs)
+mpv viewers offered debian mpv mpv (videos)
+dolphin files minimal debian dolphin,ark,kio-extras,ffmpegthumbs,kde-cli-tools Dolphin (files and archives)
+localsend files everyday release:localsend localsend LocalSend
+syncthing files offered debian syncthing Syncthing
+nextcloud files offered debian nextcloud-desktop Nextcloud
+qbittorrent files offered debian qbittorrent qBittorrent
+filezilla files offered debian filezilla FileZilla
+bitwarden security everyday release:bitwarden bitwarden Bitwarden
+keepassxc security offered debian keepassxc KeePassXC
+mullvad security offered extrepo:mullvad mullvad-vpn Mullvad VPN
+protonvpn security offered extrepo:protonvpn proton-vpn-gnome-desktop Proton VPN
+gimp creative offered debian gimp GIMP
+inkscape creative offered debian inkscape Inkscape
+krita creative offered debian krita Krita
+drawing creative offered debian drawing Drawing
+darktable creative offered debian darktable Darktable
+blender creative offered debian blender Blender
+spotify media offered extrepo:spotify spotify-client Spotify
+strawberry media offered debian strawberry Strawberry
+audacity media offered debian audacity Audacity
+kdenlive media offered debian kdenlive Kdenlive
+shotcut media offered debian shotcut Shotcut
+obs media offered debian obs-studio OBS Studio
+handbrake media offered debian handbrake HandBrake
+kooha media offered debian kooha Kooha (screen recorder)
+calculator system minimal debian gnome-calculator Calculator
+disks system offered debian gnome-disk-utility Disks
+gparted system offered debian gparted GParted
+baobab system offered debian baobab Disk usage
+camera system offered debian gnome-snapshot Camera
+scanner system offered debian simple-scan Scanner
+remmina system offered debian remmina Remmina (remote desktop)
+lutris games offered debian lutris Lutris
