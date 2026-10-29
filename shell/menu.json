@@ -187,6 +187,20 @@
       "wallpaper"
     ]
   },
+  "style.auto": {
+    "glyph": "\udb81\udd0e",
+    "label": "Automatic light and dark",
+    "action": "hyprtrixie-look auto toggle",
+    "state": "test \"$(hyprtrixie-look auto)\" != off",
+    "keywords": [
+      "light",
+      "dark",
+      "sunset",
+      "sunrise",
+      "night",
+      "automatic"
+    ]
+  },
   "style.accent": {
     "glyph": "\udb80\udfd8",
     "label": "Accent",
