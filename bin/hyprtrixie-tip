@@ -3,14 +3,28 @@ set -uo pipefail
 
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 TIPS=/usr/share/hyprtrixie/tips.txt
+SWITCHES=/etc/hyprtrixie/tips
 
 usage() {
   cat <<'USAGE'
-Usage: hyprtrixie-tip
+Usage: hyprtrixie-tip [terminal]
 
 Prints one tip at random. The tips come from /usr/share/hyprtrixie/tips.txt
 and ~/.config/hyprtrixie/tips.txt, one tip per line.
+terminal prints it dimmed, unless tips in new terminals are turned off.
 USAGE
+}
+
+enabled() {
+  [[ -f $SWITCHES ]] || return 0
+  ! grep -qx "$1=no" "$SWITCHES"
+}
+
+terminal_tip() {
+  local line
+  enabled terminal || return 0
+  line="$(tip)" || return 0
+  printf '\e[2mtip: %s\e[0m\n' "$line"
 }
 
 tip() {
@@ -25,6 +39,7 @@ tip() {
 
 case "${1:-}" in
   "") tip ;;
+  terminal) terminal_tip ;;
   -h | --help) usage ;;
   *)
     usage >&2
