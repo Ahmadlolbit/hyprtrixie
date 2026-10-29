@@ -5,6 +5,8 @@ option THEME --section look --label "Theme" --type choice --default catppuccin \
   --help "Colours, wallpaper and icons for every app; Super+Ctrl+T changes it later"
 option BOOT_SPLASH --section look --label "Boot splash" --type bool --default yes \
   --help "The logo and the disk password prompt in your theme's colours while it boots"
+option BOOT_MENU_THEME --section look --label "Boot menu in the theme" --type bool --default yes \
+  --help "The boot menu, where the snapshots are, in your theme's colours"
 
 OMARCHY_DIR="${HYPRTRIXIE_OMARCHY_DIR:-/usr/share/omarchy}"
 THEME_STATE=.local/state/omarchy/current
@@ -12,6 +14,7 @@ THEME_APPLIED="$STATE_DIR/theme"
 DROPPED_THEMES=(bloodline neon-plum noir cobalt-night navy-mint porcelain dayshift inkwell terracotta marble green-magic roseglass)
 FOLLOW_SHARE="$SHARE_DIR/follow"
 GRUB_SETTINGS=/etc/default/grub.d/hyprtrixie.cfg
+GRUB_THEME_DIR="${HYPRTRIXIE_GRUB_THEME_DIR:-/boot/grub/themes/hyprtrixie}"
 FOLLOW_INITRAMFS=0
 
 theme_copy() {
@@ -111,8 +114,9 @@ theme_ready() {
 follow_install() {
   deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-follow-theme" "$BIN_DIR/hyprtrixie-follow-theme" 0755 || return 1
   deploy_file "$HYPRTRIXIE_ROOT/system/plymouth/hyprtrixie.script" "$FOLLOW_SHARE/hyprtrixie.script" || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/system/grub/theme.txt" "$FOLLOW_SHARE/theme.txt" || return 1
   deploy_rendered "$HYPRTRIXIE_ROOT/system/follow-theme.conf" /etc/hyprtrixie/follow-theme 0644 root \
-    "USER=$TARGET_USER" "SPLASH=$BOOT_SPLASH"
+    "USER=$TARGET_USER" "SPLASH=$BOOT_SPLASH" "MENU=$BOOT_MENU_THEME"
 }
 
 splash_file() {
@@ -129,10 +133,22 @@ boot_splash_install() {
   splash_file initramfs/splash.conf /etc/initramfs-tools/conf.d/hyprtrixie-splash
 }
 
+grub_theme_install() {
+  local size
+  [[ $BOOT_MENU_THEME == yes ]] || return 0
+  apt_install fonts-dejavu-core || return 1
+  mkdir -p "$GRUB_THEME_DIR" || return 1
+  for size in 16 20 28; do
+    [[ -f $GRUB_THEME_DIR/dejavu-$size.pf2 ]] && continue
+    grub-mkfont -s "$size" -o "$GRUB_THEME_DIR/dejavu-$size.pf2" /usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf || return 1
+  done
+}
+
 grub_settings() {
   local tmp rc
   tmp="$(mktemp)" || return 1
   [[ $BOOT_SPLASH == yes ]] && cat "$HYPRTRIXIE_ROOT/system/grub/splash.cfg" >>"$tmp"
+  [[ $BOOT_MENU_THEME == yes ]] && cat "$HYPRTRIXIE_ROOT/system/grub/theme.cfg" >>"$tmp"
   deploy_file "$tmp" "$GRUB_SETTINGS"
   rc=$?
   rm -f "$tmp"
@@ -159,6 +175,7 @@ module_14() {
   run_step "Apply the $THEME theme" theme_apply
   run_step "Install the theme follower" follow_install
   run_step "Show a boot splash in the theme's colours" boot_splash_install
+  run_step "Theme the boot menu" grub_theme_install
   run_step "Set up the boot menu" grub_settings
   run_step "Paint the boot screens in the theme's colours" follow_run
 }
@@ -174,4 +191,9 @@ verify_14_theme() {
 verify_14_splash() {
   [[ $BOOT_SPLASH == yes ]] || return 0
   run_check "The boot splash is in the theme's colours" test -f /usr/share/plymouth/themes/hyprtrixie/hyprtrixie.script
+}
+
+verify_14_boot_menu() {
+  [[ $BOOT_MENU_THEME == yes ]] || return 0
+  run_check "The boot menu is in the theme's colours" test -f "$GRUB_THEME_DIR/theme.txt"
 }
