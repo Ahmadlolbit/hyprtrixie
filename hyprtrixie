@@ -36,6 +36,7 @@ USAGE
                                      --verbose also writes everything to ~/hyprtrixie-log-<time>.txt
   hyprtrixie verbose [on|off]      Log the desktop in detail from the next login (run it without sudo)
   hyprtrixie guide                 Read the guide in the terminal
+  hyprtrixie update                Pull the newest hyprtrixie and run the installer (run it without sudo)
   hyprtrixie app list              List the apps you can install, by category (* = installed)
   hyprtrixie app install|remove APP
                                    Install or remove one app and tick or untick it in the configuration
@@ -562,6 +563,16 @@ cmd_guide() {
   done
 }
 
+cmd_update() {
+  ((EUID != 0)) || die "run it as yourself, without sudo: hyprtrixie update"
+  git -C "$HYPRTRIXIE_ROOT" rev-parse --git-dir >/dev/null 2>&1 ||
+    die "$HYPRTRIXIE_ROOT is not a git clone, so it can't update itself"
+  printf 'Updating %s\n' "$HYPRTRIXIE_ROOT"
+  git -C "$HYPRTRIXIE_ROOT" pull --ff-only ||
+    die "git pull failed: the folder has local changes, or its branch has no upstream"
+  exec sudo "$HYPRTRIXIE_ROOT/hyprtrixie" install
+}
+
 app_untick() {
   local id="$1" item rest=()
   for item in $APPS; do
@@ -622,6 +633,7 @@ main() {
       cmd_app "$@"
       ;;
     guide) cmd_guide ;;
+    update) cmd_update ;;
     config)
       shift
       cmd_config "$@"
