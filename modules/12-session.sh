@@ -21,7 +21,7 @@ option IDLE_SUSPEND_MINUTES --section system --label "Suspend after (minutes)" -
 
 HYPR_SHARE="$SHARE_DIR/hypr"
 ELEPHANT_LIB=/usr/local/lib/elephant
-ELEPHANT_PROVIDERS=(desktopapplications calc runner files symbols websearch clipboard providerlist unicode menus)
+ELEPHANT_PROVIDERS=(desktopapplications calc runner files symbols websearch clipboard providerlist unicode)
 
 lua_bool() {
   if [[ $1 == yes ]]; then
@@ -140,9 +140,9 @@ walker_install() {
   done
   rm -rf /etc/xdg/walker/themes/hyprtrixie
   rm -f "$BIN_DIR/hyprtrixie-power-menu"
-  rm -f /etc/xdg/elephant/menus/themes.lua /etc/xdg/elephant/menus/backgrounds.lua
-  deploy_file "$HYPRTRIXIE_ROOT/system/walker/config.toml" /etc/xdg/walker/config.toml || return 1
-  deploy_tree "$HYPRTRIXIE_ROOT/system/elephant/menus" /etc/xdg/elephant/menus
+  rm -rf /etc/xdg/elephant/menus
+  rm -f "$ELEPHANT_LIB/menus.so"
+  deploy_file "$HYPRTRIXIE_ROOT/system/walker/config.toml" /etc/xdg/walker/config.toml
 }
 
 walker_ready() {
