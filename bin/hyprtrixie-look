@@ -31,6 +31,7 @@ Usage: hyprtrixie-look
        hyprtrixie-look location [LATITUDE,LONGITUDE|zone]
        hyprtrixie-look rotate [MINUTES|off|toggle]
        hyprtrixie-look workspaces [on|off|toggle]
+       hyprtrixie-look bar [full|floating|minimal|vertical]
        hyprtrixie-look get SETTING
 
 Shows and changes how the desktop looks. Your settings are kept in
@@ -46,7 +47,8 @@ While it's on, a theme you pick becomes the light or the dark one.
 sun prints the day's sunrise and sunset where your time zone's main city
 is, or at the location you set. rotate changes the wallpaper every so
 many minutes; toggle switches between off and every 30 minutes.
-workspaces gives each workspace its own wallpaper.
+workspaces gives each workspace its own wallpaper. bar sets the bar's
+layout in ~/.config/hyprtrixie/shell.json.
 USAGE
 }
 
@@ -303,6 +305,34 @@ workspaces() {
   esac
 }
 
+bar_layout() {
+  local file="$CONFIG_HOME/hyprtrixie/shell.json" source preset tmp
+  if [[ -z ${1:-} ]]; then
+    for source in "$file" "${HYPRTRIXIE_SHELL_SYSTEM:-/etc/hyprtrixie/shell.json}"; do
+      preset="$(jq -r '.bar.preset // empty' "$source" 2>/dev/null)"
+      [[ -n $preset ]] && break
+    done
+    printf '%s\n' "${preset:-full}"
+    return 0
+  fi
+  if [[ ! $1 =~ ^(full|floating|minimal|vertical)$ ]]; then
+    printf 'bar takes full, floating, minimal or vertical\n' >&2
+    return 2
+  fi
+  mkdir -p "${file%/*}" || return 1
+  tmp="$(mktemp "$file.XXXXXX")" || return 1
+  if [[ -s $file ]]; then
+    jq --arg preset "$1" '.bar.preset = $preset' "$file" >"$tmp"
+  else
+    jq -n --arg preset "$1" '{bar: {preset: $preset}}' >"$tmp"
+  fi || {
+    rm -f "$tmp"
+    printf '%s is not valid JSON; fix it first\n' "$file" >&2
+    return 1
+  }
+  mv "$tmp" "$file"
+}
+
 tick() {
   auto_tick
   rotate_tick
@@ -445,6 +475,7 @@ case "${1:-}" in
   remember) remember "${2:-}" "${3:-}" ;;
   rotate) rotate "${2:-}" ;;
   workspaces) workspaces "${2:-}" ;;
+  bar) bar_layout "${2:-}" ;;
   location) location "${2:-}" ;;
   -h | --help) usage ;;
   *)

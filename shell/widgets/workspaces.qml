@@ -3,13 +3,16 @@ import QtQuick.Layouts
 import Quickshell.Hyprland
 import qs.common
 
-RowLayout {
+GridLayout {
   id: root
 
   property var bar
   readonly property var monitor: bar ? Hyprland.monitorFor(bar.screen) : null
+  readonly property bool vertical: bar ? bar.vertical : false
 
-  spacing: 2
+  flow: vertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+  rowSpacing: 2
+  columnSpacing: 2
 
   Repeater {
     model: Hyprland.workspaces
@@ -21,8 +24,8 @@ RowLayout {
       readonly property bool current: root.monitor ? root.monitor.activeWorkspace === modelData : modelData.focused
 
       visible: modelData.id > 0 && (!root.monitor || modelData.monitor === root.monitor)
-      implicitWidth: Math.max(22, label.implicitWidth + 12)
-      implicitHeight: Theme.barHeight - 8
+      implicitWidth: root.vertical ? Theme.barWidth - 16 : Math.max(22, label.implicitWidth + 12)
+      implicitHeight: root.vertical ? 24 : Theme.barHeight - 8
       color: current ? Theme.accent : "transparent"
 
       Label {

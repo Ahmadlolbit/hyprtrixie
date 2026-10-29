@@ -12,6 +12,7 @@ PopupWindow {
   default property alias content: body.data
   readonly property var window: owner ? owner.QsWindow.window : null
   readonly property bool below: Config.position !== "bottom"
+  readonly property bool beside: bar ? bar.vertical === true : false
 
   function toggle() {
     Popups.toggle(root);
@@ -29,6 +30,12 @@ PopupWindow {
     onAnchoring: {
       if (!root.owner || !root.window)
         return;
+      if (root.beside) {
+        const side = root.window.contentItem.mapFromItem(root.owner, 0, root.owner.height / 2 - root.implicitHeight / 2);
+        placement.rect.x = root.window.width + 6;
+        placement.rect.y = Math.round(Math.max(6, Math.min(side.y, root.window.height - root.implicitHeight - 6)));
+        return;
+      }
       const point = root.window.contentItem.mapFromItem(root.owner, root.owner.width / 2 - root.implicitWidth / 2, 0);
       placement.rect.x = Math.round(Math.max(6, Math.min(point.x, root.window.width - root.implicitWidth - 6)));
       placement.rect.y = root.below ? root.window.height + 6 : -root.implicitHeight - 6;

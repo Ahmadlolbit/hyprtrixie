@@ -4,13 +4,15 @@ import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 import qs.common
 
-RowLayout {
+GridLayout {
   id: root
 
   property var bar
   readonly property bool shown: SystemTray.items.values.length > 0
 
-  spacing: 8
+  flow: bar && bar.vertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
+  rowSpacing: 8
+  columnSpacing: 8
 
   Repeater {
     model: SystemTray.items
