@@ -149,6 +149,7 @@ grub_settings() {
   tmp="$(mktemp)" || return 1
   [[ $BOOT_SPLASH == yes ]] && cat "$HYPRTRIXIE_ROOT/system/grub/splash.cfg" >>"$tmp"
   [[ $BOOT_MENU_THEME == yes ]] && cat "$HYPRTRIXIE_ROOT/system/grub/theme.cfg" >>"$tmp"
+  cat "$HYPRTRIXIE_ROOT/system/grub/hidden.cfg" >>"$tmp"
   deploy_file "$tmp" "$GRUB_SETTINGS"
   rc=$?
   rm -f "$tmp"
