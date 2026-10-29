@@ -9,6 +9,31 @@
       "launch"
     ]
   },
+  "learn": {
+    "glyph": "\udb82\uddd1",
+    "label": "Learn"
+  },
+  "learn.guide": {
+    "glyph": "\udb80\uded7",
+    "label": "Guide",
+    "action": "hyprtrixie-terminal --wait hyprtrixie guide",
+    "keywords": [
+      "guide",
+      "help",
+      "docs",
+      "manual"
+    ]
+  },
+  "learn.keys": {
+    "glyph": "\uf11c",
+    "label": "Keys",
+    "action": "qs -p /usr/share/hyprtrixie/shell ipc call keys open",
+    "keywords": [
+      "keys",
+      "shortcuts",
+      "bindings"
+    ]
+  },
   "capture": {
     "glyph": "\uf030",
     "label": "Capture"
