@@ -21,6 +21,8 @@ Singleton {
   readonly property string font: look.font || "JetBrainsMono Nerd Font"
   readonly property bool glass: look.glass === "yes"
   readonly property color panel: Qt.alpha(base, glass ? 0.8 : 1)
+  readonly property var looks: Object.assign({}, lines(systemLook.text()), lines(userLook.text()))
+  readonly property bool corners: looks.corners === "yes"
   readonly property int fontSize: 13
   readonly property int barHeight: 30
   readonly property int spacing: 14
@@ -55,6 +57,34 @@ Singleton {
     onFileChanged: reload()
   }
 
+  function lines(text) {
+    const values = {};
+    for (const line of text.split("\n")) {
+      const at = line.indexOf("=");
+      if (at > 0)
+        values[line.slice(0, at).trim()] = line.slice(at + 1).trim();
+    }
+    return values;
+  }
+
+  FileView {
+    id: systemLook
+
+    path: "/etc/hyprtrixie/look.conf"
+    watchChanges: true
+    printErrors: false
+    onFileChanged: reload()
+  }
+
+  FileView {
+    id: userLook
+
+    path: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/hyprtrixie/look.conf"
+    watchChanges: true
+    printErrors: false
+    onFileChanged: reload()
+  }
+
   FileView {
     id: lookFile
 
@@ -70,6 +100,8 @@ Singleton {
     function reload(): void {
       file.reload();
       lookFile.reload();
+      systemLook.reload();
+      userLook.reload();
     }
   }
 }
