@@ -11,9 +11,9 @@ OMARCHY_PATH="${OMARCHY_PATH:-/usr/share/omarchy}"
 HERE="$(dirname "$(readlink -f "$0")")"
 ZONEINFO="${HYPRTRIXIE_ZONEINFO:-/usr/share/zoneinfo}"
 LOCALTIME="${HYPRTRIXIE_LOCALTIME:-/etc/localtime}"
-KEYS=(accent font ui_font glass auto light dark light_at dark_at location)
+KEYS=(accent font ui_font glass auto light dark light_at dark_at location rotate)
 declare -A DEFAULT=([accent]=theme [font]="JetBrainsMono Nerd Font" [ui_font]=default [glass]=no [auto]=off
-  [light]=catppuccin-latte [dark]=catppuccin [light_at]=07:00 [dark_at]=19:00 [location]=zone)
+  [light]=catppuccin-latte [dark]=catppuccin [light_at]=07:00 [dark_at]=19:00 [location]=zone [rotate]=0)
 ACCENTS=" theme red orange yellow green cyan blue magenta "
 
 usage() {
@@ -28,6 +28,7 @@ Usage: hyprtrixie-look
        hyprtrixie-look times [LIGHT_FROM DARK_FROM]
        hyprtrixie-look sun [DATE]
        hyprtrixie-look location [LATITUDE,LONGITUDE|zone]
+       hyprtrixie-look rotate [MINUTES|off|toggle]
        hyprtrixie-look get SETTING
 
 Shows and changes how the desktop looks. Your settings are kept in
@@ -40,7 +41,8 @@ auto switches to the light theme by day and the dark one at night, at
 sunrise and sunset (sun) or at set times like 07:00 and 19:00 (times).
 While it's on, a theme you pick becomes the light or the dark one.
 sun prints the day's sunrise and sunset where your time zone's main city
-is, or at the location you set.
+is, or at the location you set. rotate changes the wallpaper every so
+many minutes; toggle switches between off and every 30 minutes.
 USAGE
 }
 
@@ -232,7 +234,7 @@ period() {
   fi
 }
 
-tick() {
+auto_tick() {
   local mode now theme
   mode="$(get auto)"
   [[ $mode == sun || $mode == times ]] || return 0
@@ -257,9 +259,51 @@ remember() {
   fi
 }
 
+rotate_tick() {
+  local every now last
+  every="$(get rotate)"
+  if [[ ! $every =~ ^[0-9]+$ ]] || ((every == 0)); then
+    return 0
+  fi
+  now="$(date -d "${HYPRTRIXIE_NOW:-now}" +%s)" || return 0
+  last="$(cat "$LOOK_STATE/rotated" 2>/dev/null)"
+  if [[ $last =~ ^[0-9]+$ ]] && ((now - last < every * 60)); then
+    return 0
+  fi
+  mkdir -p "$LOOK_STATE" && printf '%s\n' "$now" >"$LOOK_STATE/rotated"
+  [[ $last =~ ^[0-9]+$ ]] || return 0
+  "$(command_path hyprtrixie-background)" next >/dev/null
+}
+
+tick() {
+  auto_tick
+  rotate_tick
+}
+
 retick() {
   rm -f "$LOOK_STATE/period"
-  tick
+  auto_tick
+}
+
+rotate() {
+  local every="${1,,}"
+  case "$every" in
+    "")
+      get rotate
+      return 0
+      ;;
+    off) every=0 ;;
+    toggle)
+      every=30
+      [[ "$(get rotate)" == 0 ]] || every=0
+      ;;
+  esac
+  if [[ ! $every =~ ^[0-9]+$ ]] || ((10#$every > 1440)); then
+    printf 'rotate takes minutes from 0 to 1440, off or toggle\n' >&2
+    return 2
+  fi
+  rm -f "$LOOK_STATE/rotated"
+  put rotate "$((10#$every))" && rotate_tick
 }
 
 auto() {
@@ -347,6 +391,7 @@ case "${1:-}" in
     ;;
   tick) tick ;;
   remember) remember "${2:-}" "${3:-}" ;;
+  rotate) rotate "${2:-}" ;;
   location) location "${2:-}" ;;
   -h | --help) usage ;;
   *)
