@@ -160,6 +160,52 @@ app_present() {
   esac
 }
 
+app_repo_in_use() {
+  local repo="$1" skip="$2" id
+  for id in $(option_items APPS); do
+    [[ $id == "$skip" ]] && continue
+    [[ "$(app_source "$id")" == "extrepo:$repo" ]] || continue
+    app_present "$id" && return 0
+  done
+  return 1
+}
+
+app_remove() {
+  local id="$1" source packages=() installed=() package repo=""
+  source="$(app_source "$id")" || {
+    log error "no app named $id in the catalogue"
+    return 1
+  }
+  case "$source" in
+    webapp)
+      rm -f "/usr/local/share/applications/$id-web.desktop" "$SHARE_DIR/icons/$id-web.svg"
+      return 0
+      ;;
+    teams)
+      if [[ $TEAMS_SOURCE == snap ]]; then
+        snap list teams-for-linux >/dev/null 2>&1 || return 0
+        snap remove teams-for-linux
+        return
+      fi
+      repo=teams-for-linux
+      ;;
+    extrepo:*) repo="${source#extrepo:}" ;;
+  esac
+  mapfile -t packages < <(app_packages "$id")
+  for package in "${packages[@]}"; do
+    package="${package%/backports}"
+    pkg_installed "$package" && installed+=("$package")
+  done
+  if ((${#installed[@]})); then
+    apt_get remove --autoremove "${installed[@]}" || return 1
+  fi
+  if [[ -n $repo ]] && extrepo_enabled "$repo" && ! app_repo_in_use "$repo" "$id"; then
+    extrepo disable "$repo" || return 1
+    apt_mark_dirty
+  fi
+  return 0
+}
+
 default_app_set() {
   local name="$1" desktop="$2" stamp="$STATE_DIR/defaults/$1"
   shift 2
@@ -189,6 +235,30 @@ apps_missing() {
   ((${#missing[@]} == 0)) && return 0
   printf 'not installed: %s\n' "${missing[*]}"
   return 1
+}
+
+apps_list() {
+  local filter="${1:-}" category title id mark
+  if [[ -n $filter ]]; then
+    for id in $(option_items APPS); do
+      if app_present "$id"; then
+        [[ $filter == installed ]] && printf '%s\t%s\n' "$id" "$(app_name "$id")"
+      else
+        [[ $filter == available ]] && printf '%s\t%s\n' "$id" "$(app_name "$id")"
+      fi
+    done
+    return 0
+  fi
+  while IFS=$'\t' read -r category title; do
+    printf '%s\n' "$title"
+    for id in $(option_items APPS); do
+      [[ "$(app_category "$id")" == "$category" ]] || continue
+      mark=" "
+      app_present "$id" && mark="*"
+      printf '  %s %-14s %s\n' "$mark" "$id" "$(app_name "$id")"
+    done
+  done < <(apps_categories)
+  printf '\n* installed\n'
 }
 
 module_10() {
