@@ -173,6 +173,18 @@ accent_override() {
   printf 'theme_accent = "%s"\n' "$original" >>"$1"
 }
 
+glass_settings() {
+  if [[ "$(look glass no)" == yes ]]; then
+    COLORS[glass]=yes
+    COLORS[opacity]=0.88
+    COLORS[panel_alpha]=cc
+  else
+    COLORS[glass]=no
+    COLORS[opacity]=1.0
+    COLORS[panel_alpha]=ee
+  fi
+}
+
 render() {
   local dir="$1" script key value tpl name
   script="$(mktemp)" || return 1
@@ -283,7 +295,9 @@ apply() {
   accent_override "$next/colors.toml"
   COLORS[font]="$(look font 'JetBrainsMono Nerd Font')"
   [[ ${COLORS[font]} =~ ^[[:alnum:]][[:alnum:]\ ._+-]*$ ]] || COLORS[font]="JetBrainsMono Nerd Font"
+  glass_settings
   render "$next" || return 1
+  [[ ${COLORS[glass]} == yes ]] || rm -f "$next/glass.lua"
   rm -rf "$STATE/theme"
   mv "$next" "$STATE/theme" || return 1
   printf '%s\n' "$name" >"$STATE/theme.name"

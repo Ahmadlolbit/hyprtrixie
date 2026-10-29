@@ -176,7 +176,7 @@ Scope {
         anchors.centerIn: parent
         width: Math.min(parent.width - 80, 1180)
         height: Math.min(parent.height - 120, header.implicitHeight + list.contentHeight + 72)
-        color: Theme.base
+        color: Theme.panel
         border.color: Theme.accent
         border.width: 2
         radius: Theme.radius

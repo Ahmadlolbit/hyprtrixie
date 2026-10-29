@@ -7,8 +7,8 @@ USER_LOOK="$CONFIG_HOME/hyprtrixie/look.conf"
 SYSTEM_LOOK="${HYPRTRIXIE_LOOK_SYSTEM:-/etc/hyprtrixie/look.conf}"
 CURRENT="$STATE_HOME/omarchy/current"
 HERE="$(dirname "$(readlink -f "$0")")"
-KEYS=(accent font ui_font)
-declare -A DEFAULT=([accent]=theme [font]="JetBrainsMono Nerd Font" [ui_font]=default)
+KEYS=(accent font ui_font glass)
+declare -A DEFAULT=([accent]=theme [font]="JetBrainsMono Nerd Font" [ui_font]=default [glass]=no)
 ACCENTS=" theme red orange yellow green cyan blue magenta "
 
 usage() {
@@ -17,6 +17,7 @@ Usage: hyprtrixie-look
        hyprtrixie-look accent [theme|red|orange|yellow|green|cyan|blue|magenta|#rrggbb]
        hyprtrixie-look font [FAMILY|default]
        hyprtrixie-look ui-font [FAMILY|default]
+       hyprtrixie-look glass [on|off|toggle]
        hyprtrixie-look get SETTING
 
 Shows and changes how the desktop looks. Your settings are kept in
@@ -24,6 +25,7 @@ Shows and changes how the desktop looks. Your settings are kept in
 /etc/hyprtrixie/look.conf. With no value, a command prints the setting.
 An accent named after a colour uses that colour of each theme. font is
 the terminal's, the bar's and the lock screen's; ui-font is the apps'.
+Glass makes terminals and panels see-through, with blur behind them.
 USAGE
 }
 
@@ -100,6 +102,25 @@ font() {
   put "$key" "$value" && reapply
 }
 
+glass() {
+  case "${1,,}" in
+    "") get glass ;;
+    on | yes) put glass yes && reapply ;;
+    off | no) put glass no && reapply ;;
+    toggle)
+      if [[ "$(get glass)" == yes ]]; then
+        glass off
+      else
+        glass on
+      fi
+      ;;
+    *)
+      printf 'glass takes on, off or toggle\n' >&2
+      return 2
+      ;;
+  esac
+}
+
 case "${1:-}" in
   "")
     for key in "${KEYS[@]}"; do
@@ -116,6 +137,7 @@ case "${1:-}" in
   accent) accent "${2:-}" ;;
   font) font font "${2:-}" ;;
   ui-font) font ui_font "${2:-}" ;;
+  glass) glass "${2:-}" ;;
   -h | --help) usage ;;
   *)
     usage >&2

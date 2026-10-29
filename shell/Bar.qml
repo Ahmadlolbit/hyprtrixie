@@ -10,7 +10,7 @@ PanelWindow {
 
   screen: modelData
   implicitHeight: Theme.barHeight
-  color: Theme.base
+  color: Theme.panel
   anchors {
     top: Config.position !== "bottom"
     bottom: Config.position === "bottom"

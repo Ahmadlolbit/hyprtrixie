@@ -54,7 +54,7 @@ PopupWindow {
     anchors.fill: parent
     implicitWidth: body.implicitWidth + 28
     implicitHeight: body.implicitHeight + 28
-    color: Theme.base
+    color: Theme.panel
     border.color: Theme.accent
     border.width: 2
     radius: Theme.radius
