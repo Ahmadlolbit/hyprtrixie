@@ -6,13 +6,14 @@ TEMPLATES="${HYPRTRIXIE_FOLLOW_TEMPLATES:-/usr/share/hyprtrixie/follow}"
 PLYMOUTH_DIR="${HYPRTRIXIE_PLYMOUTH_DIR:-/usr/share/plymouth/themes/hyprtrixie}"
 GRUB_DIR="${HYPRTRIXIE_GRUB_THEME_DIR:-/boot/grub/themes/hyprtrixie}"
 VTRGB="${HYPRTRIXIE_VTRGB:-/etc/hyprtrixie/vtrgb}"
+SDDM_THEME_DIR="${HYPRTRIXIE_SDDM_THEME_DIR:-/usr/share/sddm/themes/hyprtrixie}"
 
 usage() {
   cat <<'USAGE'
 Usage: hyprtrixie-follow-theme [--initramfs]
 
-Paints the boot splash, the boot menu and the text consoles in the colours of
-the theme the desktop user has picked.
+Paints the boot splash, the boot menu, the text consoles and the login screen in
+the colours and wallpaper of the theme the desktop user has picked.
 --initramfs rebuilds the initramfs even when the colours didn't change.
 Run as root; the installer and a theme switch run it for you.
 USAGE
@@ -59,6 +60,26 @@ console_palette() {
     IFS=,
     printf '%s\n%s\n%s\n' "${reds[*]}" "${greens[*]}" "${blues[*]}"
   )
+}
+
+login_screen() {
+  local image wallpaper="" red settings
+  image="$(readlink -f "$home/.local/state/omarchy/current/background" 2>/dev/null)"
+  if [[ -f $image ]]; then
+    wallpaper="wallpaper.${image##*.}"
+    if ! cmp -s "$image" "$SDDM_THEME_DIR/$wallpaper"; then
+      rm -f "$SDDM_THEME_DIR"/wallpaper.*
+      install -m 0644 "$image" "$SDDM_THEME_DIR/$wallpaper" || return 1
+    fi
+  fi
+  red="$(color red)"
+  settings="$(mktemp)" || return 1
+  printf '[General]\nbackground=%s\nforeground=%s\naccent=%s\nfail=%s\nclock=%s\nwallpaper=%s\n' \
+    "$background" "$foreground" "$accent" "${red:-#f38ba8}" "$(setting clock)" "$wallpaper" >"$settings"
+  if ! cmp -s "$settings" "$SDDM_THEME_DIR/theme.conf.user"; then
+    install -m 0644 "$settings" "$SDDM_THEME_DIR/theme.conf.user"
+  fi
+  rm -f "$settings"
 }
 
 render() {
@@ -132,5 +153,9 @@ if [[ "$(setting console)" == yes ]]; then
     setvtrgb "$VTRGB" 2>/dev/null
   fi
   rm -f "$palette"
+fi
+
+if [[ -d $SDDM_THEME_DIR ]]; then
+  login_screen || exit 1
 fi
 exit 0
