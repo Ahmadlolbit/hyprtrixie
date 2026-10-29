@@ -675,6 +675,44 @@ doctor_check_services() {
   ui_note "Fix: systemctl status NAME says why; restarting often helps"
 }
 
+doctor_check_snapshots() {
+  local last age
+  if [[ $SNAPSHOTS != yes ]]; then
+    ui_status skip "Snapshots are turned off"
+    return 0
+  fi
+  if ! service_active snapper-timeline.timer || ! service_active snapper-cleanup.timer; then
+    ui_status fail "The snapshot timers aren't running"
+    ui_note "Fix: systemctl enable --now snapper-timeline.timer snapper-cleanup.timer"
+    return 0
+  fi
+  last="$(snapper --csvout --no-headers -c root list --columns date 2>/dev/null | tail -n 1)"
+  if ! last="$(date -d "$last" +%s 2>/dev/null)"; then
+    ui_status warn "No snapshot of the system yet"
+    return 0
+  fi
+  age=$((($(date +%s) - last) / 86400))
+  if ((age > 2)); then
+    ui_status warn "The newest snapshot is $age days old"
+    ui_note "Fix: journalctl -u snapper-timeline says why snapshots stopped"
+  else
+    ui_status ok "Snapshots are being taken"
+  fi
+}
+
+doctor_check_disk() {
+  local mount use
+  while read -r mount use; do
+    use="${use%\%}"
+    if ((use >= 85)); then
+      ui_status "$( ((use >= 95)) && printf fail || printf warn)" "$mount is $use% full"
+      ui_note "Fix: clear the package cache, trim old snapshots and old logs"
+    else
+      ui_status ok "$mount is $use% full"
+    fi
+  done < <(df -P / /home 2>/dev/null | awk 'NR > 1 && !seen[$1]++ { print $6, $5 }')
+}
+
 cmd_doctor() {
   require_root
   ui_init
@@ -684,6 +722,9 @@ cmd_doctor() {
   ui_rule "Desktop"
   doctor_check_desktop
   doctor_check_services
+  ui_rule "Storage"
+  doctor_check_snapshots
+  doctor_check_disk
 }
 
 app_untick() {
