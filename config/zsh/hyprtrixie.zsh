@@ -44,3 +44,5 @@ for script in /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh /usr/share/
   [[ -f $script ]] && source "$script"
 done
 unset script
+
+[[ -o interactive ]] && (( $+commands[hyprtrixie-tip] )) && hyprtrixie-tip terminal

@@ -1,0 +1,20 @@
+Super+Space opens your apps. Start with = to calculate, / to find files, : for your clipboard.
+Super+Alt+Space opens the menu. Type anything to find it in there.
+Super+K lists every key binding, your own included.
+Super+Ctrl+T switches the theme. Menu › Style › Background picks a wallpaper.
+Print takes a screenshot of a region, Shift+Print the window, Ctrl+Print the whole screen.
+Super+S shows the scratchpad. Super+Alt+S sends a window there.
+Super+Escape opens the System menu: lock, suspend, restart, shut down.
+Menu › Toggle turns night light, do not disturb, Wi-Fi and Bluetooth on and off.
+Menu › Install offers more apps. hyprtrixie app list shows them all.
+hyprtrixie update pulls the newest hyprtrixie and runs the installer for you.
+Click the clock in the bar for a calendar.
+Click the speaker in the bar for volume and outputs, the battery for power modes.
+The cup in the bar keeps the screen awake until you click it again.
+Super+F makes a window full screen. Super+T floats it or puts it back in the tiles.
+Super+1 to Super+0 switch workspaces. Add Shift to move the window there.
+Super+Tab and Super+Shift+Tab step through your workspaces.
+Super+Q closes the window you're in.
+Snapshots are taken before system changes. Press Esc at boot to start an older one.
+Put your own tips in ~/.config/hyprtrixie/tips.txt, one per line.
+Menu › Learn › Guide opens the guide right in the terminal.

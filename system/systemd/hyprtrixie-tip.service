@@ -1,0 +1,6 @@
+[Unit]
+Description=Show a hyprtrixie tip
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/hyprtrixie-tip notify
