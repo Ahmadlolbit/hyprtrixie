@@ -172,7 +172,7 @@ command_ready() {
 }
 
 terminal_install() {
-  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-terminal" "$BIN_DIR/hyprtrixie-terminal" 0755
+  deploy_tool hyprtrixie-terminal
 }
 
 package_picker_install() {
