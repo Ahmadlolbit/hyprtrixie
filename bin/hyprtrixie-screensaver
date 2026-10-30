@@ -59,6 +59,7 @@ run() {
   local file pid
   file="$(text_file)"
   trap finish EXIT INT TERM HUP
+  trap '' TSTP
   hyprctl eval 'hl.config({ cursor = { invisible = true } })' >/dev/null 2>&1
   sleep 0.5
   printf '\e[?1003h\e[?1006h'
@@ -66,10 +67,11 @@ run() {
     tte --input-file "$file" --frame-rate 60 --canvas-width 0 --canvas-height 0 --anchor-canvas c --anchor-text c \
       "${EFFECTS[RANDOM % ${#EFFECTS[@]}]}" &
     pid=$!
-    while kill -0 "$pid" 2>/dev/null; do
+    while true; do
       if read -rsn1 -t 1 || ! focused || pidof hyprlock >/dev/null; then
         finish
       fi
+      kill -0 "$pid" 2>/dev/null || break
     done
   done
 }
