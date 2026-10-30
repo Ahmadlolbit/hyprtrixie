@@ -14,7 +14,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
-const usage = `Usage: restic-backup init <location>       set up where backups go (a folder, a USB drive path or a restic URL)
+const usage = `Usage: restic-backup init <location>       set up where backups go (a folder, a USB drive path, s3:, b2: or rclone:)
        restic-backup [run]                 back up your home folder
        restic-backup list                  show the backups
        restic-backup restore <id> <folder> restore a backup into a folder
@@ -22,11 +22,13 @@ const usage = `Usage: restic-backup init <location>       set up where backups g
        restic-backup check                 verify the backup data
        restic-backup prune                 keep 7 daily, 4 weekly and 6 monthly backups, drop the rest
        restic-backup usb on|off            back up by itself whenever the backup drive is plugged in
+       restic-backup keys                  type the keys for an s3: or b2: location again
 
 The location is remembered in ~/.config/restic-backup/repository and the
 password in ~/.config/restic-backup/password. Keep a copy of the password
-somewhere safe: without it the backups cannot be read. Extra patterns to leave
-out go in ~/.config/restic-backup/excludes, one per line.
+somewhere safe: without it the backups cannot be read. Keys for cloud locations
+are in ~/.config/restic-backup/env, which only you can read. Extra patterns to
+leave out go in ~/.config/restic-backup/excludes, one per line.
 `
 
 const (
@@ -64,6 +66,7 @@ func useRepository() bool {
 		fmt.Fprintln(os.Stderr, err)
 		return false
 	}
+	loadKeys()
 	return true
 }
 
@@ -99,6 +102,9 @@ func initialize(args []string) int {
 	}
 	if err := prepare(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	if !keysReady(args[0]) {
 		return 1
 	}
 	if err := atomic.Write(repositoryFile(), []byte(args[0]+"\n"), 0o666); err != nil {
@@ -162,7 +168,8 @@ func commands() map[string]func([]string) int {
 		"prune": func([]string) int {
 			return repository("forget", "--keep-daily", "7", "--keep-weekly", "4", "--keep-monthly", "6", "--prune")
 		},
-		"usb": usb,
+		"usb":  usb,
+		"keys": func([]string) int { return keys() },
 	}
 }
 
