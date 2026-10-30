@@ -90,8 +90,9 @@ login_screen() {
   settings="$(mktemp)" || return 1
   printf '[General]\nbackground=%s\nforeground=%s\naccent=%s\nfail=%s\nclock=%s\nwallpaper=%s\n' \
     "$background" "$foreground" "$accent" "${red:-#f38ba8}" "$(setting clock)" "$wallpaper" >"$settings"
-  if ! cmp -s "$settings" "$SDDM_THEME_DIR/theme.conf.user"; then
-    install -m 0644 "$settings" "$SDDM_THEME_DIR/theme.conf.user"
+  if ! cmp -s "$settings" "$SDDM_THEME_DIR/theme.conf.user" && ! install -m 0644 "$settings" "$SDDM_THEME_DIR/theme.conf.user"; then
+    rm -f "$settings"
+    return 1
   fi
   rm -f "$settings"
 }
@@ -108,7 +109,10 @@ render() {
     rm -f "$tmp"
     return 1
   fi
-  install -D -m 0644 "$tmp" "$dest"
+  if ! install -D -m 0644 "$tmp" "$dest"; then
+    rm -f "$tmp"
+    return 2
+  fi
   rm -f "$tmp"
 }
 
