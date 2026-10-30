@@ -112,11 +112,7 @@ func remember(stamp, today string) error {
 }
 
 func main() {
-	command := ""
-	if len(os.Args) > 1 {
-		command = os.Args[1]
-	}
-	switch command {
+	switch env.Arg(1) {
 	case "":
 		os.Exit(printTip())
 	case "terminal":
