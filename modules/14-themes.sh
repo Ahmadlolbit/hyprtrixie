@@ -8,6 +8,8 @@ option ACCENT_COLOR --section look --label "Accent colour" --type choice --defau
   --help "The theme's own accent, or another of its colours, for borders and highlights"
 option GLASS --section look --label "Glass mode" --type bool --default no \
   --help "See-through terminals and panels, with the wallpaper blurred behind them"
+option ROUNDED_CORNERS --section look --label "Rounded screen corners" --type bool --default no \
+  --help "Round the corners of the screen, like a phone's"
 option AUTO_THEME --section look --label "Automatic light and dark" --type choice --default off \
   --values "off sun times" \
   --help "A light theme by day and a dark one at night: by the sun or at set times"
@@ -124,7 +126,7 @@ theme_in_use() {
 }
 
 look_install() {
-  deploy_rendered "$HYPRTRIXIE_ROOT/system/look.conf" "$LOOK_CONF" 0644 root "ACCENT=$ACCENT_COLOR" "GLASS=$GLASS" \
+  deploy_rendered "$HYPRTRIXIE_ROOT/system/look.conf" "$LOOK_CONF" 0644 root "ACCENT=$ACCENT_COLOR" "GLASS=$GLASS" "CORNERS=$ROUNDED_CORNERS" \
     "AUTO=$AUTO_THEME" "LIGHT=$LIGHT_THEME" "DARK=$DARK_THEME" "LIGHT_AT=$LIGHT_AT" "DARK_AT=$DARK_AT" "ROTATE=$WALLPAPER_MINUTES" \
     "WORKSPACES=$WALLPAPER_PER_WORKSPACE" || return 1
   ((DEPLOY_CHANGED)) || return 0

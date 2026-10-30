@@ -19,4 +19,6 @@ ShellRoot {
   Welcome {}
 
   Look {}
+
+  Corners {}
 }
