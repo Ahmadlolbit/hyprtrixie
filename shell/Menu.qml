@@ -219,6 +219,11 @@ Scope {
       Session.awake = !Session.awake;
       return;
     }
+    if (item.shell.startsWith("awake ")) {
+      Session.stayAwake(Number(item.shell.slice(6)));
+      close();
+      return;
+    }
     if (item.action)
       Quickshell.execDetached(["sh", "-c", item.action]);
     if (item.state) {

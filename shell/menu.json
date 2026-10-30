@@ -100,6 +100,32 @@
       "caffeine"
     ]
   },
+  "toggle.awakefor": {
+    "glyph": "\udb81\udd1b",
+    "label": "Stay awake for",
+    "keywords": [
+      "awake",
+      "caffeine",
+      "timer",
+      "idle",
+      "lock"
+    ]
+  },
+  "toggle.awakefor.30": {
+    "glyph": "\udb80\udd76",
+    "label": "30 minutes",
+    "shell": "awake 30"
+  },
+  "toggle.awakefor.60": {
+    "glyph": "\udb80\udd76",
+    "label": "1 hour",
+    "shell": "awake 60"
+  },
+  "toggle.awakefor.120": {
+    "glyph": "\udb80\udd76",
+    "label": "2 hours",
+    "shell": "awake 120"
+  },
   "toggle.nightlight": {
     "glyph": "\udb81\udd94",
     "label": "Night light",
