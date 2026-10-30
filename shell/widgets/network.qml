@@ -72,7 +72,7 @@ Label {
     return "could not connect";
   }
 
-  text: network ? icon() + " " + network.name : icon()
+  text: network && !(bar && bar.vertical) ? icon() + " " + network.name : icon()
   color: device ? Theme.text : Theme.subtext
 
   MouseArea {

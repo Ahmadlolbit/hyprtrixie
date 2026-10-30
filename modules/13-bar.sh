@@ -1,7 +1,10 @@
 register_module 13 "Bar"
 
+option BAR_PRESET --section look --label "Bar layout" --type choice \
+  --default full --values "full floating minimal vertical" \
+  --help "Full width, floating with rounded corners, minimal, or down the left side"
 option BAR_POSITION --section look --label "Bar position" --type choice \
-  --default top --values "top bottom" \
+  --default top --values "top bottom" --when bar_horizontal \
   --help "The bar at the top or the bottom of the screen"
 option CLOCK_FORMAT --section look --label "Clock" --type choice \
   --default 24h --values "24h 12h" \
@@ -9,13 +12,17 @@ option CLOCK_FORMAT --section look --label "Clock" --type choice \
 
 BAR_DIR="$SHARE_DIR/shell"
 
+bar_horizontal() {
+  [[ $BAR_PRESET != vertical ]]
+}
+
 bar_install() {
   deploy_tree "$HYPRTRIXIE_ROOT/shell" "$BAR_DIR"
 }
 
 bar_settings() {
   deploy_rendered "$HYPRTRIXIE_ROOT/system/shell.json" /etc/hyprtrixie/shell.json 0644 root \
-    "POSITION=$BAR_POSITION" "CLOCK=$CLOCK_FORMAT" "STYLE=$WINDOW_STYLE"
+    "POSITION=$BAR_POSITION" "CLOCK=$CLOCK_FORMAT" "STYLE=$WINDOW_STYLE" "PRESET=$BAR_PRESET"
 }
 
 bar_ready() {

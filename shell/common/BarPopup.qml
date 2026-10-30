@@ -12,6 +12,8 @@ PanelWindow {
   default property alias content: body.data
   readonly property var window: owner ? owner.QsWindow.window : null
   readonly property bool below: Config.position !== "bottom"
+  readonly property bool beside: bar ? bar.vertical === true : false
+  readonly property int gap: bar && bar.gap ? bar.gap : 0
 
   function toggle() {
     Popups.toggle(root);
@@ -20,9 +22,15 @@ PanelWindow {
   function place() {
     if (!owner || !window)
       return;
+    if (beside) {
+      const side = window.contentItem.mapFromItem(owner, 0, owner.height / 2);
+      frame.x = gap + window.width + 6;
+      frame.y = Math.round(Math.max(6, Math.min(gap + side.y - frame.height / 2, height - frame.height - 6)));
+      return;
+    }
     const point = window.contentItem.mapFromItem(owner, owner.width / 2, 0);
-    frame.x = Math.round(Math.max(6, Math.min(point.x - frame.width / 2, width - frame.width - 6)));
-    frame.y = below ? window.height + 6 : height - window.height - frame.height - 6;
+    frame.x = Math.round(Math.max(6, Math.min(gap + point.x - frame.width / 2, width - frame.width - 6)));
+    frame.y = below ? gap + window.height + 6 : height - gap - window.height - frame.height - 6;
   }
 
   screen: bar ? bar.screen : null

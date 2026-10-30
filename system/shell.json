@@ -2,6 +2,7 @@
   "bar": {
     "position": "{{ POSITION }}",
     "clock": "{{ CLOCK }}",
-    "style": "{{ STYLE }}"
+    "style": "{{ STYLE }}",
+    "preset": "{{ PRESET }}"
   }
 }
