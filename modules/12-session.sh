@@ -181,7 +181,7 @@ package_picker_install() {
 
 tips_install() {
   deploy_file "$HYPRTRIXIE_ROOT/system/tips.txt" "$SHARE_DIR/tips.txt" || return 1
-  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-tip" "$BIN_DIR/hyprtrixie-tip" 0755 || return 1
+  deploy_tool hyprtrixie-tip || return 1
   deploy_rendered "$HYPRTRIXIE_ROOT/system/tips.conf" /etc/hyprtrixie/tips 0644 root "TERMINAL=$TIPS_TERMINAL" \
     "WELCOME=$TIPS_WELCOME" "NOTIFY=$TIPS_NOTIFY"
 }

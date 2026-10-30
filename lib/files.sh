@@ -3,6 +3,8 @@ FILES_DB="$FILES_STATE_DIR/files.db"
 DEPLOY_CHANGED=0
 SHARE_DIR="${HYPRTRIXIE_SHARE_DIR:-/usr/share/hyprtrixie}"
 BIN_DIR="${HYPRTRIXIE_BIN_DIR:-/usr/local/bin}"
+TOOLS_DIR="${HYPRTRIXIE_TOOLS_DIR:-$HYPRTRIXIE_ROOT/build/bin}"
+TOOLS_BUILT="${HYPRTRIXIE_TOOLS_BUILT:-0}"
 
 file_hash() {
   [[ -f $1 ]] || return 1
@@ -149,4 +151,17 @@ remove_line() {
   grep -vxF -- "$line" "$file" >"$tmp"
   cat "$tmp" >"$file"
   rm -f "$tmp"
+}
+
+tools_build() {
+  ((TOOLS_BUILT)) && return 0
+  command -v go >/dev/null || apt_install golang-go || return 1
+  log info "building the hyprtrixie tools"
+  (cd "$HYPRTRIXIE_ROOT" && CGO_ENABLED=0 go build -buildvcs=false -o "$TOOLS_DIR/" ./cmd/...) || return 1
+  TOOLS_BUILT=1
+}
+
+deploy_tool() {
+  tools_build || return 1
+  deploy_file "$TOOLS_DIR/$1" "$BIN_DIR/$1" 0755
 }
