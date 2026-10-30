@@ -224,6 +224,14 @@ Scope {
       close();
       return;
     }
+    if (item.shell.startsWith("focus ")) {
+      if (item.shell === "focus stop")
+        Focus.stop();
+      else
+        Focus.start(Number(item.shell.slice(6)));
+      close();
+      return;
+    }
     if (item.action)
       Quickshell.execDetached(["sh", "-c", item.action]);
     if (item.state) {
