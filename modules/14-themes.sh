@@ -1,7 +1,7 @@
 register_module 14 "Themes"
 
 option THEME --section look --label "Theme" --type choice --default catppuccin \
-  --values "catppuccin catppuccin-latte ethereal everforest flexoki-light gruvbox hackerman kanagawa last-horizon lumon lupine matte-black miasma nord osaka-jade retro-82 ristretto rose-pine solitude tokyo-night vantablack white" \
+  --values "catppuccin catppuccin-latte ethereal everforest flexoki-light gruvbox hackerman kanagawa last-horizon lupine matte-black miasma nord northern-sea osaka-jade pitch-black retro-82 ristretto rose-pine solitude tokyo-night white" \
   --help "Colours, wallpaper and icons for every app; Super+Ctrl+T changes it later"
 option ACCENT_COLOR --section look --label "Accent colour" --type choice --default theme \
   --values "theme red orange yellow green cyan blue magenta" \
@@ -52,7 +52,8 @@ option CONSOLE_THEME --section look --label "Console colours and font" --type bo
 OMARCHY_DIR="${HYPRTRIXIE_OMARCHY_DIR:-/usr/share/omarchy}"
 THEME_STATE=.local/state/omarchy/current
 THEME_APPLIED="$STATE_DIR/theme"
-DROPPED_THEMES=(bloodline neon-plum noir cobalt-night navy-mint porcelain dayshift inkwell terracotta marble green-magic roseglass)
+DROPPED_THEMES=(bloodline neon-plum noir cobalt-night navy-mint porcelain dayshift inkwell terracotta marble green-magic roseglass lumon vantablack)
+declare -gA RENAMED_THEMES=([lumon]=northern-sea [vantablack]=pitch-black)
 FOLLOW_SHARE="$SHARE_DIR/follow"
 GRUB_SETTINGS=/etc/default/grub.d/hyprtrixie.cfg
 GRUB_THEME_DIR="${HYPRTRIXIE_GRUB_THEME_DIR:-/boot/grub/themes/hyprtrixie}"
@@ -80,17 +81,28 @@ theme_copy() {
   mv "$dest.part" "$dest"
 }
 
-omarchy_themes_install() {
+theme_names_update() {
+  local key
+  for key in THEME LIGHT_THEME DARK_THEME; do
+    [[ -z ${!key} ]] || printf -v "$key" '%s' "${RENAMED_THEMES[${!key}]:-${!key}}"
+  done
+}
+
+config_migration 3 theme_names_update
+
+themes_install() {
   local dir
-  source_current omarchy && [[ -f $OMARCHY_DIR/LICENSE.omarchy ]] && return 0
-  fetch_git_cached omarchy /themes/ /LICENSE || return 1
+  source_current hyprtrixie-themes && [[ -f $OMARCHY_DIR/THIRD-PARTY-LICENSES ]] && return 0
+  fetch_git_cached hyprtrixie-themes /themes/ /LICENSE /THIRD-PARTY-LICENSES || return 1
   for dir in "$FETCHED_PATH"/themes/*/; do
     dir="${dir%/}"
     theme_copy "$dir" "$OMARCHY_DIR/themes/${dir##*/}" || return 1
   done
-  install -D -m 0644 "$FETCHED_PATH/LICENSE" "$OMARCHY_DIR/LICENSE.omarchy" || return 1
+  install -D -m 0644 "$FETCHED_PATH/LICENSE" "$OMARCHY_DIR/LICENSE.themes" || return 1
+  install -D -m 0644 "$FETCHED_PATH/THIRD-PARTY-LICENSES" "$OMARCHY_DIR/THIRD-PARTY-LICENSES" || return 1
   rm -rf "$FETCHED_PATH"
-  source_mark omarchy
+  source_mark hyprtrixie-themes
+  LOOK_CHANGED=1
 }
 
 dropped_themes_remove() {
@@ -99,6 +111,23 @@ dropped_themes_remove() {
     rm -rf "${OMARCHY_DIR:?}/themes/$name"
   done
   rm -f "$OMARCHY_DIR/LICENSE.community-themes" "$STATE_DIR/sources/community-themes"
+  rm -f "$OMARCHY_DIR/LICENSE.omarchy" "$STATE_DIR/sources/omarchy"
+}
+
+theme_name_replace() {
+  local file="$1" name
+  shift
+  for name in "${!RENAMED_THEMES[@]}"; do
+    grep -qE "^((light|dark)=)?$name\$" "$file" 2>/dev/null || continue
+    "$@" sed -i --follow-symlinks -E "s/^((light|dark)=)?$name\$/\\1${RENAMED_THEMES[$name]}/" "$file" || return 1
+  done
+}
+
+renamed_themes_follow() {
+  theme_name_replace "$THEME_APPLIED" || return 1
+  theme_name_replace "$LOOK_CONF" || return 1
+  theme_name_replace "$(user_path "$THEME_STATE/theme.name")" as_user || return 1
+  theme_name_replace "$(user_path .config/hyprtrixie/look.conf)" as_user
 }
 
 themes_present() {
@@ -266,8 +295,9 @@ follow_watch() {
 
 module_14() {
   run_step "Install theme packages" apt_install_list themes
-  run_step "Install the Omarchy themes" omarchy_themes_install
-  run_step "Remove the dropped community themes" dropped_themes_remove
+  run_step "Install the themes" themes_install
+  run_step "Remove the dropped themes" dropped_themes_remove
+  run_step "Move to the themes' new names" renamed_themes_follow
   run_step "Install the theme switcher" theme_engine_install
   run_step "Point btop at the theme" btop_theme_setup
   run_step "Write the look settings" look_install
