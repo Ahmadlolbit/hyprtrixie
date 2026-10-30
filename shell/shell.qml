@@ -17,4 +17,6 @@ ShellRoot {
   Menu {}
 
   Welcome {}
+
+  Look {}
 }

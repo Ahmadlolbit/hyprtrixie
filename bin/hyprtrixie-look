@@ -6,9 +6,14 @@ STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
 USER_LOOK="$CONFIG_HOME/hyprtrixie/look.conf"
 SYSTEM_LOOK="${HYPRTRIXIE_LOOK_SYSTEM:-/etc/hyprtrixie/look.conf}"
 CURRENT="$STATE_HOME/omarchy/current"
+LOOK_STATE="$STATE_HOME/hyprtrixie/look"
+OMARCHY_PATH="${OMARCHY_PATH:-/usr/share/omarchy}"
 HERE="$(dirname "$(readlink -f "$0")")"
-KEYS=(accent font ui_font glass)
-declare -A DEFAULT=([accent]=theme [font]="JetBrainsMono Nerd Font" [ui_font]=default [glass]=no)
+ZONEINFO="${HYPRTRIXIE_ZONEINFO:-/usr/share/zoneinfo}"
+LOCALTIME="${HYPRTRIXIE_LOCALTIME:-/etc/localtime}"
+KEYS=(accent font ui_font glass auto light dark light_at dark_at location)
+declare -A DEFAULT=([accent]=theme [font]="JetBrainsMono Nerd Font" [ui_font]=default [glass]=no [auto]=off
+  [light]=catppuccin-latte [dark]=catppuccin [light_at]=07:00 [dark_at]=19:00 [location]=zone)
 ACCENTS=" theme red orange yellow green cyan blue magenta "
 
 usage() {
@@ -18,6 +23,11 @@ Usage: hyprtrixie-look
        hyprtrixie-look font [FAMILY|default]
        hyprtrixie-look ui-font [FAMILY|default]
        hyprtrixie-look glass [on|off|toggle]
+       hyprtrixie-look auto [off|sun|times|toggle]
+       hyprtrixie-look light|dark [THEME]
+       hyprtrixie-look times [LIGHT_FROM DARK_FROM]
+       hyprtrixie-look sun [DATE]
+       hyprtrixie-look location [LATITUDE,LONGITUDE|zone]
        hyprtrixie-look get SETTING
 
 Shows and changes how the desktop looks. Your settings are kept in
@@ -26,6 +36,11 @@ Shows and changes how the desktop looks. Your settings are kept in
 An accent named after a colour uses that colour of each theme. font is
 the terminal's, the bar's and the lock screen's; ui-font is the apps'.
 Glass makes terminals and panels see-through, with blur behind them.
+auto switches to the light theme by day and the dark one at night, at
+sunrise and sunset (sun) or at set times like 07:00 and 19:00 (times).
+While it's on, a theme you pick becomes the light or the dark one.
+sun prints the day's sunrise and sunset where your time zone's main city
+is, or at the location you set.
 USAGE
 }
 
@@ -121,6 +136,191 @@ glass() {
   esac
 }
 
+zone() {
+  local path
+  if [[ -n ${TZ:-} ]]; then
+    printf '%s\n' "${TZ#:}"
+    return 0
+  fi
+  path="$(realpath "$LOCALTIME" 2>/dev/null)" || return 1
+  [[ $path == */zoneinfo/* ]] || return 1
+  printf '%s\n' "${path#*/zoneinfo/}"
+}
+
+coordinates() {
+  local value zone
+  value="$(get location)"
+  if [[ $value =~ ^-?[0-9]+(\.[0-9]+)?,-?[0-9]+(\.[0-9]+)?$ ]]; then
+    printf '%s\n' "$value"
+    return 0
+  fi
+  zone="$(zone)" || return 1
+  awk -F '\t' -v zone="$zone" '
+    function degrees(text, sign, digits, size) {
+      sign = substr(text, 1, 1) == "-" ? -1 : 1
+      digits = substr(text, 2)
+      size = length(digits) % 2 ? 3 : 2
+      return sign * (substr(digits, 1, size) + substr(digits, size + 1, 2) / 60 + substr(digits, size + 3, 2) / 3600)
+    }
+    $3 == zone {
+      split_at = match(substr($2, 2), /[+-]/)
+      printf "%.4f,%.4f\n", degrees(substr($2, 1, split_at)), degrees(substr($2, split_at + 1))
+      found = 1
+      exit
+    }
+    END { exit !found }
+  ' "$ZONEINFO/zone1970.tab" "$ZONEINFO/zone.tab" 2>/dev/null
+}
+
+sun_minutes() {
+  local day offset latitude longitude
+  IFS=, read -r latitude longitude <<<"$(coordinates)"
+  [[ -n $latitude ]] || return 1
+  day="$(date -d "$1" +%j)" || return 1
+  offset="$(date -d "$1 12:00" +%z)" || return 1
+  awk -v lat="$latitude" -v lon="$longitude" -v day="$((10#$day))" -v offset="$offset" '
+    function acos(x) { return atan2(sqrt(1 - x * x), x) }
+    BEGIN {
+      pi = atan2(0, -1)
+      tz = (substr(offset, 1, 1) == "-" ? -1 : 1) * (substr(offset, 2, 2) * 60 + substr(offset, 4, 2))
+      g = 2 * pi / 365 * (day - 1)
+      eq = 229.18 * (0.000075 + 0.001868 * cos(g) - 0.032077 * sin(g) - 0.014615 * cos(2 * g) - 0.040849 * sin(2 * g))
+      decl = 0.006918 - 0.399912 * cos(g) + 0.070257 * sin(g) - 0.006758 * cos(2 * g) + 0.000907 * sin(2 * g) - 0.002697 * cos(3 * g) + 0.00148 * sin(3 * g)
+      phi = lat * pi / 180
+      x = cos(90.833 * pi / 180) / (cos(phi) * cos(decl)) - (sin(phi) / cos(phi)) * (sin(decl) / cos(decl))
+      if (x >= 1) { print 720, 720; exit }
+      if (x <= -1) { print 0, 1440; exit }
+      ha = acos(x) * 180 / pi
+      rise = int(720 - 4 * (lon + ha) - eq + tz + 0.5)
+      set = int(720 - 4 * (lon - ha) - eq + tz + 0.5)
+      print (rise < 0 ? 0 : rise), (set > 1440 ? 1440 : set)
+    }'
+}
+
+clock() {
+  printf '%02d:%02d' $(($1 / 60)) $(($1 % 60))
+}
+
+sun() {
+  local times rise set
+  if ! times="$(sun_minutes "${1:-today}")"; then
+    printf 'no location: set one with hyprtrixie-look location LATITUDE,LONGITUDE\n' >&2
+    return 1
+  fi
+  read -r rise set <<<"$times"
+  printf 'sunrise %s\nsunset %s\n' "$(clock "$rise")" "$(clock "$set")"
+}
+
+minutes() {
+  [[ $1 =~ ^([01][0-9]|2[0-3]):([0-5][0-9])$ ]] || return 1
+  printf '%d\n' $((10#${BASH_REMATCH[1]} * 60 + 10#${BASH_REMATCH[2]}))
+}
+
+period() {
+  local now start end times
+  now="$(minutes "$(date -d "${HYPRTRIXIE_NOW:-now}" +%H:%M)")" || return 1
+  if [[ $1 == sun ]] && times="$(sun_minutes "$(date -d "${HYPRTRIXIE_NOW:-now}" +%F)")"; then
+    read -r start end <<<"$times"
+  else
+    start="$(minutes "$(get light_at)")" || start="$(minutes "${DEFAULT[light_at]}")"
+    end="$(minutes "$(get dark_at)")" || end="$(minutes "${DEFAULT[dark_at]}")"
+  fi
+  if ((start <= end ? now >= start && now < end : now >= start || now < end)); then
+    printf 'day\n'
+  else
+    printf 'night\n'
+  fi
+}
+
+tick() {
+  local mode now theme
+  mode="$(get auto)"
+  [[ $mode == sun || $mode == times ]] || return 0
+  now="$(period "$mode")" || return 0
+  [[ "$(cat "$LOOK_STATE/period" 2>/dev/null)" == "$now" ]] && return 0
+  mkdir -p "$LOOK_STATE" && printf '%s\n' "$now" >"$LOOK_STATE/period"
+  if [[ $now == day ]]; then
+    theme="$(get light)"
+  else
+    theme="$(get dark)"
+  fi
+  [[ "$(cat "$CURRENT/theme.name" 2>/dev/null)" == "$theme" ]] && return 0
+  HYPRTRIXIE_LOOK_AUTO=1 "$(command_path omarchy-theme-set)" "$theme"
+}
+
+remember() {
+  [[ -n $1 ]] || return 2
+  if [[ $2 == light ]]; then
+    put light "$1"
+  else
+    put dark "$1"
+  fi
+}
+
+retick() {
+  rm -f "$LOOK_STATE/period"
+  tick
+}
+
+auto() {
+  case "${1,,}" in
+    "") get auto ;;
+    off) put auto off ;;
+    sun | times) put auto "${1,,}" && retick ;;
+    toggle)
+      if [[ "$(get auto)" == off ]]; then
+        auto sun
+      else
+        auto off
+      fi
+      ;;
+    *)
+      printf 'auto takes off, sun, times or toggle\n' >&2
+      return 2
+      ;;
+  esac
+}
+
+theme_choice() {
+  local key="$1" name
+  if [[ -z ${2:-} ]]; then
+    get "$key"
+    return 0
+  fi
+  name="$(sed -E 's/<[^>]+>//g' <<<"$2" | tr '[:upper:] ' '[:lower:]-')"
+  if [[ ! $name =~ ^[a-z0-9][a-z0-9_-]*$ ]] || [[ ! -d $OMARCHY_PATH/themes/$name && ! -d $CONFIG_HOME/omarchy/themes/$name ]]; then
+    printf 'no theme named %s; see omarchy-theme-set --list\n' "$2" >&2
+    return 2
+  fi
+  put "$key" "$name" && retick
+}
+
+set_times() {
+  if (($# == 0)); then
+    printf '%s %s\n' "$(get light_at)" "$(get dark_at)"
+    return 0
+  fi
+  if (($# != 2)) || ! minutes "$1" >/dev/null || ! minutes "$2" >/dev/null; then
+    printf 'times takes two times like 07:00 19:00: when light starts, then dark\n' >&2
+    return 2
+  fi
+  put light_at "$1" && put dark_at "$2" && retick
+}
+
+location() {
+  local value="${1:-}"
+  if [[ -z $value ]]; then
+    get location
+    return 0
+  fi
+  if [[ $value != zone ]] && { [[ ! $value =~ ^-?[0-9]{1,3}(\.[0-9]+)?,-?[0-9]{1,3}(\.[0-9]+)?$ ]] ||
+    ! awk -v at="$value" 'BEGIN { split(at, part, ","); exit !(part[1] >= -90 && part[1] <= 90 && part[2] >= -180 && part[2] <= 180) }'; }; then
+    printf 'a location is LATITUDE,LONGITUDE in degrees, like 33.31,44.36, or zone\n' >&2
+    return 2
+  fi
+  put location "$value"
+}
+
 case "${1:-}" in
   "")
     for key in "${KEYS[@]}"; do
@@ -138,6 +338,16 @@ case "${1:-}" in
   font) font font "${2:-}" ;;
   ui-font) font ui_font "${2:-}" ;;
   glass) glass "${2:-}" ;;
+  sun) sun "${2:-}" ;;
+  auto) auto "${2:-}" ;;
+  light | dark) theme_choice "$1" "${2:-}" ;;
+  times)
+    shift
+    set_times "$@"
+    ;;
+  tick) tick ;;
+  remember) remember "${2:-}" "${3:-}" ;;
+  location) location "${2:-}" ;;
   -h | --help) usage ;;
   *)
     usage >&2

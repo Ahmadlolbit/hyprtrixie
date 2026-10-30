@@ -185,6 +185,14 @@ glass_settings() {
   fi
 }
 
+remember_pick() {
+  local command=hyprtrixie-look
+  [[ -z ${HYPRTRIXIE_LOOK_AUTO:-} ]] || return 0
+  [[ "$(look auto off)" != off ]] || return 0
+  [[ -x $HERE/$command ]] && command="$HERE/$command"
+  "$command" remember "$1" "${COLORS[mode]}"
+}
+
 render() {
   local dir="$1" script key value tpl name
   script="$(mktemp)" || return 1
@@ -304,6 +312,7 @@ apply() {
   pick_background "$name" "$previous"
   link_apps
   desktop_settings
+  remember_pick "$name"
   return 0
 }
 
