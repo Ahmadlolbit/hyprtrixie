@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/notify"
 )
@@ -96,10 +97,18 @@ func notifyTip() int {
 	if notify.Send("Tips", "Tip", line) != nil {
 		return 1
 	}
-	if os.MkdirAll(filepath.Dir(stamp), 0o755) != nil || os.WriteFile(stamp, []byte(today+"\n"), 0o644) != nil {
+	if err := remember(stamp, today); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
 	return 0
+}
+
+func remember(stamp, today string) error {
+	if err := os.MkdirAll(filepath.Dir(stamp), 0o777); err != nil {
+		return err
+	}
+	return atomic.Write(stamp, []byte(today+"\n"), 0o666)
 }
 
 func main() {
