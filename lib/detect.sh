@@ -84,7 +84,7 @@ detect_gpus() {
     ids="$(pci_ids "$line")"
     vendor="$(pci_vendor "${ids%%:*}")"
     GPU_VENDORS="$(add_word "$GPU_VENDORS" "$vendor")"
-    GPU_NAMES+=("$(sed -E 's/^[^:]+:[^:]+: //; s/ \[[0-9a-f]{4}:[0-9a-f]{4}\].*$//' <<<"$line")")
+    GPU_NAMES+=("$(sed -E 's/^[^]]*\]: //; s/ \[[0-9a-f]{4}:[0-9a-f]{4}\].*$//' <<<"$line")")
     if [[ $vendor == nvidia ]] && nvidia_open_capable "${ids#*:}"; then
       NVIDIA_OPEN=1
     fi
