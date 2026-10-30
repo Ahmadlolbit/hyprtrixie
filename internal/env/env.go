@@ -2,6 +2,7 @@ package env
 
 import (
 	"os"
+	"os/user"
 	"path/filepath"
 )
 
@@ -13,7 +14,13 @@ func Or(name, fallback string) string {
 }
 
 func Home() string {
-	return os.Getenv("HOME")
+	if home := os.Getenv("HOME"); home != "" {
+		return home
+	}
+	if current, err := user.Current(); err == nil && current.HomeDir != "" {
+		return current.HomeDir
+	}
+	return "/"
 }
 
 func ConfigHome() string {
