@@ -19,6 +19,7 @@ case "$name" in
   bar)
     command=(qs -p /usr/share/hyprtrixie/shell)
     debug=(-vv --log-times)
+    mkdir -p "$CONFIG_HOME/hyprtrixie" "${XDG_CACHE_HOME:-$HOME/.cache}/hyprtrixie"
     ;;
   hypridle | hyprpaper)
     command=("$name")
