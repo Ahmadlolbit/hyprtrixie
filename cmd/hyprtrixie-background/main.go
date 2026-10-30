@@ -14,6 +14,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/hypr"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/look"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
@@ -56,8 +57,7 @@ func next() (string, bool) {
 }
 
 func perWorkspace() bool {
-	value, _ := run.CaptureQuiet(run.Quick, run.Sibling("hyprtrixie-look"), "get", "workspaces")
-	return value == "yes"
+	return look.Open().Get("workspaces") == "yes"
 }
 
 func inHyprland() bool {

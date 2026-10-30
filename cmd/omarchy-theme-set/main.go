@@ -17,6 +17,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/look"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/theme"
 )
@@ -34,12 +35,12 @@ lock screen, btop, GTK and the wallpaper. Themes come from
 const (
 	denied     = " alacritty.toml foot.ini ghostty.conf kitty.conf vscode.json "
 	wallpapers = "--wallpapers-soon"
-	shellPath  = "/usr/share/hyprtrixie/shell"
 )
 
 var (
 	systemRoot = env.Or("OMARCHY_PATH", "/usr/share/omarchy")
 	iconName   = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
+	settings   = look.Open()
 )
 
 func state() string {
@@ -124,17 +125,9 @@ func stage(name, next string) error {
 	return stageFromGit(own, next)
 }
 
-func look(key, fallback string) string {
-	value, _ := run.CaptureQuiet(run.Quick, run.Sibling("hyprtrixie-look"), "get", key)
-	if value == "" {
-		return fallback
-	}
-	return value
-}
-
 func overrideAccent(colors theme.Colors, file string) {
 	original := colors["accent"]
-	accent, ok := colors.Accent(look("accent", "theme"))
+	accent, ok := colors.Accent(settings.Get("accent"))
 	if !ok {
 		return
 	}
@@ -149,7 +142,7 @@ func overrideAccent(colors theme.Colors, file string) {
 }
 
 func glassSettings(colors theme.Colors) {
-	if look("glass", "no") == "yes" {
+	if settings.Get("glass") == "yes" {
 		colors["glass"], colors["opacity"], colors["panel_alpha"] = "yes", "0.88", "cc"
 		return
 	}
@@ -157,7 +150,7 @@ func glassSettings(colors theme.Colors) {
 }
 
 func chooseFont(colors theme.Colors) {
-	colors["font"] = look("font", theme.DefaultFont)
+	colors["font"] = settings.Get("font")
 	if !theme.ValidFont(colors["font"]) {
 		colors["font"] = theme.DefaultFont
 	}
@@ -294,7 +287,7 @@ func desktopSettings(colors theme.Colors) {
 		desktop("set", "gtk-theme", "Adwaita-dark")
 	}
 	desktop("set", "monospace-font-name", colors["font"]+" 11")
-	if ui := look("ui_font", "default"); ui == "default" {
+	if ui := settings.Get("ui_font"); ui == "default" {
 		desktop("reset", "font-name")
 	} else {
 		desktop("set", "font-name", ui+" 11")
@@ -304,8 +297,15 @@ func desktopSettings(colors theme.Colors) {
 }
 
 func rememberPick(name, mode string) {
-	if os.Getenv("HYPRTRIXIE_LOOK_AUTO") == "" && look("auto", "off") != "off" {
-		run.Within(run.Quick, run.Sibling("hyprtrixie-look"), "remember", name, mode)
+	if os.Getenv("HYPRTRIXIE_LOOK_AUTO") != "" || settings.Get("auto") == "off" {
+		return
+	}
+	key := "dark"
+	if mode == "light" {
+		key = "light"
+	}
+	if err := settings.Put(key, name); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 	}
 }
 
@@ -375,7 +375,7 @@ func retint() {
 	run.Quiet(run.Quick, "hyprctl", "reload")
 	restartPaper()
 	run.Quiet(run.Quick, "makoctl", "reload")
-	run.Quiet(run.Quick, "qs", "-p", shellPath, "ipc", "call", "theme", "reload")
+	look.ReloadShell()
 	run.Within(run.Quick, "pkill", "-USR1", "-x", "kitty")
 	run.Within(run.Quick, "pkill", "-USR2", "-x", "btop")
 	if run.Within(run.Quick, "pkill", "-x", "walker") == 0 {

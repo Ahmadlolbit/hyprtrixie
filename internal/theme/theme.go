@@ -18,6 +18,7 @@ var (
 	bare      = pattern(`^[[:space:]]*([a-z0-9_]+)[[:space:]]*=[[:space:]]*([^[:space:]#"]+)`)
 	safeValue = pattern(`^[A-Za-z0-9#(),.%_ -]*$`)
 	hexColor  = pattern(`^#[0-9A-Fa-f]{6}$`)
+	themeName = pattern(`^[a-z0-9][a-z0-9_-]*$`)
 	fontName  = pattern(`^[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N} ._+-]*$`)
 	markup    = pattern(`<[^>\n]+>`)
 	hues      = []string{"red", "green", "yellow", "blue", "magenta", "cyan"}
@@ -195,6 +196,10 @@ func Slug(value string) string {
 		}
 	}
 	return string(plain)
+}
+
+func ValidName(name string) bool {
+	return themeName().MatchString(name)
 }
 
 func ValidFont(name string) bool {

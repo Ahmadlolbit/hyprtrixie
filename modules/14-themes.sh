@@ -110,7 +110,7 @@ themes_present() {
 
 theme_engine_install() {
   deploy_tree "$HYPRTRIXIE_ROOT/themed" "$OMARCHY_DIR/default/themed" || return 1
-  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-look" "$BIN_DIR/hyprtrixie-look" 0755 || return 1
+  deploy_tool hyprtrixie-look || return 1
   deploy_tool omarchy-theme-install || return 1
   deploy_tool hyprtrixie-weather || return 1
   deploy_tool hyprtrixie-background || return 1
