@@ -23,6 +23,8 @@ Singleton {
   readonly property color panel: Qt.alpha(base, glass ? 0.8 : 1)
   readonly property var looks: Object.assign({}, lines(systemLook.text()), lines(userLook.text()))
   readonly property bool corners: looks.corners === "yes"
+  readonly property string video: looks.video && looks.video !== "off" ? looks.video : ""
+  readonly property bool videoOnBattery: looks.video_battery === "play"
   readonly property int fontSize: 13
   readonly property int barHeight: 30
   readonly property int barWidth: 60

@@ -8,3 +8,4 @@ hyprpolkitagent/backports
 hyprsunset/backports
 xdg-desktop-portal-hyprland/backports
 quickshell/backports
+qml6-module-qtmultimedia
