@@ -545,10 +545,22 @@
     "glyph": "\uf021",
     "label": "Update"
   },
+  "update.everything": {
+    "glyph": "\udb81\udeb0",
+    "label": "Everything",
+    "action": "hyprtrixie-terminal --wait hyprtrixie update",
+    "keywords": [
+      "update",
+      "upgrade",
+      "everything",
+      "all",
+      "snapshot"
+    ]
+  },
   "update.hyprtrixie": {
     "glyph": "\udb81\udeb0",
     "label": "hyprtrixie",
-    "action": "hyprtrixie-terminal --wait hyprtrixie update",
+    "action": "hyprtrixie-terminal --wait hyprtrixie update hyprtrixie",
     "keywords": [
       "update",
       "upgrade",
