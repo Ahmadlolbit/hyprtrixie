@@ -62,15 +62,29 @@ console_palette() {
   )
 }
 
+as_user() {
+  runuser -u "$user" -- "$@"
+}
+
+copy_wallpaper() {
+  local copy
+  copy="$(mktemp -p "$SDDM_THEME_DIR")" || return 1
+  if ! as_user cat "$1" >"$copy"; then
+    rm -f "$copy"
+    return 1
+  fi
+  rm -f "$SDDM_THEME_DIR"/wallpaper.*
+  chmod 0644 "$copy"
+  mv "$copy" "$SDDM_THEME_DIR/$2"
+}
+
 login_screen() {
-  local image wallpaper="" red settings
+  local image extension wallpaper="" red settings
   image="$(readlink -f "$home/.local/state/omarchy/current/background" 2>/dev/null)"
-  if [[ -f $image ]]; then
-    wallpaper="wallpaper.${image##*.}"
-    if ! cmp -s "$image" "$SDDM_THEME_DIR/$wallpaper"; then
-      rm -f "$SDDM_THEME_DIR"/wallpaper.*
-      install -m 0644 "$image" "$SDDM_THEME_DIR/$wallpaper" || return 1
-    fi
+  extension="${image##*.}"
+  if [[ -f $image && $extension =~ ^[[:alnum:]]+$ ]] && as_user test -r "$image"; then
+    wallpaper="wallpaper.$extension"
+    as_user cmp -s "$image" "$SDDM_THEME_DIR/$wallpaper" || copy_wallpaper "$image" "$wallpaper" || return 1
   fi
   red="$(color red)"
   settings="$(mktemp)" || return 1
