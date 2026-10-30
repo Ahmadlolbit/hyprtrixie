@@ -9,7 +9,7 @@ end
 
 bind("SUPER + Return", "Terminal", "kitty")
 bind("SUPER + E", "Files", "xdg-open ~")
-bind("SUPER + B", "Browser", "helium")
+bind("SUPER + B", "Browser", [[sh -c 'gtk-launch "$(xdg-mime query default x-scheme-handler/https)" || exec x-www-browser']])
 bind("SUPER + Q", "Close window", hl.dsp.window.close())
 bind("SUPER + F", "Full screen", hl.dsp.window.fullscreen({ mode = "fullscreen" }))
 bind("SUPER + T", "Float or tile window", hl.dsp.window.float({ action = "toggle" }))
