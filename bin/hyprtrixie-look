@@ -7,6 +7,7 @@ USER_LOOK="$CONFIG_HOME/hyprtrixie/look.conf"
 SYSTEM_LOOK="${HYPRTRIXIE_LOOK_SYSTEM:-/etc/hyprtrixie/look.conf}"
 CURRENT="$STATE_HOME/omarchy/current"
 LOOK_STATE="$STATE_HOME/hyprtrixie/look"
+QUIET_STAMP="${XDG_RUNTIME_DIR:-$LOOK_STATE}/hyprtrixie-quiet"
 WEATHER_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/hyprtrixie/weather.json"
 OMARCHY_PATH="${OMARCHY_PATH:-/usr/share/omarchy}"
 HERE="$(dirname "$(readlink -f "$0")")"
@@ -443,8 +444,8 @@ quiet_tick() {
   else
     inside=loud
   fi
-  [[ "$(cat "$LOOK_STATE/quiet" 2>/dev/null)" == "$inside" ]] && return 0
-  mkdir -p "$LOOK_STATE" && printf '%s\n' "$inside" >"$LOOK_STATE/quiet"
+  [[ "$(cat "$QUIET_STAMP" 2>/dev/null)" == "$inside" ]] && return 0
+  mkdir -p "$LOOK_STATE" && printf '%s\n' "$inside" >"$QUIET_STAMP"
   if [[ $inside == quiet ]]; then
     makoctl mode -a do-not-disturb >/dev/null 2>&1
   else
@@ -458,15 +459,15 @@ quiet() {
     "") get quiet ;;
     on | yes)
       put quiet yes || return 1
-      rm -f "$LOOK_STATE/quiet"
+      rm -f "$QUIET_STAMP"
       quiet_tick
       ;;
     off | no)
       put quiet no || return 1
-      if [[ "$(cat "$LOOK_STATE/quiet" 2>/dev/null)" == quiet ]]; then
+      if [[ "$(cat "$QUIET_STAMP" 2>/dev/null)" == quiet ]]; then
         makoctl mode -r do-not-disturb >/dev/null 2>&1
       fi
-      rm -f "$LOOK_STATE/quiet"
+      rm -f "$QUIET_STAMP"
       ;;
     toggle)
       if [[ "$(get quiet)" == yes ]]; then
@@ -493,7 +494,7 @@ quiet_hours() {
   fi
   put quiet_from "$1" || return 1
   put quiet_to "$2" || return 1
-  rm -f "$LOOK_STATE/quiet"
+  rm -f "$QUIET_STAMP"
   quiet_tick
 }
 
