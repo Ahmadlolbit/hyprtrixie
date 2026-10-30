@@ -6,7 +6,7 @@ usage() {
 Usage: hyprtrixie-screenshot [region|window|screen]
 
 Saves a screenshot to ~/Pictures/Screenshots, copies it to the clipboard and
-shows a notification. Choose Edit on the notification to annotate it.
+shows a notification. Click the notification to annotate it.
 USAGE
 }
 
@@ -52,7 +52,7 @@ case $? in
 esac
 
 wl-copy --type image/png <"$file"
-action="$(notify-send --app-name=Screenshot --icon="$file" --action=edit=Edit "Screenshot saved" "${file/#"$HOME"/\~}")"
-if [[ $action == edit ]]; then
+action="$(notify-send --app-name=Screenshot --icon="$file" --action=default=Edit "Screenshot saved" "${file/#"$HOME"/\~}. Click to edit it.")"
+if [[ $action == default ]]; then
   swappy -f "$file" -o "$file"
 fi

@@ -622,9 +622,9 @@ changes_notify() {
   [[ -f $dir/changes-unseen && -s $dir/changes.txt ]] || return 0
   rm -f "$dir/changes-unseen"
   count="$(grep -c '^  - ' "$dir/changes.txt")"
-  action="$(notify-send --app-name=hyprtrixie --action=read=Read "hyprtrixie was updated" \
-    "$count changes since the last update. Menu › Update › What changed shows them too.")"
-  [[ $action == read ]] && exec hyprtrixie-terminal --wait "$HYPRTRIXIE_ROOT/hyprtrixie" changes
+  action="$(notify-send --app-name=hyprtrixie --action=default=Read "hyprtrixie was updated" \
+    "$count changes since the last update. Click to read them, or open Menu › Update › What changed.")"
+  [[ $action == default ]] && exec hyprtrixie-terminal --wait "$HYPRTRIXIE_ROOT/hyprtrixie" changes
   return 0
 }
 
