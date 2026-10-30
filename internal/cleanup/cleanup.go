@@ -6,14 +6,26 @@ import (
 	"syscall"
 )
 
-var signals = []os.Signal{syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP}
-
-func Notify(channel chan<- os.Signal) {
-	for _, watched := range signals {
-		if !signal.Ignored(watched) {
-			signal.Notify(channel, watched)
+func catch(channel chan<- os.Signal, watched ...os.Signal) {
+	for _, one := range watched {
+		if !signal.Ignored(one) {
+			signal.Notify(channel, one)
 		}
 	}
+}
+
+func Notify(channel chan<- os.Signal) {
+	catch(channel, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+}
+
+func NotifyInterrupt(channel chan<- os.Signal) {
+	catch(channel, syscall.SIGINT)
+}
+
+func IgnoreQuit() func() {
+	ignored := make(chan os.Signal, 1)
+	catch(ignored, syscall.SIGQUIT)
+	return func() { signal.Stop(ignored) }
 }
 
 func OnSignal(action func()) func() {
