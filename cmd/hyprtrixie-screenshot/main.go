@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/hypr"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/notify"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
@@ -19,24 +19,9 @@ Saves a screenshot to ~/Pictures/Screenshots, copies it to the clipboard and
 shows a notification. Click the notification to annotate it.
 `
 
-func hyprctl(target any, query string) bool {
-	output, err := run.Capture(run.Quick, "hyprctl", "-j", query)
-	if err != nil {
-		return false
-	}
-	if err := json.Unmarshal([]byte(output), target); err != nil {
-		fmt.Fprintf(os.Stderr, "hyprctl %s: %v\n", query, err)
-		return false
-	}
-	return true
-}
-
 func windowArea() (string, bool) {
-	var window struct {
-		At   [2]int `json:"at"`
-		Size [2]int `json:"size"`
-	}
-	if !hyprctl(&window, "activewindow") {
+	window, ok := hypr.ActiveWindow()
+	if !ok {
 		return "", false
 	}
 	if window.Size[0] == 0 || window.Size[1] == 0 {
@@ -47,11 +32,8 @@ func windowArea() (string, bool) {
 }
 
 func focusedOutput() (string, bool) {
-	var monitors []struct {
-		Name    string `json:"name"`
-		Focused bool   `json:"focused"`
-	}
-	if !hyprctl(&monitors, "monitors") {
+	monitors, ok := hypr.Monitors()
+	if !ok {
 		return "", false
 	}
 	for _, monitor := range monitors {

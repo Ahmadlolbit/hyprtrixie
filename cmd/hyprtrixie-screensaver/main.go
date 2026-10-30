@@ -1,19 +1,20 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/rand/v2"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"regexp"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/hypr"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/notify"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/term"
@@ -36,15 +37,13 @@ const (
 	mouseOn    = "\x1b[?1003h\x1b[?1006h"
 	mouseOff   = "\x1b[?1006l\x1b[?1003l"
 
-	effectLimit = time.Hour
+	effectLimit       = time.Hour
+	monitorCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"
 )
 
-var (
-	effects = []string{"beams", "binarypath", "blackhole", "bouncyballs", "bubbles", "burn", "colorshift", "crumble", "decrypt", "errorcorrect", "expand", "fireworks",
-		"highlight", "laseretch", "matrix", "middleout", "orbittingvolley", "overflow", "pour", "print", "rain", "randomsequence", "rings", "scattered", "slice",
-		"slide", "spotlights", "spray", "swarm", "sweep", "synthgrid", "unstable", "vhstape", "waves", "wipe"}
-	monitorName = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
-)
+var effects = []string{"beams", "binarypath", "blackhole", "bouncyballs", "bubbles", "burn", "colorshift", "crumble", "decrypt", "errorcorrect", "expand", "fireworks",
+	"highlight", "laseretch", "matrix", "middleout", "orbittingvolley", "overflow", "pour", "print", "rain", "randomsequence", "rings", "scattered", "slice",
+	"slide", "spotlights", "spray", "swarm", "sweep", "synthgrid", "unstable", "vhstape", "waves", "wipe"}
 
 func configDir() string {
 	return filepath.Join(env.ConfigHome(), "hyprtrixie")
@@ -54,14 +53,9 @@ func offFile() string {
 	return filepath.Join(configDir(), "screensaver-off")
 }
 
-func exists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
-}
-
 func textFile() string {
 	own := filepath.Join(configDir(), "screensaver.txt")
-	if info, err := os.Stat(own); err == nil && info.Mode().IsRegular() {
+	if fsutil.IsFile(own) {
 		return own
 	}
 	return sharedText
@@ -76,22 +70,11 @@ func locked() bool {
 }
 
 func monitors() []string {
-	output, err := run.Capture(run.Quick, "hyprctl", "monitors", "-j")
-	if err != nil {
-		return nil
-	}
-	var found []struct {
-		Name    string `json:"name"`
-		Focused bool   `json:"focused"`
-	}
-	if err := json.Unmarshal([]byte(output), &found); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return nil
-	}
+	found, _ := hypr.Monitors()
 	var others, last []string
 	for _, monitor := range found {
 		switch {
-		case !monitorName.MatchString(monitor.Name):
+		case !validMonitor(monitor.Name):
 		case monitor.Focused:
 			last = append(last, monitor.Name)
 		default:
@@ -101,13 +84,17 @@ func monitors() []string {
 	return append(others, last...)
 }
 
+func validMonitor(name string) bool {
+	return name != "" && strings.Trim(name, monitorCharacters) == ""
+}
+
 func dispatch(command string) int {
 	_, err := run.Capture(run.Quick, "hyprctl", "dispatch", command)
 	return run.Report(err)
 }
 
 func start() int {
-	if exists(offFile()) || running() || locked() {
+	if fsutil.Exists(offFile()) || running() || locked() {
 		return 0
 	}
 	code := 0
@@ -119,14 +106,8 @@ func start() int {
 }
 
 func focused() bool {
-	output, err := run.Capture(run.Quick, "hyprctl", "activewindow", "-j")
-	if err != nil {
-		return false
-	}
-	var window struct {
-		Class string `json:"class"`
-	}
-	return json.Unmarshal([]byte(output), &window) == nil && window.Class == class
+	window, ok := hypr.ActiveWindow()
+	return ok && window.Class == class
 }
 
 func cursor(invisible string) {
@@ -195,7 +176,7 @@ func saver() {
 }
 
 func toggle() int {
-	if exists(offFile()) {
+	if fsutil.Exists(offFile()) {
 		if err := os.Remove(offFile()); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
@@ -220,7 +201,7 @@ func main() {
 	case "toggle":
 		os.Exit(toggle())
 	case "status":
-		if exists(offFile()) {
+		if fsutil.Exists(offFile()) {
 			fmt.Println("off")
 		} else {
 			fmt.Println("on")
