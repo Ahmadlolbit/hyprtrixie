@@ -176,7 +176,7 @@ terminal_install() {
 }
 
 package_picker_install() {
-  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-pkg" "$BIN_DIR/hyprtrixie-pkg" 0755
+  deploy_tool hyprtrixie-pkg
 }
 
 tips_install() {
