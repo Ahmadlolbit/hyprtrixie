@@ -34,6 +34,14 @@ option WEATHER --section look --label "Weather in the bar" --type bool --default
 option WEATHER_UNITS --section look --label "Weather units" --type choice --default celsius \
   --values "celsius fahrenheit" --when weather_on \
   --help "Degrees Celsius and km/h, or Fahrenheit and mph"
+option QUIET_HOURS --section look --label "Quiet hours" --type bool --default no \
+  --help "Do not disturb every night, for the hours below"
+option QUIET_FROM --section look --label "Quiet from" --type choice --default 22:00 \
+  --values "20:00 21:00 22:00 23:00 00:00" --when quiet_on \
+  --help "When notifications go quiet"
+option QUIET_TO --section look --label "Quiet until" --type choice --default 07:00 \
+  --values "05:00 06:00 07:00 08:00 09:00" --when quiet_on \
+  --help "When notifications come back"
 option BOOT_SPLASH --section look --label "Boot splash" --type bool --default yes \
   --help "The logo and the disk password prompt in your theme's colours while it boots"
 option BOOT_MENU_THEME --section look --label "Boot menu in the theme" --type bool --default yes \
@@ -133,7 +141,8 @@ theme_in_use() {
 look_install() {
   deploy_rendered "$HYPRTRIXIE_ROOT/system/look.conf" "$LOOK_CONF" 0644 root "ACCENT=$ACCENT_COLOR" "GLASS=$GLASS" "CORNERS=$ROUNDED_CORNERS" \
     "AUTO=$AUTO_THEME" "LIGHT=$LIGHT_THEME" "DARK=$DARK_THEME" "LIGHT_AT=$LIGHT_AT" "DARK_AT=$DARK_AT" "ROTATE=$WALLPAPER_MINUTES" \
-    "WORKSPACES=$WALLPAPER_PER_WORKSPACE" "WEATHER=$WEATHER" "WEATHER_UNITS=$WEATHER_UNITS" || return 1
+    "WORKSPACES=$WALLPAPER_PER_WORKSPACE" "WEATHER=$WEATHER" "WEATHER_UNITS=$WEATHER_UNITS" \
+    "QUIET=$QUIET_HOURS" "QUIET_FROM=$QUIET_FROM" "QUIET_TO=$QUIET_TO" || return 1
   ((DEPLOY_CHANGED)) || return 0
   LOOK_CHANGED=1
   rm -f "$(user_path .local/state/hyprtrixie/look/period)"
@@ -149,6 +158,10 @@ auto_theme_times() {
 
 weather_on() {
   [[ $WEATHER == yes ]]
+}
+
+quiet_on() {
+  [[ $QUIET_HOURS == yes ]]
 }
 
 theme_apply() {
