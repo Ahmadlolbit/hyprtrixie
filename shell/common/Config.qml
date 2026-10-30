@@ -12,7 +12,7 @@ Singleton {
       clock: "24h",
       style: "sharp",
       left: ["workspaces", "window"],
-      center: ["media", "clock"],
+      center: ["media", "clock", "focus"],
       right: ["privacy", "indicators", "updates", "snapshots", "weather", "tray", "cpu", "memory", "temperature", "network", "bluetooth", "audio", "brightness", "power-profile", "battery", "notifications"],
       preset: "full"
     })

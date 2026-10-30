@@ -215,6 +215,42 @@
       "bluetooth"
     ]
   },
+  "focus": {
+    "glyph": "\udb81\udd1f",
+    "label": "Focus"
+  },
+  "focus.25": {
+    "glyph": "\udb81\udd1f",
+    "label": "25 minutes",
+    "shell": "focus 25",
+    "keywords": [
+      "focus",
+      "pomodoro",
+      "timer",
+      "do not disturb"
+    ]
+  },
+  "focus.50": {
+    "glyph": "\udb81\udd1f",
+    "label": "50 minutes",
+    "shell": "focus 50",
+    "keywords": [
+      "focus",
+      "pomodoro",
+      "timer",
+      "do not disturb"
+    ]
+  },
+  "focus.stop": {
+    "glyph": "\udb81\udcdb",
+    "label": "Stop",
+    "shell": "focus stop",
+    "keywords": [
+      "focus",
+      "pomodoro",
+      "timer"
+    ]
+  },
   "style": {
     "glyph": "\uebcf",
     "label": "Style"
