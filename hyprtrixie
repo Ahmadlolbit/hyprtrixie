@@ -38,7 +38,8 @@ USAGE
                                      --verbose also writes everything to ~/hyprtrixie-log-<time>.txt
   hyprtrixie verbose [on|off]      Log the desktop in detail from the next login (run it without sudo)
   hyprtrixie guide                 Read the guide in the terminal
-  hyprtrixie update                Pull the newest hyprtrixie and run the installer (run it without sudo)
+  hyprtrixie update [PART]         Update everything (run it without sudo): a snapshot, Debian, the apps,
+                                     then hyprtrixie and its installer; PART is system, apps or hyprtrixie
   hyprtrixie changes               Show what the last hyprtrixie update changed
   hyprtrixie doctor                Check the system and offer the safe fixes (run it with sudo)
   hyprtrixie app list              List the apps you can install, by category (* = installed)
@@ -595,11 +596,52 @@ changes_between() {
   return 0
 }
 
+update_system() {
+  if command -v snapper >/dev/null && [[ -f ${HYPRTRIXIE_SNAPPER_CONFIG:-/etc/snapper/configs/root} ]]; then
+    printf 'Taking a snapshot first\n'
+    sudo snapper --no-dbus -c root create --description "before hyprtrixie update" --cleanup-algorithm number ||
+      die "the snapshot failed, so nothing was updated"
+  fi
+  printf 'Updating Debian\n'
+  sudo apt update || die "updating Debian failed"
+  sudo apt full-upgrade || die "updating Debian failed"
+}
+
+update_apps() {
+  if command -v flatpak >/dev/null; then
+    printf 'Updating Flatpak apps\n'
+    flatpak update || die "updating Flatpak apps failed"
+  fi
+  if command -v mise >/dev/null; then
+    printf "Updating mise's tools\n"
+    mise upgrade || die "updating mise's tools failed"
+  fi
+  if command -v rustup >/dev/null; then
+    printf 'Updating Rust\n'
+    rustup update || die "updating Rust failed"
+  fi
+  return 0
+}
+
 cmd_update() {
-  local old new dir
+  local part="${1:-all}"
+  case $part in
+    all | system | apps | hyprtrixie) ;;
+    *) die "usage: hyprtrixie update [system | apps | hyprtrixie]" ;;
+  esac
   ((EUID != 0)) || die "run it as yourself, without sudo: hyprtrixie update"
-  git -C "$HYPRTRIXIE_ROOT" rev-parse --git-dir >/dev/null 2>&1 ||
-    die "$HYPRTRIXIE_ROOT is not a git clone, so it can't update itself"
+  if [[ $part == all || $part == hyprtrixie ]]; then
+    git -C "$HYPRTRIXIE_ROOT" rev-parse --git-dir >/dev/null 2>&1 ||
+      die "$HYPRTRIXIE_ROOT is not a git clone, so it can't update itself"
+  fi
+  [[ $part == all || $part == system ]] && update_system
+  [[ $part == all || $part == apps ]] && update_apps
+  [[ $part == all || $part == hyprtrixie ]] && update_hyprtrixie
+  return 0
+}
+
+update_hyprtrixie() {
+  local old new dir
   old="$(git -C "$HYPRTRIXIE_ROOT" rev-parse HEAD)"
   printf 'Updating %s\n' "$HYPRTRIXIE_ROOT"
   git -C "$HYPRTRIXIE_ROOT" pull --ff-only ||
@@ -932,7 +974,10 @@ main() {
       ;;
     guide) cmd_guide ;;
     doctor) cmd_doctor ;;
-    update) cmd_update ;;
+    update)
+      shift
+      cmd_update "$@"
+      ;;
     changes)
       shift
       cmd_changes "$@"

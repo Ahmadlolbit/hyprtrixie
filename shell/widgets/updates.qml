@@ -25,7 +25,7 @@ Label {
   Process {
     id: upgrade
 
-    command: ["hyprtrixie-terminal", "--wait", "sh", "-c", "sudo apt update && sudo apt full-upgrade"]
+    command: ["hyprtrixie-terminal", "--wait", "hyprtrixie", "update"]
     onExited: counter.running = true
   }
 
