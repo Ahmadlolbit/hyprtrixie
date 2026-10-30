@@ -201,6 +201,29 @@
       "automatic"
     ]
   },
+  "style.rotate": {
+    "glyph": "\udb81\udc53",
+    "label": "Rotate wallpapers",
+    "action": "hyprtrixie-look rotate toggle",
+    "state": "test \"$(hyprtrixie-look rotate)\" != 0",
+    "keywords": [
+      "wallpaper",
+      "background",
+      "rotate",
+      "slideshow"
+    ]
+  },
+  "style.workspaces": {
+    "glyph": "\udb81\udd70",
+    "label": "Wallpaper per workspace",
+    "action": "hyprtrixie-look workspaces toggle",
+    "state": "test \"$(hyprtrixie-look workspaces)\" = yes",
+    "keywords": [
+      "wallpaper",
+      "background",
+      "workspace"
+    ]
+  },
   "style.accent": {
     "glyph": "\udb80\udfd8",
     "label": "Accent",

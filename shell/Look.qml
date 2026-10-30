@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 
 Scope {
@@ -7,6 +8,14 @@ Scope {
     id: tick
 
     command: ["hyprtrixie-look", "tick"]
+  }
+
+  Connections {
+    target: Hyprland
+
+    function onFocusedWorkspaceChanged() {
+      Quickshell.execDetached(["hyprtrixie-background", "workspaces"]);
+    }
   }
 
   Timer {

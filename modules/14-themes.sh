@@ -23,6 +23,10 @@ option LIGHT_AT --section look --label "Light from" --type choice --default 07:0
 option DARK_AT --section look --label "Dark from" --type choice --default 19:00 \
   --values "17:00 18:00 19:00 20:00 21:00 22:00" --when auto_theme_times \
   --help "When the dark theme starts"
+option WALLPAPER_MINUTES --section look --label "Change wallpaper every (minutes)" --type number --default 0 \
+  --help "Move to the theme's next wallpaper every so many minutes; 0 keeps one"
+option WALLPAPER_PER_WORKSPACE --section look --label "A wallpaper per workspace" --type bool --default no \
+  --help "Each workspace shows its own wallpaper from the theme"
 option BOOT_SPLASH --section look --label "Boot splash" --type bool --default yes \
   --help "The logo and the disk password prompt in your theme's colours while it boots"
 option BOOT_MENU_THEME --section look --label "Boot menu in the theme" --type bool --default yes \
@@ -121,7 +125,8 @@ theme_in_use() {
 
 look_install() {
   deploy_rendered "$HYPRTRIXIE_ROOT/system/look.conf" "$LOOK_CONF" 0644 root "ACCENT=$ACCENT_COLOR" "GLASS=$GLASS" \
-    "AUTO=$AUTO_THEME" "LIGHT=$LIGHT_THEME" "DARK=$DARK_THEME" "LIGHT_AT=$LIGHT_AT" "DARK_AT=$DARK_AT" || return 1
+    "AUTO=$AUTO_THEME" "LIGHT=$LIGHT_THEME" "DARK=$DARK_THEME" "LIGHT_AT=$LIGHT_AT" "DARK_AT=$DARK_AT" "ROTATE=$WALLPAPER_MINUTES" \
+    "WORKSPACES=$WALLPAPER_PER_WORKSPACE" || return 1
   ((DEPLOY_CHANGED)) || return 0
   LOOK_CHANGED=1
   rm -f "$(user_path .local/state/hyprtrixie/look/period)"
