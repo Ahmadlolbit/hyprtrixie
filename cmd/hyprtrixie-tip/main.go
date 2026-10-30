@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
@@ -28,22 +30,22 @@ var (
 	switches = env.Or("HYPRTRIXIE_TIP_SWITCHES", "/etc/hyprtrixie/tips")
 )
 
-func enabled(name string) bool {
-	data, err := os.ReadFile(switches)
-	if err != nil {
-		return true
+func read(file string) string {
+	data, err := os.ReadFile(file)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		fmt.Fprintln(os.Stderr, err)
 	}
-	return !slices.Contains(strings.Split(string(data), "\n"), name+"=no")
+	return string(data)
+}
+
+func enabled(name string) bool {
+	return !slices.Contains(strings.Split(read(switches), "\n"), name+"=no")
 }
 
 func tip() (string, bool) {
 	var tips []string
 	for _, file := range []string{tipsFile, filepath.Join(env.ConfigHome(), "hyprtrixie", "tips.txt")} {
-		data, err := os.ReadFile(file)
-		if err != nil {
-			continue
-		}
-		for _, line := range strings.Split(string(data), "\n") {
+		for _, line := range strings.Split(read(file), "\n") {
 			if strings.TrimSpace(line) != "" {
 				tips = append(tips, line)
 			}
