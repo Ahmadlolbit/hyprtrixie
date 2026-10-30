@@ -285,7 +285,11 @@ Scope {
     property string kind: ""
 
     stdout: StdioCollector {
-      onStreamFinished: root.listed = lister.kind.endsWith("fonts") ? root.fonts(lister.kind, text) : root.catalogue(lister.kind, text)
+      onStreamFinished: {
+        const entry = root.entries[root.page];
+        if (entry && entry.list === lister.kind)
+          root.listed = lister.kind.endsWith("fonts") ? root.fonts(lister.kind, text) : root.catalogue(lister.kind, text);
+      }
     }
   }
 
