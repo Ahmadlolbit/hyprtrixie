@@ -200,7 +200,7 @@ brightness_access() {
 }
 
 screenshot_install() {
-  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-screenshot" "$BIN_DIR/hyprtrixie-screenshot" 0755
+  deploy_tool hyprtrixie-screenshot
 }
 
 screensaver_install() {
