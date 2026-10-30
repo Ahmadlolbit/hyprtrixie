@@ -13,17 +13,17 @@ Singleton {
       style: "sharp",
       left: ["workspaces", "window"],
       center: ["media", "clock"],
-      right: ["indicators", "updates", "snapshots", "tray", "cpu", "memory", "network", "bluetooth", "audio", "brightness", "power-profile", "battery"],
+      right: ["indicators", "updates", "snapshots", "weather", "tray", "cpu", "memory", "network", "bluetooth", "audio", "brightness", "power-profile", "battery"],
       preset: "full"
     })
   readonly property var presets: ({
       minimal: {
         left: ["workspaces"],
-        right: ["indicators", "updates", "tray", "network", "bluetooth", "audio", "battery"]
+        right: ["indicators", "updates", "weather", "tray", "network", "bluetooth", "audio", "battery"]
       },
       vertical: {
         left: ["workspaces"],
-        right: ["indicators", "updates", "tray", "network", "bluetooth", "audio", "brightness", "battery"]
+        right: ["indicators", "updates", "weather", "tray", "network", "bluetooth", "audio", "brightness", "battery"]
       }
     })
   readonly property var system: parse(systemFile.text())
