@@ -22,7 +22,7 @@ imv viewers minimal debian imv imv (images)
 evince viewers minimal debian evince Evince (PDFs)
 vlc viewers everyday debian vlc VLC (videos and music)
 okular viewers offered debian okular Okular (PDFs)
-mpv viewers offered debian mpv mpv (videos)
+mpv viewers offered debian mpv,mpv-mpris mpv (videos)
 dolphin files minimal debian dolphin,ark,kio-extras,ffmpegthumbs,kde-cli-tools Dolphin (files and archives)
 localsend files everyday release:localsend localsend LocalSend
 syncthing files offered debian syncthing Syncthing
