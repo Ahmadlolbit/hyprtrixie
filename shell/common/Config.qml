@@ -13,7 +13,7 @@ Singleton {
       style: "sharp",
       left: ["workspaces", "window"],
       center: ["media", "clock"],
-      right: ["privacy", "indicators", "updates", "snapshots", "weather", "tray", "cpu", "memory", "network", "bluetooth", "audio", "brightness", "power-profile", "battery", "notifications"],
+      right: ["privacy", "indicators", "updates", "snapshots", "weather", "tray", "cpu", "memory", "temperature", "network", "bluetooth", "audio", "brightness", "power-profile", "battery", "notifications"],
       preset: "full"
     })
   readonly property var presets: ({
