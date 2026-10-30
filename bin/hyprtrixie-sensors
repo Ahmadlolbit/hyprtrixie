@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+ROOT="${HYPRTRIXIE_SYSROOT:-}"
+CPU_SENSORS=(coretemp k10temp zenpower cpu_thermal thinkpad acpitz)
+
+usage() {
+  cat <<'USAGE'
+Usage: hyprtrixie-sensors
+
+Prints the CPU temperature, the other temperatures worth watching (NVMe
+drives, an AMD GPU) and the fans as JSON, read from /sys/class/hwmon. On a
+ThinkPad it adds the fan level from /proc/acpi/ibm/fan. The bar's
+temperature widget reads it every few seconds.
+USAGE
+}
+
+degrees() {
+  local value
+  read -r value 2>/dev/null <"$1" || return 1
+  [[ $value =~ ^[0-9]+$ ]] || return 1
+  printf '%d\n' $(((value + 500) / 1000))
+}
+
+labelled() {
+  local label
+  for label in "$1"/temp*_label; do
+    [[ -r $label && "$(<"$label")" == "$2" ]] || continue
+    printf '%s\n' "${label%_label}_input"
+    return 0
+  done
+  return 1
+}
+
+cpu_input() {
+  case $2 in
+    coretemp) labelled "$1" "Package id 0" && return 0 ;;
+    k10temp) labelled "$1" Tctl && return 0 ;;
+    zenpower) labelled "$1" Tdie && return 0 ;;
+  esac
+  [[ -r $1/temp1_input ]] && printf '%s\n' "$1/temp1_input"
+}
+
+rows() {
+  local dir name rank=${#CPU_SENSORS[@]} i input value cpu="" drives=0 fan number label
+  for dir in "$ROOT"/sys/class/hwmon/hwmon*; do
+    [[ -r $dir/name ]] || continue
+    name="$(<"$dir/name")"
+    for ((i = 0; i < rank; i++)); do
+      [[ ${CPU_SENSORS[i]} == "$name" ]] || continue
+      input="$(cpu_input "$dir" "$name")" && value="$(degrees "$input")" && cpu=$value rank=$i
+      break
+    done
+    if [[ $name == nvme ]] && value="$(degrees "$dir/temp1_input")"; then
+      drives=$((drives + 1))
+      label=NVMe
+      ((drives > 1)) && label="NVMe $drives"
+      printf 'temp\t%s\t%s\n' "$label" "$value"
+    fi
+    if [[ $name == amdgpu ]] && value="$(degrees "$dir/temp1_input")"; then
+      printf 'temp\tGPU\t%s\n' "$value"
+    fi
+    for fan in "$dir"/fan*_input; do
+      read -r value 2>/dev/null <"$fan" || continue
+      [[ $value =~ ^[0-9]+$ ]] || continue
+      [[ $name == thinkpad ]] || ((value > 0)) || continue
+      number="${fan##*/fan}"
+      number="${number%_input}"
+      label=Fan
+      ((number > 1)) && label="Fan $number"
+      [[ -r ${fan%_input}_label ]] && label="$(<"${fan%_input}_label")"
+      printf 'fan\t%s\t%s\n' "$label" "$value"
+    done
+  done
+  [[ -n $cpu ]] && printf 'cpu\tCPU\t%s\n' "$cpu"
+  return 0
+}
+
+level() {
+  local key value
+  [[ -r $ROOT/proc/acpi/ibm/fan ]] || return 0
+  while IFS=: read -r key value; do
+    [[ $key == level ]] || continue
+    printf '%s\n' "${value//[[:space:]]/}"
+    return 0
+  done <"$ROOT/proc/acpi/ibm/fan"
+}
+
+show() {
+  rows | jq -c -R -s --arg level "$(level)" '
+    [split("\n")[] | select(length > 0) | split("\t")] as $rows
+    | {
+        cpu: ([$rows[] | select(.[0] == "cpu") | .[2] | tonumber] | first),
+        temps: [($rows[] | select(.[0] == "cpu")), ($rows[] | select(.[0] == "temp")) | {label: .[1], value: (.[2] | tonumber)}],
+        fans: [$rows[] | select(.[0] == "fan") | {label: .[1], rpm: (.[2] | tonumber)}],
+        level: (if $level == "" then null else $level end)
+      }'
+}
+
+case "${1:-}" in
+  "") show ;;
+  -h | --help) usage ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

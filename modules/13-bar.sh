@@ -17,7 +17,8 @@ bar_horizontal() {
 }
 
 bar_install() {
-  deploy_tree "$HYPRTRIXIE_ROOT/shell" "$BAR_DIR"
+  deploy_tree "$HYPRTRIXIE_ROOT/shell" "$BAR_DIR" || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-sensors" "$BIN_DIR/hyprtrixie-sensors" 0755
 }
 
 bar_settings() {
@@ -26,7 +27,7 @@ bar_settings() {
 }
 
 bar_ready() {
-  [[ -f $BAR_DIR/shell.qml && -f /etc/hyprtrixie/shell.json ]] && commands_present qs
+  [[ -f $BAR_DIR/shell.qml && -f /etc/hyprtrixie/shell.json && -x $BIN_DIR/hyprtrixie-sensors ]] && commands_present qs
 }
 
 module_13() {
