@@ -13,6 +13,13 @@ func Or(name, fallback string) string {
 	return fallback
 }
 
+func Arg(index int) string {
+	if index < len(os.Args) {
+		return os.Args[index]
+	}
+	return ""
+}
+
 func Home() string {
 	if home := os.Getenv("HOME"); home != "" {
 		return home
