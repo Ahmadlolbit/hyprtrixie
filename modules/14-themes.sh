@@ -29,6 +29,11 @@ option WALLPAPER_MINUTES --section look --label "Change wallpaper every (minutes
   --help "Move to the theme's next wallpaper every so many minutes; 0 keeps one"
 option WALLPAPER_PER_WORKSPACE --section look --label "A wallpaper per workspace" --type bool --default no \
   --help "Each workspace shows its own wallpaper from the theme"
+option WEATHER --section look --label "Weather in the bar" --type bool --default no \
+  --help "From Open-Meteo, no account; it sends your time zone's main city there"
+option WEATHER_UNITS --section look --label "Weather units" --type choice --default celsius \
+  --values "celsius fahrenheit" --when weather_on \
+  --help "Degrees Celsius and km/h, or Fahrenheit and mph"
 option BOOT_SPLASH --section look --label "Boot splash" --type bool --default yes \
   --help "The logo and the disk password prompt in your theme's colours while it boots"
 option BOOT_MENU_THEME --section look --label "Boot menu in the theme" --type bool --default yes \
@@ -98,7 +103,7 @@ themes_present() {
 theme_engine_install() {
   local command
   deploy_tree "$HYPRTRIXIE_ROOT/themed" "$OMARCHY_DIR/default/themed" || return 1
-  for command in omarchy-theme-set omarchy-theme-install hyprtrixie-background hyprtrixie-look; do
+  for command in omarchy-theme-set omarchy-theme-install hyprtrixie-background hyprtrixie-look hyprtrixie-weather; do
     deploy_file "$HYPRTRIXIE_ROOT/bin/$command" "$BIN_DIR/$command" 0755 || return 1
   done
   rm -f "$BIN_DIR/hyprtrixie-theme-picker"
@@ -128,7 +133,7 @@ theme_in_use() {
 look_install() {
   deploy_rendered "$HYPRTRIXIE_ROOT/system/look.conf" "$LOOK_CONF" 0644 root "ACCENT=$ACCENT_COLOR" "GLASS=$GLASS" "CORNERS=$ROUNDED_CORNERS" \
     "AUTO=$AUTO_THEME" "LIGHT=$LIGHT_THEME" "DARK=$DARK_THEME" "LIGHT_AT=$LIGHT_AT" "DARK_AT=$DARK_AT" "ROTATE=$WALLPAPER_MINUTES" \
-    "WORKSPACES=$WALLPAPER_PER_WORKSPACE" || return 1
+    "WORKSPACES=$WALLPAPER_PER_WORKSPACE" "WEATHER=$WEATHER" "WEATHER_UNITS=$WEATHER_UNITS" || return 1
   ((DEPLOY_CHANGED)) || return 0
   LOOK_CHANGED=1
   rm -f "$(user_path .local/state/hyprtrixie/look/period)"
@@ -140,6 +145,10 @@ auto_theme_on() {
 
 auto_theme_times() {
   [[ $AUTO_THEME == times ]]
+}
+
+weather_on() {
+  [[ $WEATHER == yes ]]
 }
 
 theme_apply() {

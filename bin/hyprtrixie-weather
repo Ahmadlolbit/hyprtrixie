@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/hyprtrixie/weather.json"
+HERE="$(dirname "$(readlink -f "$0")")"
+
+usage() {
+  cat <<'USAGE'
+Usage: hyprtrixie-weather [update]
+
+Prints the weather saved in ~/.cache/hyprtrixie/weather.json; update
+fetches it again from Open-Meteo (no account) for the look settings'
+location: your time zone's main city, or hyprtrixie-look location.
+hyprtrixie-look weather on fetches it every 30 minutes for the bar.
+USAGE
+}
+
+look() {
+  local command=hyprtrixie-look
+  [[ -x $HERE/$command ]] && command="$HERE/$command"
+  "$command" "$@"
+}
+
+update() {
+  local latitude longitude units wind=kmh url tmp
+  IFS=, read -r latitude longitude <<<"$(look coordinates)"
+  if [[ -z $latitude ]]; then
+    printf 'no location: set one with hyprtrixie-look location LATITUDE,LONGITUDE\n' >&2
+    return 1
+  fi
+  units="$(look get weather_units)"
+  [[ $units == fahrenheit ]] || units=celsius
+  [[ $units == celsius ]] || wind=mph
+  url="https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude"
+  url+="&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,is_day"
+  url+="&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+  url+="&timezone=auto&forecast_days=5&temperature_unit=$units&wind_speed_unit=$wind"
+  mkdir -p "${CACHE%/*}" || return 1
+  tmp="$(mktemp "$CACHE.XXXXXX")" || return 1
+  if curl -fsS --max-time 20 "$url" -o "$tmp" &&
+    jq -e --argjson fetched "$(date +%s)" 'select(.current.temperature_2m != null) | . + {fetched: $fetched}' "$tmp" >"$tmp.json" 2>/dev/null; then
+    mv "$tmp.json" "$CACHE"
+    rm -f "$tmp"
+  else
+    rm -f "$tmp" "$tmp.json"
+    printf 'could not fetch the weather\n' >&2
+    return 1
+  fi
+}
+
+show() {
+  [[ -s $CACHE ]] || {
+    printf 'no weather yet: hyprtrixie-weather update\n' >&2
+    return 1
+  }
+  jq -r '"\(.current.temperature_2m)\(.current_units.temperature_2m), feels like \(.current.apparent_temperature)\(.current_units.apparent_temperature), at \(.current.time)"' "$CACHE"
+}
+
+case "${1:-}" in
+  "") show ;;
+  update) update ;;
+  -h | --help) usage ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

@@ -135,6 +135,17 @@
       "screen"
     ]
   },
+  "toggle.weather": {
+    "glyph": "\udb81\udd95",
+    "label": "Weather",
+    "action": "hyprtrixie-look weather toggle",
+    "state": "test \"$(hyprtrixie-look weather)\" = yes",
+    "keywords": [
+      "weather",
+      "forecast",
+      "temperature"
+    ]
+  },
   "toggle.dnd": {
     "glyph": "\udb80\udc9b",
     "label": "Do not disturb",
