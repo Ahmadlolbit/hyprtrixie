@@ -157,6 +157,18 @@
       "dnd"
     ]
   },
+  "toggle.quiet": {
+    "glyph": "\udb83\ude0f",
+    "label": "Quiet hours",
+    "action": "hyprtrixie-look quiet toggle",
+    "state": "test \"$(hyprtrixie-look quiet)\" = yes",
+    "keywords": [
+      "quiet",
+      "night",
+      "notifications",
+      "schedule"
+    ]
+  },
   "toggle.wifi": {
     "glyph": "\udb81\udda9",
     "label": "Wi-Fi",

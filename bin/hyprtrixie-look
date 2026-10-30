@@ -12,10 +12,10 @@ OMARCHY_PATH="${OMARCHY_PATH:-/usr/share/omarchy}"
 HERE="$(dirname "$(readlink -f "$0")")"
 ZONEINFO="${HYPRTRIXIE_ZONEINFO:-/usr/share/zoneinfo}"
 LOCALTIME="${HYPRTRIXIE_LOCALTIME:-/etc/localtime}"
-KEYS=(accent font ui_font glass corners auto light dark light_at dark_at location rotate workspaces video video_battery weather weather_units)
+KEYS=(accent font ui_font glass corners auto light dark light_at dark_at location rotate workspaces video video_battery weather weather_units quiet quiet_from quiet_to)
 declare -A DEFAULT=([accent]=theme [font]="JetBrainsMono Nerd Font" [ui_font]=default [glass]=no [corners]=no [auto]=off
   [light]=catppuccin-latte [dark]=catppuccin [light_at]=07:00 [dark_at]=19:00 [location]=zone [rotate]=0 [workspaces]=no [video]=off [video_battery]=pause [weather]=off
-  [weather_units]=celsius)
+  [weather_units]=celsius [quiet]=no [quiet_from]=22:00 [quiet_to]=07:00)
 ACCENTS=" theme red orange yellow green cyan blue magenta "
 
 usage() {
@@ -39,6 +39,8 @@ Usage: hyprtrixie-look
        hyprtrixie-look weather [on|off|toggle]
        hyprtrixie-look weather-units [celsius|fahrenheit]
        hyprtrixie-look coordinates
+       hyprtrixie-look quiet [on|off|toggle]
+       hyprtrixie-look quiet-hours [FROM TO]
        hyprtrixie-look get SETTING
 
 Shows and changes how the desktop looks. Your settings are kept in
@@ -59,7 +61,8 @@ layout in ~/.config/hyprtrixie/shell.json. video plays a video file as
 the wallpaper, muted and looping; on battery it pauses, unless
 video-battery is play. weather shows the weather in the bar from
 Open-Meteo for your location (it sends that location there); coordinates
-prints the location the sun and the weather use.
+prints the location the sun and the weather use. quiet turns do not
+disturb on for the quiet hours (22:00 to 07:00 unless you set others).
 USAGE
 }
 
@@ -429,10 +432,76 @@ weather_units() {
   esac
 }
 
+quiet_tick() {
+  local now start end inside
+  [[ "$(get quiet)" == yes ]] || return 0
+  now="$(minutes "$(date -d "${HYPRTRIXIE_NOW:-now}" +%H:%M)")" || return 0
+  start="$(minutes "$(get quiet_from)")" || start="$(minutes "${DEFAULT[quiet_from]}")"
+  end="$(minutes "$(get quiet_to)")" || end="$(minutes "${DEFAULT[quiet_to]}")"
+  if ((start <= end ? now >= start && now < end : now >= start || now < end)); then
+    inside=quiet
+  else
+    inside=loud
+  fi
+  [[ "$(cat "$LOOK_STATE/quiet" 2>/dev/null)" == "$inside" ]] && return 0
+  mkdir -p "$LOOK_STATE" && printf '%s\n' "$inside" >"$LOOK_STATE/quiet"
+  if [[ $inside == quiet ]]; then
+    makoctl mode -a do-not-disturb >/dev/null 2>&1
+  else
+    makoctl mode -r do-not-disturb >/dev/null 2>&1
+  fi
+  return 0
+}
+
+quiet() {
+  case "${1,,}" in
+    "") get quiet ;;
+    on | yes)
+      put quiet yes || return 1
+      rm -f "$LOOK_STATE/quiet"
+      quiet_tick
+      ;;
+    off | no)
+      put quiet no || return 1
+      if [[ "$(cat "$LOOK_STATE/quiet" 2>/dev/null)" == quiet ]]; then
+        makoctl mode -r do-not-disturb >/dev/null 2>&1
+      fi
+      rm -f "$LOOK_STATE/quiet"
+      ;;
+    toggle)
+      if [[ "$(get quiet)" == yes ]]; then
+        quiet off
+      else
+        quiet on
+      fi
+      ;;
+    *)
+      printf 'quiet takes on, off or toggle\n' >&2
+      return 2
+      ;;
+  esac
+}
+
+quiet_hours() {
+  if (($# == 0)); then
+    printf '%s %s\n' "$(get quiet_from)" "$(get quiet_to)"
+    return 0
+  fi
+  if (($# != 2)) || ! minutes "$1" >/dev/null || ! minutes "$2" >/dev/null; then
+    printf 'quiet-hours takes two times like 22:00 07:00: when it starts, then ends\n' >&2
+    return 2
+  fi
+  put quiet_from "$1" || return 1
+  put quiet_to "$2" || return 1
+  rm -f "$LOOK_STATE/quiet"
+  quiet_tick
+}
+
 tick() {
   auto_tick
   rotate_tick
   weather_tick
+  quiet_tick
 }
 
 retick() {
@@ -578,6 +647,11 @@ case "${1:-}" in
   weather) weather "${2:-}" ;;
   weather-units) weather_units "${2:-}" ;;
   coordinates) coordinates ;;
+  quiet) quiet "${2:-}" ;;
+  quiet-hours)
+    shift
+    quiet_hours "$@"
+    ;;
   location) location "${2:-}" ;;
   -h | --help) usage ;;
   *)
