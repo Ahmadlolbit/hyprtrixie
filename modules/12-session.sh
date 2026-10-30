@@ -192,6 +192,13 @@ tips_timer_install() {
   systemctl --global enable hyprtrixie-tip.timer
 }
 
+brightness_access() {
+  deploy_file "$HYPRTRIXIE_ROOT/system/udev/90-hyprtrixie-brightness.rules" /etc/udev/rules.d/90-hyprtrixie-brightness.rules || return 1
+  user_add_groups video || return 1
+  udevadm control --reload
+  udevadm trigger --subsystem-match=backlight --subsystem-match=leds --action=add
+}
+
 screenshot_install() {
   deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-screenshot" "$BIN_DIR/hyprtrixie-screenshot" 0755
 }
@@ -217,6 +224,7 @@ module_12() {
   run_step "Set up the wallpaper" hyprpaper_setup
   run_step "Set up notifications" mako_setup
   run_step "Install the Walker launcher" walker_install
+  run_step "Let you change the brightness" brightness_access
   run_step "Install the screenshot command" screenshot_install
   run_step "Install the screensaver" screensaver_install
 }
@@ -275,6 +283,10 @@ verify_12_tips() {
 
 verify_12_tip_timer() {
   run_check "Tip notifications are scheduled" test -L /etc/systemd/user/timers.target.wants/hyprtrixie-tip.timer
+}
+
+verify_12_brightness() {
+  run_check "Your account can change the brightness" user_in_group video
 }
 
 verify_12_screenshot() {
