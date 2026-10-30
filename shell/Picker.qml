@@ -30,7 +30,7 @@ Scope {
     if (kind === "themes") {
       themeName.reload();
       selected = themeName.text().trim();
-      list.command = ["omarchy-theme-set", "--previews"];
+      list.command = ["hyprtrixie-theme-set", "--previews"];
       list.running = true;
     } else {
       background.running = true;
@@ -51,7 +51,7 @@ Scope {
     if (!item || busy)
       return;
     busy = true;
-    applying.command = mode === "themes" ? ["omarchy-theme-set", item.value] : ["hyprtrixie-background", item.value];
+    applying.command = mode === "themes" ? ["hyprtrixie-theme-set", item.value] : ["hyprtrixie-background", item.value];
     applying.running = true;
   }
 

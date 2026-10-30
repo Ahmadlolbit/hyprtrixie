@@ -22,10 +22,10 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/theme"
 )
 
-const usage = `Usage: omarchy-theme-set <theme>
-       omarchy-theme-set --list
-       omarchy-theme-set --previews
-       omarchy-theme-set --current
+const usage = `Usage: hyprtrixie-theme-set <theme>
+       hyprtrixie-theme-set --list
+       hyprtrixie-theme-set --previews
+       hyprtrixie-theme-set --current
 
 Applies a theme to Hyprland, the bar, kitty, the launcher, notifications, the
 lock screen, btop, GTK and the wallpaper. Themes come from
@@ -403,7 +403,7 @@ func set(argument string) int {
 	name := theme.Slug(argument)
 	if name == "" || strings.HasPrefix(name, ".") || strings.Contains(name, "/") ||
 		(!fsutil.IsDir(filepath.Join(systemRoot, "themes", name)) && !fsutil.IsDir(filepath.Join(userThemes(), name))) {
-		fmt.Fprintf(os.Stderr, "no theme named %s; see omarchy-theme-set --list\n", argument)
+		fmt.Fprintf(os.Stderr, "no theme named %s; see hyprtrixie-theme-set --list\n", argument)
 		return 1
 	}
 	held, err := lock()

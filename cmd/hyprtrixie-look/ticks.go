@@ -165,7 +165,7 @@ func autoTick() int {
 	if err := os.Setenv("HYPRTRIXIE_LOOK_AUTO", "1"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
-	return run.Within(run.Slow, run.Sibling("omarchy-theme-set"), wanted)
+	return run.Within(run.Slow, run.Sibling("hyprtrixie-theme-set"), wanted)
 }
 
 func retick() int {

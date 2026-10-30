@@ -140,11 +140,11 @@ themes_present() {
 theme_engine_install() {
   deploy_tree "$HYPRTRIXIE_ROOT/themed" "$OMARCHY_DIR/default/themed" || return 1
   deploy_tool hyprtrixie-look || return 1
-  deploy_tool omarchy-theme-install || return 1
+  deploy_tool hyprtrixie-theme-install || return 1
   deploy_tool hyprtrixie-weather || return 1
   deploy_tool hyprtrixie-background || return 1
-  deploy_tool omarchy-theme-set || return 1
-  rm -f "$BIN_DIR/hyprtrixie-theme-picker"
+  deploy_tool hyprtrixie-theme-set || return 1
+  rm -f "$BIN_DIR/hyprtrixie-theme-picker" "$BIN_DIR/omarchy-theme-set" "$BIN_DIR/omarchy-theme-install"
 }
 
 btop_theme_setup() {
@@ -198,11 +198,11 @@ theme_apply() {
   if theme_in_use && [[ "$(cat "$THEME_APPLIED" 2>/dev/null)" == "$THEME" ]]; then
     log info "keeping the theme in use; $THEME was applied before"
     if ((LOOK_CHANGED)); then
-      as_user env OMARCHY_PATH="$OMARCHY_DIR" HYPRTRIXIE_LOOK_SYSTEM="$LOOK_CONF" HYPRTRIXIE_LOOK_AUTO=1 "$BIN_DIR/omarchy-theme-set" \
+      as_user env OMARCHY_PATH="$OMARCHY_DIR" HYPRTRIXIE_LOOK_SYSTEM="$LOOK_CONF" HYPRTRIXIE_LOOK_AUTO=1 "$BIN_DIR/hyprtrixie-theme-set" \
         "$(cat "$(user_path "$THEME_STATE/theme.name")")" || return 1
     fi
   else
-    as_user env OMARCHY_PATH="$OMARCHY_DIR" HYPRTRIXIE_LOOK_SYSTEM="$LOOK_CONF" HYPRTRIXIE_LOOK_AUTO=1 "$BIN_DIR/omarchy-theme-set" "$THEME" || return 1
+    as_user env OMARCHY_PATH="$OMARCHY_DIR" HYPRTRIXIE_LOOK_SYSTEM="$LOOK_CONF" HYPRTRIXIE_LOOK_AUTO=1 "$BIN_DIR/hyprtrixie-theme-set" "$THEME" || return 1
     mkdir -p "${THEME_APPLIED%/*}" && printf '%s\n' "$THEME" >"$THEME_APPLIED"
   fi
   if [[ -f "$(user_path .config/mako/config)" ]]; then

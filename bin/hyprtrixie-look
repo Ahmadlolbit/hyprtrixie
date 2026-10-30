@@ -104,7 +104,7 @@ reapply() {
   local name
   name="$(cat "$CURRENT/theme.name" 2>/dev/null)"
   [[ -n $name ]] || return 0
-  "$(command_path omarchy-theme-set)" "$name"
+  "$(command_path hyprtrixie-theme-set)" "$name"
 }
 
 accent() {
@@ -268,7 +268,7 @@ auto_tick() {
     theme="$(get dark)"
   fi
   [[ "$(cat "$CURRENT/theme.name" 2>/dev/null)" == "$theme" ]] && return 0
-  HYPRTRIXIE_LOOK_AUTO=1 "$(command_path omarchy-theme-set)" "$theme"
+  HYPRTRIXIE_LOOK_AUTO=1 "$(command_path hyprtrixie-theme-set)" "$theme"
 }
 
 remember() {
@@ -558,7 +558,7 @@ theme_choice() {
   fi
   name="$(sed -E 's/<[^>]+>//g' <<<"$2" | tr '[:upper:] ' '[:lower:]-')"
   if [[ ! $name =~ ^[a-z0-9][a-z0-9_-]*$ ]] || [[ ! -d $OMARCHY_PATH/themes/$name && ! -d $CONFIG_HOME/omarchy/themes/$name ]]; then
-    printf 'no theme named %s; see omarchy-theme-set --list\n' "$2" >&2
+    printf 'no theme named %s; see hyprtrixie-theme-set --list\n' "$2" >&2
     return 2
   fi
   put "$key" "$name" && retick

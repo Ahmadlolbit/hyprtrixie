@@ -104,7 +104,7 @@ func reapply() int {
 	if name == "" {
 		return 0
 	}
-	return run.Within(run.Slow, run.Sibling("omarchy-theme-set"), name)
+	return run.Within(run.Slow, run.Sibling("hyprtrixie-theme-set"), name)
 }
 
 func accent(args []string) int {
@@ -275,7 +275,7 @@ func themeChoice(key, value string) int {
 	}
 	name := theme.Slug(value)
 	if !theme.ValidName(name) || !themeExists(name) {
-		fmt.Fprintf(os.Stderr, "no theme named %s; see omarchy-theme-set --list\n", value)
+		fmt.Fprintf(os.Stderr, "no theme named %s; see hyprtrixie-theme-set --list\n", value)
 		return 2
 	}
 	return putThen(key, name, retick)()
