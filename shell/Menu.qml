@@ -363,7 +363,7 @@ Scope {
         anchors.centerIn: parent
         width: 480
         height: header.height + list.height + 36
-        color: Theme.base
+        color: Theme.panel
         border.color: Theme.accent
         border.width: 2
         radius: Theme.radius

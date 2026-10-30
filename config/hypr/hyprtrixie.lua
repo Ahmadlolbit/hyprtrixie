@@ -18,3 +18,7 @@ end
 if package.searchpath("hyprtrixie.hypr.options", package.path) then
   require("hyprtrixie.hypr.options")
 end
+
+if package.searchpath("omarchy.current.theme.glass", package.path) then
+  require("omarchy.current.theme.glass")
+end

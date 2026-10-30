@@ -61,7 +61,7 @@ PanelWindow {
 
     width: body.implicitWidth + 28
     height: body.implicitHeight + 28
-    color: Theme.base
+    color: Theme.panel
     border.color: Theme.accent
     border.width: 2
     radius: Theme.radius

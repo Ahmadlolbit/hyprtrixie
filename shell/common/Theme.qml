@@ -19,6 +19,8 @@ Singleton {
   readonly property color critical: palette.red || "#f38ba8"
   readonly property var look: settings(lookFile.text())
   readonly property string font: look.font || "JetBrainsMono Nerd Font"
+  readonly property bool glass: look.glass === "yes"
+  readonly property color panel: Qt.alpha(base, glass ? 0.8 : 1)
   readonly property int fontSize: 13
   readonly property int barHeight: 30
   readonly property int spacing: 14

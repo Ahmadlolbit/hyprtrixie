@@ -78,7 +78,7 @@ Scope {
 
     Rectangle {
       anchors.fill: parent
-      color: Theme.base
+      color: Theme.panel
       border.color: Theme.accent
       border.width: 2
 

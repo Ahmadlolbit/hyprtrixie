@@ -6,6 +6,8 @@ option THEME --section look --label "Theme" --type choice --default catppuccin \
 option ACCENT_COLOR --section look --label "Accent colour" --type choice --default theme \
   --values "theme red orange yellow green cyan blue magenta" \
   --help "The theme's own accent, or another of its colours, for borders and highlights"
+option GLASS --section look --label "Glass mode" --type bool --default no \
+  --help "See-through terminals and panels, with the wallpaper blurred behind them"
 option BOOT_SPLASH --section look --label "Boot splash" --type bool --default yes \
   --help "The logo and the disk password prompt in your theme's colours while it boots"
 option BOOT_MENU_THEME --section look --label "Boot menu in the theme" --type bool --default yes \
@@ -103,7 +105,7 @@ theme_in_use() {
 }
 
 look_install() {
-  deploy_rendered "$HYPRTRIXIE_ROOT/system/look.conf" "$LOOK_CONF" 0644 root "ACCENT=$ACCENT_COLOR" || return 1
+  deploy_rendered "$HYPRTRIXIE_ROOT/system/look.conf" "$LOOK_CONF" 0644 root "ACCENT=$ACCENT_COLOR" "GLASS=$GLASS" || return 1
   ((DEPLOY_CHANGED)) && LOOK_CHANGED=1
   return 0
 }

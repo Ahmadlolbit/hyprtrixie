@@ -112,6 +112,18 @@
       "blue light"
     ]
   },
+  "toggle.glass": {
+    "glyph": "\udb80\udcb5",
+    "label": "Glass",
+    "action": "hyprtrixie-look glass toggle",
+    "state": "test \"$(hyprtrixie-look glass)\" = yes",
+    "keywords": [
+      "glass",
+      "transparent",
+      "blur",
+      "see-through"
+    ]
+  },
   "toggle.dnd": {
     "glyph": "\udb80\udc9b",
     "label": "Do not disturb",

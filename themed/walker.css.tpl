@@ -22,7 +22,7 @@ scrollbar {
 }
 
 .box-wrapper {
-  background: @window_bg_color;
+  background: alpha(@window_bg_color, {{ opacity }});
   border: 2px solid @accent_bg_color;
   padding: 16px;
   min-width: 640px;
