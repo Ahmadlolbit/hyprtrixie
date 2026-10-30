@@ -47,6 +47,12 @@ Label {
     return [WifiSecurityType.Sae, WifiSecurityType.Wpa2Psk, WifiSecurityType.WpaPsk, WifiSecurityType.StaticWep].includes(network.security);
   }
 
+  function askPassword(network) {
+    asking = network;
+    password.text = "";
+    password.focusInput();
+  }
+
   function choose(network) {
     failure = "";
     if (network.connected)
@@ -55,17 +61,19 @@ Label {
       asking = null;
       network.connect();
     } else if (needsPassword(network)) {
-      asking = network;
-      password.text = "";
-      password.focusInput();
+      askPassword(network);
     } else {
       asking = null;
       failure = network.name + " needs more settings";
     }
   }
 
+  function wrongPassword(code) {
+    return code === ConnectionFailReason.NoSecrets || code === ConnectionFailReason.WifiAuthTimeout;
+  }
+
   function reason(code) {
-    if (code === ConnectionFailReason.NoSecrets || code === ConnectionFailReason.WifiAuthTimeout)
+    if (wrongPassword(code))
       return "wrong password";
     if (code === ConnectionFailReason.WifiNetworkLost)
       return "out of range";
@@ -149,6 +157,8 @@ Label {
 
           function onConnectionFailed(reason) {
             root.failure = choice.modelData.name + ": " + root.reason(reason);
+            if (root.wrongPassword(reason) && root.needsPassword(choice.modelData))
+              root.askPassword(choice.modelData);
           }
         }
       }
