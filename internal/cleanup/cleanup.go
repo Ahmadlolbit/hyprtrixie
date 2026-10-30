@@ -3,7 +3,6 @@ package cleanup
 import (
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 )
 
@@ -20,29 +19,23 @@ func Notify(channel chan<- os.Signal) {
 func OnSignal(action func()) func() {
 	received := make(chan os.Signal, 1)
 	Notify(received)
-	done := make(chan struct{})
-	go watch(received, done, action)
-	var once sync.Once
+	go watch(received, action)
 	return func() {
-		once.Do(func() {
-			close(done)
-			signal.Stop(received)
-		})
+		signal.Stop(received)
+		close(received)
 	}
 }
 
-func watch(received chan os.Signal, done <-chan struct{}, action func()) {
-	select {
-	case caught := <-received:
+func watch(received chan os.Signal, action func()) {
+	if caught, ok := <-received; ok {
 		action()
 		signal.Stop(received)
 		Raise(caught)
-	case <-done:
 	}
 }
 
 func Raise(caught os.Signal) {
 	if number, ok := caught.(syscall.Signal); ok {
-		syscall.Kill(syscall.Getpid(), number)
+		syscall.Tgkill(syscall.Getpid(), syscall.Gettid(), number)
 	}
 }
