@@ -157,7 +157,7 @@ tools_build() {
   ((TOOLS_BUILT)) && return 0
   command -v go >/dev/null || apt_install golang-go || return 1
   log info "building the hyprtrixie tools"
-  (cd "$HYPRTRIXIE_ROOT" && CGO_ENABLED=0 go build -buildvcs=false -o "$TOOLS_DIR/" ./cmd/...) || return 1
+  (cd "$HYPRTRIXIE_ROOT" && CGO_ENABLED=0 go build -buildvcs=false -trimpath -ldflags='-s -w' -o "$TOOLS_DIR/" ./cmd/...) || return 1
   TOOLS_BUILT=1
 }
 
