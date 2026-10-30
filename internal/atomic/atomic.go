@@ -66,7 +66,11 @@ func follow(path string) (string, error) {
 			return path, nil
 		}
 		if !filepath.IsAbs(link) {
-			link = filepath.Join(filepath.Dir(path), link)
+			dir, err := filepath.EvalSymlinks(filepath.Dir(path))
+			if err != nil {
+				return "", err
+			}
+			link = filepath.Join(dir, link)
 		}
 		path = link
 	}
