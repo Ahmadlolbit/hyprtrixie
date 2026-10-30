@@ -175,6 +175,72 @@
       "wallpaper"
     ]
   },
+  "style.accent": {
+    "glyph": "\udb80\udfd8",
+    "label": "Accent",
+    "keywords": [
+      "accent",
+      "colour",
+      "color",
+      "highlight"
+    ]
+  },
+  "style.accent.theme": {
+    "glyph": "\udb81\udf65",
+    "label": "The theme's own",
+    "color": "theme_accent",
+    "action": "hyprtrixie-look accent theme",
+    "state": "test \"$(hyprtrixie-look accent)\" = theme"
+  },
+  "style.accent.red": {
+    "glyph": "\udb81\udf65",
+    "label": "Red",
+    "color": "red",
+    "action": "hyprtrixie-look accent red",
+    "state": "test \"$(hyprtrixie-look accent)\" = red"
+  },
+  "style.accent.orange": {
+    "glyph": "\udb81\udf65",
+    "label": "Orange",
+    "color": "orange",
+    "action": "hyprtrixie-look accent orange",
+    "state": "test \"$(hyprtrixie-look accent)\" = orange"
+  },
+  "style.accent.yellow": {
+    "glyph": "\udb81\udf65",
+    "label": "Yellow",
+    "color": "yellow",
+    "action": "hyprtrixie-look accent yellow",
+    "state": "test \"$(hyprtrixie-look accent)\" = yellow"
+  },
+  "style.accent.green": {
+    "glyph": "\udb81\udf65",
+    "label": "Green",
+    "color": "green",
+    "action": "hyprtrixie-look accent green",
+    "state": "test \"$(hyprtrixie-look accent)\" = green"
+  },
+  "style.accent.cyan": {
+    "glyph": "\udb81\udf65",
+    "label": "Cyan",
+    "color": "cyan",
+    "action": "hyprtrixie-look accent cyan",
+    "state": "test \"$(hyprtrixie-look accent)\" = cyan"
+  },
+  "style.accent.blue": {
+    "glyph": "\udb81\udf65",
+    "label": "Blue",
+    "color": "blue",
+    "action": "hyprtrixie-look accent blue",
+    "state": "test \"$(hyprtrixie-look accent)\" = blue"
+  },
+  "style.accent.magenta": {
+    "glyph": "\udb81\udf65",
+    "label": "Magenta",
+    "color": "magenta",
+    "action": "hyprtrixie-look accent magenta",
+    "state": "test \"$(hyprtrixie-look accent)\" = magenta"
+  },
   "setup": {
     "glyph": "\ue615",
     "label": "Setup"

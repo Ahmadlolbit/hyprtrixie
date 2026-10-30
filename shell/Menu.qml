@@ -79,6 +79,7 @@ Scope {
       action: entry.action || "",
       shell: entry.shell || "",
       state: entry.state || "",
+      color: entry.color || "",
       page: isPage(entry),
       icon: "",
       app: null,
@@ -144,6 +145,7 @@ Scope {
           action: "",
           shell: "",
           state: "",
+          color: "",
           page: false,
           icon: entry.icon || "",
           app: entry,
@@ -161,6 +163,7 @@ Scope {
         action: "hyprtrixie-terminal --wait sudo hyprtrixie app " + kind + " " + fields[0],
         shell: "",
         state: "",
+        color: "",
         page: false,
         icon: "",
         app: null,
@@ -432,7 +435,7 @@ Scope {
                   anchors.centerIn: parent
                   visible: !icon.visible
                   text: item.modelData.glyph
-                  color: Theme.accent
+                  color: Theme.palette[item.modelData.color] || Theme.accent
                   font.pixelSize: 18
                 }
               }

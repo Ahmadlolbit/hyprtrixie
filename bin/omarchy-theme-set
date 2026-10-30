@@ -7,6 +7,7 @@ STATE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/current"
 USER_THEMES="$CONFIG_HOME/omarchy/themes"
 USER_TEMPLATES="$CONFIG_HOME/omarchy/themed"
 DENIED=" alacritty.toml foot.ini ghostty.conf kitty.conf vscode.json "
+HERE="$(dirname "$(readlink -f "$0")")"
 declare -A COLORS=()
 
 usage() {
@@ -147,6 +148,31 @@ resolve_colors() {
   [[ ${COLORS[mode]:-} == light ]] || COLORS[mode]=dark
 }
 
+look() {
+  local command=hyprtrixie-look value
+  [[ -x $HERE/$command ]] && command="$HERE/$command"
+  value="$("$command" get "$1" 2>/dev/null)"
+  printf '%s\n' "${value:-$2}"
+}
+
+accent_override() {
+  local accent original="${COLORS[accent]}"
+  accent="$(look accent theme)"
+  if [[ $accent =~ ^#[0-9A-Fa-f]{6}$ ]]; then
+    COLORS[accent]="$accent"
+  elif [[ $accent != theme && ${COLORS[$accent]:-} =~ ^#[0-9A-Fa-f]{6}$ ]]; then
+    COLORS[accent]="${COLORS[$accent]}"
+  else
+    return 0
+  fi
+  if grep -q '^accent *=' "$1"; then
+    sed -i "s|^accent *=.*|accent = \"${COLORS[accent]}\"|" "$1"
+  else
+    printf 'accent = "%s"\n' "${COLORS[accent]}" >>"$1"
+  fi
+  printf 'theme_accent = "%s"\n' "$original" >>"$1"
+}
+
 render() {
   local dir="$1" script key value tpl name
   script="$(mktemp)" || return 1
@@ -247,6 +273,7 @@ apply() {
     COLORS[mode]=light
   fi
   resolve_colors
+  accent_override "$next/colors.toml"
   render "$next" || return 1
   rm -rf "$STATE/theme"
   mv "$next" "$STATE/theme" || return 1

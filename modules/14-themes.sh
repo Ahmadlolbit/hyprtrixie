@@ -3,6 +3,9 @@ register_module 14 "Themes"
 option THEME --section look --label "Theme" --type choice --default catppuccin \
   --values "catppuccin catppuccin-latte ethereal everforest flexoki-light gruvbox hackerman kanagawa last-horizon lumon lupine matte-black miasma nord osaka-jade retro-82 ristretto rose-pine solitude tokyo-night vantablack white" \
   --help "Colours, wallpaper and icons for every app; Super+Ctrl+T changes it later"
+option ACCENT_COLOR --section look --label "Accent colour" --type choice --default theme \
+  --values "theme red orange yellow green cyan blue magenta" \
+  --help "The theme's own accent, or another of its colours, for borders and highlights"
 option BOOT_SPLASH --section look --label "Boot splash" --type bool --default yes \
   --help "The logo and the disk password prompt in your theme's colours while it boots"
 option BOOT_MENU_THEME --section look --label "Boot menu in the theme" --type bool --default yes \
@@ -18,6 +21,8 @@ FOLLOW_SHARE="$SHARE_DIR/follow"
 GRUB_SETTINGS=/etc/default/grub.d/hyprtrixie.cfg
 GRUB_THEME_DIR="${HYPRTRIXIE_GRUB_THEME_DIR:-/boot/grub/themes/hyprtrixie}"
 FOLLOW_INITRAMFS=0
+LOOK_CONF="${HYPRTRIXIE_LOOK_CONF:-/etc/hyprtrixie/look.conf}"
+LOOK_CHANGED=0
 
 theme_copy() {
   local src="$1" dest="$2" old="${3:-}" new="${4:-}" file base
@@ -70,7 +75,7 @@ themes_present() {
 theme_engine_install() {
   local command
   deploy_tree "$HYPRTRIXIE_ROOT/themed" "$OMARCHY_DIR/default/themed" || return 1
-  for command in omarchy-theme-set omarchy-theme-install hyprtrixie-background; do
+  for command in omarchy-theme-set omarchy-theme-install hyprtrixie-background hyprtrixie-look; do
     deploy_file "$HYPRTRIXIE_ROOT/bin/$command" "$BIN_DIR/$command" 0755 || return 1
   done
   rm -f "$BIN_DIR/hyprtrixie-theme-picker"
@@ -97,11 +102,21 @@ theme_in_use() {
   [[ -n $name && (-d $OMARCHY_DIR/themes/$name || -d "$(user_path ".config/omarchy/themes/$name")") ]]
 }
 
+look_install() {
+  deploy_rendered "$HYPRTRIXIE_ROOT/system/look.conf" "$LOOK_CONF" 0644 root "ACCENT=$ACCENT_COLOR" || return 1
+  ((DEPLOY_CHANGED)) && LOOK_CHANGED=1
+  return 0
+}
+
 theme_apply() {
   if theme_in_use && [[ "$(cat "$THEME_APPLIED" 2>/dev/null)" == "$THEME" ]]; then
     log info "keeping the theme in use; $THEME was applied before"
+    if ((LOOK_CHANGED)); then
+      as_user env OMARCHY_PATH="$OMARCHY_DIR" HYPRTRIXIE_LOOK_SYSTEM="$LOOK_CONF" "$BIN_DIR/omarchy-theme-set" \
+        "$(cat "$(user_path "$THEME_STATE/theme.name")")" || return 1
+    fi
   else
-    as_user env OMARCHY_PATH="$OMARCHY_DIR" "$BIN_DIR/omarchy-theme-set" "$THEME" || return 1
+    as_user env OMARCHY_PATH="$OMARCHY_DIR" HYPRTRIXIE_LOOK_SYSTEM="$LOOK_CONF" "$BIN_DIR/omarchy-theme-set" "$THEME" || return 1
     mkdir -p "${THEME_APPLIED%/*}" && printf '%s\n' "$THEME" >"$THEME_APPLIED"
   fi
   if [[ -f "$(user_path .config/mako/config)" ]]; then
@@ -198,6 +213,7 @@ module_14() {
   run_step "Remove the dropped community themes" dropped_themes_remove
   run_step "Install the theme switcher" theme_engine_install
   run_step "Point btop at the theme" btop_theme_setup
+  run_step "Write the look settings" look_install
   run_step "Apply the $THEME theme" theme_apply
   run_step "Install the theme follower" follow_install
   run_step "Show a boot splash in the theme's colours" boot_splash_install
@@ -216,6 +232,9 @@ verify_14_theme() {
   run_check "A theme is applied" theme_ready
 }
 
+verify_14_look() {
+  run_check "The look settings are written" test -f "$LOOK_CONF"
+}
 verify_14_splash() {
   [[ $BOOT_SPLASH == yes ]] || return 0
   run_check "The boot splash is in the theme's colours" test -f /usr/share/plymouth/themes/hyprtrixie/hyprtrixie.script
