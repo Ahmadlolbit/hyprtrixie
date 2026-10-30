@@ -1,5 +1,6 @@
 hl.on("hyprland.start", function()
   hl.exec_cmd("dbus-update-activation-environment --systemd --all")
+  hl.exec_cmd("xdg-user-dirs-update")
   hl.exec_cmd("/usr/libexec/hyprpolkitagent")
   hl.exec_cmd("udiskie --automount --no-tray")
   hl.exec_cmd("hyprtrixie-start hypridle")
