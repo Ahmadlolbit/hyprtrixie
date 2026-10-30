@@ -1,9 +1,9 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Hyprland
+import Quickshell.Wayland
 
-PopupWindow {
+PanelWindow {
   id: root
 
   required property string name
@@ -13,62 +13,73 @@ PopupWindow {
   readonly property var window: owner ? owner.QsWindow.window : null
   readonly property bool below: Config.position !== "bottom"
   readonly property bool beside: bar ? bar.vertical === true : false
+  readonly property int gap: bar && bar.gap ? bar.gap : 0
 
   function toggle() {
     Popups.toggle(root);
   }
 
-  anchor {
-    id: placement
-
-    window: root.window
-    edges: Edges.Top | Edges.Left
-    gravity: Edges.Bottom | Edges.Right
-    adjustment: PopupAdjustment.Slide
-    rect.width: 1
-    rect.height: 1
-    onAnchoring: {
-      if (!root.owner || !root.window)
-        return;
-      if (root.beside) {
-        const side = root.window.contentItem.mapFromItem(root.owner, 0, root.owner.height / 2 - root.implicitHeight / 2);
-        placement.rect.x = root.window.width + 6;
-        placement.rect.y = Math.round(Math.max(6, Math.min(side.y, root.window.height - root.implicitHeight - 6)));
-        return;
-      }
-      const point = root.window.contentItem.mapFromItem(root.owner, root.owner.width / 2 - root.implicitWidth / 2, 0);
-      placement.rect.x = Math.round(Math.max(6, Math.min(point.x, root.window.width - root.implicitWidth - 6)));
-      placement.rect.y = root.below ? root.window.height + 6 : -root.implicitHeight - 6;
+  function place() {
+    if (!owner || !window)
+      return;
+    if (beside) {
+      const side = window.contentItem.mapFromItem(owner, 0, owner.height / 2);
+      frame.x = gap + window.width + 6;
+      frame.y = Math.round(Math.max(6, Math.min(gap + side.y - frame.height / 2, height - frame.height - 6)));
+      return;
     }
+    const point = window.contentItem.mapFromItem(owner, owner.width / 2, 0);
+    frame.x = Math.round(Math.max(6, Math.min(gap + point.x - frame.width / 2, width - frame.width - 6)));
+    frame.y = below ? gap + window.height + 6 : height - gap - window.height - frame.height - 6;
   }
+
+  screen: bar ? bar.screen : null
   visible: Popups.open === root
   color: "transparent"
-  implicitWidth: frame.implicitWidth
-  implicitHeight: frame.implicitHeight
+  exclusionMode: ExclusionMode.Ignore
+  WlrLayershell.layer: WlrLayer.Overlay
+  WlrLayershell.namespace: "hyprtrixie-popup"
+  WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+  onVisibleChanged: {
+    if (!visible)
+      return;
+    place();
+    frame.forceActiveFocus();
+  }
+  onWidthChanged: place()
+  onHeightChanged: place()
+
+  anchors {
+    top: true
+    bottom: true
+    left: true
+    right: true
+  }
 
   Component.onCompleted: Popups.add(root)
   Component.onDestruction: Popups.remove(root)
 
-  HyprlandFocusGrab {
-    windows: root.window ? [root, root.window] : [root]
-    active: root.visible
-    onCleared: Popups.close(root)
+  MouseArea {
+    anchors.fill: parent
+    onClicked: Popups.close(root)
   }
 
   Rectangle {
     id: frame
 
-    anchors.fill: parent
-    implicitWidth: body.implicitWidth + 28
-    implicitHeight: body.implicitHeight + 28
+    width: body.implicitWidth + 28
+    height: body.implicitHeight + 28
     color: Theme.panel
     border.color: Theme.accent
     border.width: 2
     radius: Theme.radius
+    focus: true
+    Keys.onEscapePressed: Popups.close(root)
+    onWidthChanged: root.place()
+    onHeightChanged: root.place()
 
-    Shortcut {
-      sequence: "Escape"
-      onActivated: Popups.close(root)
+    MouseArea {
+      anchors.fill: parent
     }
 
     ColumnLayout {
