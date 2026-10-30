@@ -41,7 +41,9 @@ case "$mode" in
     ;;
 esac
 
-dir="$(xdg-user-dir PICTURES 2>/dev/null || printf '%s/Pictures' "$HOME")/Screenshots"
+pictures="$(xdg-user-dir PICTURES 2>/dev/null)"
+[[ -n $pictures && $pictures != "$HOME" ]] || pictures="$HOME/Pictures"
+dir="$pictures/Screenshots"
 file="$dir/Screenshot from $(date '+%Y-%m-%d %H-%M-%S').png"
 mkdir -p "$dir" || exit 1
 capture "$mode" "$file"
