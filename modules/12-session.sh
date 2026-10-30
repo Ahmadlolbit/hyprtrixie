@@ -160,7 +160,7 @@ walker_ready() {
 }
 
 session_start_install() {
-  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-start" "$BIN_DIR/hyprtrixie-start" 0755
+  deploy_tool hyprtrixie-start
 }
 
 command_install() {
