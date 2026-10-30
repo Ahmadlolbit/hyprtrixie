@@ -249,10 +249,14 @@ apps_list() {
     done
     return 0
   fi
+  local -A group=()
+  for id in $(option_items APPS); do
+    group[$id]="$(app_category "$id")"
+  done
   while IFS=$'\t' read -r category title; do
     printf '%s\n' "$title"
     for id in $(option_items APPS); do
-      [[ "$(app_category "$id")" == "$category" ]] || continue
+      [[ ${group[$id]} == "$category" ]] || continue
       mark=" "
       app_present "$id" && mark="*"
       printf '  %s %-14s %s\n' "$mark" "$id" "$(app_name "$id")"

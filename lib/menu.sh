@@ -106,10 +106,20 @@ menu_edit() {
   esac
 }
 
+declare -gA MENU_GROUP=()
+
+menu_group_map() {
+  local key="$1" item
+  MENU_GROUP=()
+  for item in $(option_items "$key"); do
+    MENU_GROUP[$item]="$("${OPTION_GROUP_OF[$key]}" "$item")"
+  done
+}
+
 menu_group_items() {
   local key="$1" group="$2" item
   for item in $(option_items "$key"); do
-    [[ "$("${OPTION_GROUP_OF[$key]}" "$item")" == "$group" ]] && printf '%s\n' "$item"
+    [[ ${MENU_GROUP[$item]:-} == "$group" ]] && printf '%s\n' "$item"
   done
   return 0
 }
@@ -137,7 +147,7 @@ menu_edit_group() {
   )" "${names[@]}")" || return 0
   [[ -n $out ]] && mapfile -t picked <<<"$out"
   for item in $(option_items "$key"); do
-    if [[ "$("${OPTION_GROUP_OF[$key]}" "$item")" != "$group" ]]; then
+    if [[ ${MENU_GROUP[$item]:-} != "$group" ]]; then
       option_enabled "$key" "$item" && chosen+=("$item")
       continue
     fi
@@ -153,6 +163,7 @@ menu_edit_group() {
 
 menu_edit_groups() {
   local key="$1" group title choice lines=() groups=() titles=() i
+  menu_group_map "$key"
   while :; do
     lines=()
     groups=()
