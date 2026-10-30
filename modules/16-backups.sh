@@ -2,7 +2,8 @@ register_module 16 "Backups"
 
 backup_helper_install() {
   apt_install restic || return 1
-  deploy_user_file "$HYPRTRIXIE_ROOT/bin/restic-backup" bin/restic-backup 0755
+  tools_build || return 1
+  deploy_user_file "$TOOLS_DIR/restic-backup" bin/restic-backup 0755
 }
 
 module_16() {
