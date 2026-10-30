@@ -94,7 +94,7 @@ func notifyTip() int {
 	if !ok {
 		return 0
 	}
-	if notify.Send("Tips", "Tip", line) != nil {
+	if notify.Post("--app-name=Tips", "Tip", line) != 0 {
 		return 1
 	}
 	if err := remember(stamp, today); err != nil {

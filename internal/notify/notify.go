@@ -1,15 +1,19 @@
 package notify
 
 import (
-	"os/exec"
 	"strings"
+	"time"
+
+	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
-func Send(app, summary, body string) error {
-	return exec.Command("notify-send", "--app-name="+app, summary, body).Run()
+const limit = 30 * time.Second
+
+func Post(args ...string) int {
+	return run.Within(limit, "notify-send", args...)
 }
 
 func Ask(args ...string) string {
-	output, _ := exec.Command("notify-send", args...).Output()
-	return strings.TrimSpace(string(output))
+	output, _ := run.Output("notify-send", args...)
+	return strings.TrimSpace(output)
 }
