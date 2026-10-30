@@ -188,7 +188,7 @@ theme_ready() {
 }
 
 follow_install() {
-  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-follow-theme" "$BIN_DIR/hyprtrixie-follow-theme" 0755 || return 1
+  deploy_tool hyprtrixie-follow-theme || return 1
   deploy_file "$HYPRTRIXIE_ROOT/system/plymouth/hyprtrixie.script" "$FOLLOW_SHARE/hyprtrixie.script" || return 1
   deploy_file "$HYPRTRIXIE_ROOT/system/grub/theme.txt" "$FOLLOW_SHARE/theme.txt" || return 1
   deploy_rendered "$HYPRTRIXIE_ROOT/system/follow-theme.conf" /etc/hyprtrixie/follow-theme 0644 root \

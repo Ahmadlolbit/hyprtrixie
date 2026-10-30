@@ -74,6 +74,14 @@ func Feed(limit time.Duration, input *os.File, name string, args ...string) int 
 	return Report(command.Run())
 }
 
+func Into(limit time.Duration, output *os.File, name string, args ...string) int {
+	command, cancel := bounded(limit, name, args)
+	defer cancel()
+	command.Stdout = output
+	command.Stderr = os.Stderr
+	return Report(command.Run())
+}
+
 func Output(name string, args ...string) (string, error) {
 	return shown(exec.Command(name, args...))
 }
