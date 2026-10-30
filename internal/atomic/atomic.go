@@ -2,13 +2,14 @@ package atomic
 
 import (
 	"bytes"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
+	"strconv"
 	"syscall"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
@@ -24,7 +25,7 @@ func Write(path string, data []byte, perm os.FileMode) error {
 	info, err := os.Stat(target)
 	switch {
 	case err == nil && !info.Mode().IsRegular():
-		return through(target, data)
+		return os.WriteFile(target, data, 0)
 	case err == nil:
 		return replace(target, bytes.NewReader(data), perm, like(info))
 	case errors.Is(err, fs.ErrNotExist):
@@ -77,18 +78,6 @@ func follow(path string) (string, error) {
 	return "", fmt.Errorf("%s: too many levels of symbolic links", path)
 }
 
-func through(path string, data []byte) error {
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0)
-	if err != nil {
-		return err
-	}
-	_, err = file.Write(data)
-	if closed := file.Close(); err == nil {
-		err = closed
-	}
-	return err
-}
-
 func like(info fs.FileInfo) func(*os.File) error {
 	return func(file *os.File) error {
 		if err := file.Chmod(info.Mode().Perm()); err != nil {
@@ -107,7 +96,7 @@ func exactly(perm os.FileMode) func(*os.File) error {
 }
 
 func temporary(path string) string {
-	return filepath.Join(filepath.Dir(path), "."+filepath.Base(path)+"."+rand.Text())
+	return filepath.Join(filepath.Dir(path), "."+filepath.Base(path)+"."+strconv.FormatUint(rand.Uint64(), 36))
 }
 
 func replace(path string, source io.Reader, perm os.FileMode, adjust func(*os.File) error) error {
