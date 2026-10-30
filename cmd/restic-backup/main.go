@@ -21,6 +21,7 @@ const usage = `Usage: restic-backup init <location>       set up where backups g
        restic-backup mount <folder>        browse the backups as files
        restic-backup check                 verify the backup data
        restic-backup prune                 keep 7 daily, 4 weekly and 6 monthly backups, drop the rest
+       restic-backup usb on|off            back up by itself whenever the backup drive is plugged in
 
 The location is remembered in ~/.config/restic-backup/repository and the
 password in ~/.config/restic-backup/password. Keep a copy of the password
@@ -161,6 +162,7 @@ func commands() map[string]func([]string) int {
 		"prune": func([]string) int {
 			return repository("forget", "--keep-daily", "7", "--keep-weekly", "4", "--keep-monthly", "6", "--prune")
 		},
+		"usb": usb,
 	}
 }
 
