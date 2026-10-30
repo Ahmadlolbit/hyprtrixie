@@ -53,7 +53,7 @@ engine_wanted() {
 engine_install() {
   local engine
   engine="$(engine_wanted)"
-  deploy_file "$HYPRTRIXIE_ROOT/bin/engine-switch" "$BIN_DIR/engine-switch" 0755 || return 1
+  deploy_tool engine-switch || return 1
   if [[ "$("$BIN_DIR/engine-switch" status | awk '/^engine:/ { print $2 }')" == "$engine" && -e $BIN_DIR/docker ]]; then
     return 0
   fi
