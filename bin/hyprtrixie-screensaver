@@ -59,6 +59,7 @@ run() {
   local file pid
   file="$(text_file)"
   trap finish EXIT INT TERM HUP
+  trap '' TSTP
   hyprctl eval 'hl.config({ cursor = { invisible = true } })' >/dev/null 2>&1
   sleep 0.5
   printf '\e[?1003h\e[?1006h'
