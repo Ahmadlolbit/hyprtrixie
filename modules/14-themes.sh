@@ -168,11 +168,11 @@ theme_apply() {
   if theme_in_use && [[ "$(cat "$THEME_APPLIED" 2>/dev/null)" == "$THEME" ]]; then
     log info "keeping the theme in use; $THEME was applied before"
     if ((LOOK_CHANGED)); then
-      as_user env OMARCHY_PATH="$OMARCHY_DIR" HYPRTRIXIE_LOOK_SYSTEM="$LOOK_CONF" "$BIN_DIR/omarchy-theme-set" \
+      as_user env OMARCHY_PATH="$OMARCHY_DIR" HYPRTRIXIE_LOOK_SYSTEM="$LOOK_CONF" HYPRTRIXIE_LOOK_AUTO=1 "$BIN_DIR/omarchy-theme-set" \
         "$(cat "$(user_path "$THEME_STATE/theme.name")")" || return 1
     fi
   else
-    as_user env OMARCHY_PATH="$OMARCHY_DIR" HYPRTRIXIE_LOOK_SYSTEM="$LOOK_CONF" "$BIN_DIR/omarchy-theme-set" "$THEME" || return 1
+    as_user env OMARCHY_PATH="$OMARCHY_DIR" HYPRTRIXIE_LOOK_SYSTEM="$LOOK_CONF" HYPRTRIXIE_LOOK_AUTO=1 "$BIN_DIR/omarchy-theme-set" "$THEME" || return 1
     mkdir -p "${THEME_APPLIED%/*}" && printf '%s\n' "$THEME" >"$THEME_APPLIED"
   fi
   if [[ -f "$(user_path .config/mako/config)" ]]; then
