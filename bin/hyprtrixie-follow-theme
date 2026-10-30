@@ -62,22 +62,37 @@ console_palette() {
   )
 }
 
+as_user() {
+  runuser -u "$user" -- "$@"
+}
+
+copy_wallpaper() {
+  local copy
+  copy="$(mktemp -p "$SDDM_THEME_DIR")" || return 1
+  if ! as_user cat "$1" >"$copy"; then
+    rm -f "$copy"
+    return 1
+  fi
+  rm -f "$SDDM_THEME_DIR"/wallpaper.*
+  chmod 0644 "$copy"
+  mv "$copy" "$SDDM_THEME_DIR/$2"
+}
+
 login_screen() {
-  local image wallpaper="" red settings
+  local image extension wallpaper="" red settings
   image="$(readlink -f "$home/.local/state/omarchy/current/background" 2>/dev/null)"
-  if [[ -f $image ]]; then
-    wallpaper="wallpaper.${image##*.}"
-    if ! cmp -s "$image" "$SDDM_THEME_DIR/$wallpaper"; then
-      rm -f "$SDDM_THEME_DIR"/wallpaper.*
-      install -m 0644 "$image" "$SDDM_THEME_DIR/$wallpaper" || return 1
-    fi
+  extension="${image##*.}"
+  if [[ -f $image && $extension =~ ^[[:alnum:]]+$ ]] && as_user test -r "$image"; then
+    wallpaper="wallpaper.$extension"
+    as_user cmp -s "$image" "$SDDM_THEME_DIR/$wallpaper" || copy_wallpaper "$image" "$wallpaper" || return 1
   fi
   red="$(color red)"
   settings="$(mktemp)" || return 1
   printf '[General]\nbackground=%s\nforeground=%s\naccent=%s\nfail=%s\nclock=%s\nwallpaper=%s\n' \
     "$background" "$foreground" "$accent" "${red:-#f38ba8}" "$(setting clock)" "$wallpaper" >"$settings"
-  if ! cmp -s "$settings" "$SDDM_THEME_DIR/theme.conf.user"; then
-    install -m 0644 "$settings" "$SDDM_THEME_DIR/theme.conf.user"
+  if ! cmp -s "$settings" "$SDDM_THEME_DIR/theme.conf.user" && ! install -m 0644 "$settings" "$SDDM_THEME_DIR/theme.conf.user"; then
+    rm -f "$settings"
+    return 1
   fi
   rm -f "$settings"
 }
@@ -94,7 +109,10 @@ render() {
     rm -f "$tmp"
     return 1
   fi
-  install -D -m 0644 "$tmp" "$dest"
+  if ! install -D -m 0644 "$tmp" "$dest"; then
+    rm -f "$tmp"
+    return 2
+  fi
   rm -f "$tmp"
 }
 
