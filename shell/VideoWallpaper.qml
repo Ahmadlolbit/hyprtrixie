@@ -1,6 +1,7 @@
 import QtQuick
 import QtMultimedia
 import Quickshell
+import Quickshell.Services.UPower
 import Quickshell.Wayland
 import qs.common
 
@@ -25,12 +26,15 @@ Variants {
     }
 
     Video {
+      readonly property bool resting: !Theme.videoOnBattery && UPower.onBattery
+
       anchors.fill: parent
       source: "file://" + Theme.video.split("/").map(encodeURIComponent).join("/")
       loops: MediaPlayer.Infinite
       muted: true
       fillMode: VideoOutput.PreserveAspectCrop
-      autoPlay: true
+      autoPlay: !resting
+      onRestingChanged: resting ? pause() : play()
     }
   }
 }
