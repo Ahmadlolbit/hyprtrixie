@@ -364,7 +364,7 @@
   "setup.bluetooth": {
     "glyph": "\udb80\udcaf",
     "label": "Bluetooth",
-    "action": "blueman-manager",
+    "action": "qs -p /usr/share/hyprtrixie/shell ipc call popup toggle bluetooth",
     "keywords": [
       "bluetooth",
       "headphones",

@@ -13,7 +13,7 @@ Singleton {
       style: "sharp",
       left: ["workspaces", "window"],
       center: ["clock"],
-      right: ["indicators", "tray", "cpu", "memory", "network", "audio", "brightness", "power-profile", "battery"]
+      right: ["indicators", "tray", "cpu", "memory", "network", "bluetooth", "audio", "brightness", "power-profile", "battery"]
     })
   readonly property var system: parse(systemFile.text())
   readonly property var user: parse(userFile.text())
