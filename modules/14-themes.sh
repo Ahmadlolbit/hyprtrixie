@@ -111,9 +111,10 @@ themes_present() {
 theme_engine_install() {
   local command
   deploy_tree "$HYPRTRIXIE_ROOT/themed" "$OMARCHY_DIR/default/themed" || return 1
-  for command in omarchy-theme-set omarchy-theme-install hyprtrixie-background hyprtrixie-look hyprtrixie-weather; do
+  for command in omarchy-theme-set hyprtrixie-background hyprtrixie-look hyprtrixie-weather; do
     deploy_file "$HYPRTRIXIE_ROOT/bin/$command" "$BIN_DIR/$command" 0755 || return 1
   done
+  deploy_tool omarchy-theme-install || return 1
   rm -f "$BIN_DIR/hyprtrixie-theme-picker"
 }
 
