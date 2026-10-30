@@ -241,6 +241,28 @@
     "action": "hyprtrixie-look accent magenta",
     "state": "test \"$(hyprtrixie-look accent)\" = magenta"
   },
+  "style.font": {
+    "glyph": "\udb81\uded6",
+    "label": "Font",
+    "list": "fonts",
+    "keywords": [
+      "font",
+      "monospace",
+      "terminal",
+      "typeface"
+    ]
+  },
+  "style.uifont": {
+    "glyph": "\udb80\ude84",
+    "label": "Interface font",
+    "list": "ui-fonts",
+    "keywords": [
+      "font",
+      "interface",
+      "apps",
+      "typeface"
+    ]
+  },
   "setup": {
     "glyph": "\ue615",
     "label": "Setup"

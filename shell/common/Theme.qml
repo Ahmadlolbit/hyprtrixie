@@ -17,7 +17,8 @@ Singleton {
   readonly property color good: palette.green || "#a6e3a1"
   readonly property color warning: palette.yellow || "#f9e2af"
   readonly property color critical: palette.red || "#f38ba8"
-  readonly property string font: "JetBrainsMono Nerd Font"
+  readonly property var look: settings(lookFile.text())
+  readonly property string font: look.font || "JetBrainsMono Nerd Font"
   readonly property int fontSize: 13
   readonly property int barHeight: 30
   readonly property int spacing: 14
@@ -33,10 +34,29 @@ Singleton {
     return colors;
   }
 
+  function settings(text) {
+    const values = {};
+    for (const line of text.split("\n")) {
+      const match = line.match(/^\s*([a-z0-9_]+)\s*=\s*"([^"]*)"/);
+      if (match)
+        values[match[1]] = match[2];
+    }
+    return values;
+  }
+
   FileView {
     id: file
 
     path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/omarchy/current/theme/colors.toml"
+    watchChanges: true
+    printErrors: false
+    onFileChanged: reload()
+  }
+
+  FileView {
+    id: lookFile
+
+    path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/omarchy/current/theme/look.toml"
     watchChanges: true
     printErrors: false
     onFileChanged: reload()
@@ -47,6 +67,7 @@ Singleton {
 
     function reload(): void {
       file.reload();
+      lookFile.reload();
     }
   }
 }

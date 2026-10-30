@@ -6,7 +6,7 @@
 
 * {
   all: unset;
-  font-family: "JetBrainsMono Nerd Font";
+  font-family: "{{ font }}";
 }
 
 scrollbar {

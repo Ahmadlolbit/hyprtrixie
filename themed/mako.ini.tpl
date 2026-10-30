@@ -1,3 +1,4 @@
+font={{ font }} 11
 background-color={{ background }}ee
 text-color={{ foreground }}
 border-color={{ accent }}

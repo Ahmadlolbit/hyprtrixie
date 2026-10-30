@@ -80,6 +80,7 @@ Scope {
       shell: entry.shell || "",
       state: entry.state || "",
       color: entry.color || "",
+      font: "",
       page: isPage(entry),
       icon: "",
       app: null,
@@ -132,7 +133,10 @@ Scope {
       return;
     }
     lister.kind = kind;
-    lister.command = ["hyprtrixie", "app", "list", kind === "install" ? "available" : "installed"];
+    if (kind === "fonts" || kind === "ui-fonts")
+      lister.command = ["fc-list", "--format", "%{family[0]}\n", kind === "fonts" ? ":spacing=100" : ":"];
+    else
+      lister.command = ["hyprtrixie", "app", "list", kind === "install" ? "available" : "installed"];
     lister.running = true;
   }
 
@@ -146,6 +150,7 @@ Scope {
           shell: "",
           state: "",
           color: "",
+          font: "",
           page: false,
           icon: entry.icon || "",
           app: entry,
@@ -164,12 +169,36 @@ Scope {
         shell: "",
         state: "",
         color: "",
+        font: "",
         page: false,
         icon: "",
         app: null,
         path: ""
       };
     });
+  }
+
+  function quote(text) {
+    return "'" + text.replace(/'/g, "'\\''") + "'";
+  }
+
+  function fonts(kind, text) {
+    const setting = kind === "fonts" ? "font" : "ui-font";
+    const names = [...new Set(text.split("\n").map(line => line.trim()).filter(name => /^[A-Za-z0-9][A-Za-z0-9 ._+-]*$/.test(name)))];
+    return names.sort((a, b) => a.localeCompare(b)).map(name => ({
+          id: kind + ":" + name,
+          glyph: "\u{f06d6}",
+          label: name,
+          action: "hyprtrixie-look " + setting + " " + quote(name),
+          shell: "",
+          state: "test \"$(hyprtrixie-look " + setting + ")\" = " + quote(name),
+          color: "",
+          font: name,
+          page: false,
+          icon: "",
+          app: null,
+          path: ""
+        }));
   }
 
   function activate(item) {
@@ -243,7 +272,7 @@ Scope {
     property string kind: ""
 
     stdout: StdioCollector {
-      onStreamFinished: root.listed = root.catalogue(lister.kind, text)
+      onStreamFinished: root.listed = lister.kind.endsWith("fonts") ? root.fonts(lister.kind, text) : root.catalogue(lister.kind, text)
     }
   }
 
@@ -443,6 +472,7 @@ Scope {
               Label {
                 Layout.fillWidth: true
                 text: item.modelData.label
+                font.family: item.modelData.font || Theme.font
                 elide: Text.ElideRight
               }
 
