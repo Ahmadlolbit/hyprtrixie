@@ -36,6 +36,8 @@ USAGE
   hyprtrixie update [PART]         Update everything (run it without sudo): a snapshot, Debian, the apps,
                                      then hyprtrixie and its installer; PART is system, apps or hyprtrixie
   hyprtrixie changes               Show what the last hyprtrixie update changed
+  hyprtrixie restore [NUMBER]      List the restore points, or show what changed since one and go back to it
+                                     (run it without sudo)
   hyprtrixie doctor                Check the system and offer the safe fixes (run it with sudo)
   hyprtrixie app list              List the apps you can install, by category (* = installed)
   hyprtrixie app install|remove APP
@@ -61,6 +63,7 @@ var commands = map[string]func() int{
 	"collect":   collect,
 	"doctor":    doctor,
 	"app":       appCommand,
+	"restore":   restore,
 }
 
 func fail(format string, args ...any) int {

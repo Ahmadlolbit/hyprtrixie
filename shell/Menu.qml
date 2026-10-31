@@ -135,6 +135,8 @@ Scope {
     lister.kind = kind;
     if (kind === "fonts" || kind === "ui-fonts")
       lister.command = ["fc-list", "--format", "%{family[0]}\n", kind === "fonts" ? ":spacing=100" : ":"];
+    else if (kind === "restore")
+      lister.command = ["hyprtrixie", "restore", "list"];
     else
       lister.command = ["hyprtrixie", "app", "list", kind === "install" ? "available" : "installed"];
     lister.running = true;
@@ -166,6 +168,26 @@ Scope {
         glyph: kind === "install" ? "\u{f01da}" : "\u{f0b4c}",
         label: fields[1],
         action: "hyprtrixie-terminal --wait sudo hyprtrixie app " + kind + " " + fields[0],
+        shell: "",
+        state: "",
+        color: "",
+        font: "",
+        page: false,
+        icon: "",
+        app: null,
+        path: ""
+      };
+    });
+  }
+
+  function restorePoints(text) {
+    return text.split("\n").filter(line => line.includes("\t")).map(line => {
+      const fields = line.split("\t");
+      return {
+        id: "restore:" + fields[0],
+        glyph: "\u{f02da}",
+        label: fields[1],
+        action: "hyprtrixie-terminal --wait hyprtrixie restore " + fields[0],
         shell: "",
         state: "",
         color: "",
@@ -287,8 +309,14 @@ Scope {
     stdout: StdioCollector {
       onStreamFinished: {
         const entry = root.entries[root.page];
-        if (entry && entry.list === lister.kind)
-          root.listed = lister.kind.endsWith("fonts") ? root.fonts(lister.kind, text) : root.catalogue(lister.kind, text);
+        if (!entry || entry.list !== lister.kind)
+          return;
+        if (lister.kind.endsWith("fonts"))
+          root.listed = root.fonts(lister.kind, text);
+        else if (lister.kind === "restore")
+          root.listed = root.restorePoints(text);
+        else
+          root.listed = root.catalogue(lister.kind, text);
       }
     }
   }
