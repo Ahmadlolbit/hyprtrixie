@@ -20,6 +20,8 @@ option TIPS_WELCOME --section look --label "Tips on the welcome screen" --type b
   --help "A tip at the bottom of the welcome screen"
 option TIPS_NOTIFY --section look --label "Tip notifications" --type bool --default yes \
   --help "Now and then a tip as a notification, at most once a day"
+option CARE_NOTIFY --section system --label "Firmware and disk warnings" --type bool --default yes \
+  --help "A notification when new firmware is ready, or when the disk is nearly full"
 option IDLE_LOCK_MINUTES --section system --label "Lock after (minutes)" --type number --default 5 \
   --help "Lock the screen when you're away; it turns off 30 s later; 0 = never"
 option IDLE_SUSPEND_MINUTES --section system --label "Suspend after (minutes)" --type number --default 30 \
@@ -197,7 +199,11 @@ care_install() {
   deploy_tool hyprtrixie-care || return 1
   deploy_file "$HYPRTRIXIE_ROOT/system/systemd/hyprtrixie-care.service" /etc/systemd/user/hyprtrixie-care.service || return 1
   deploy_file "$HYPRTRIXIE_ROOT/system/systemd/hyprtrixie-care.timer" /etc/systemd/user/hyprtrixie-care.timer || return 1
-  systemctl --global enable hyprtrixie-care.timer
+  if [[ $CARE_NOTIFY == yes ]]; then
+    systemctl --global enable hyprtrixie-care.timer
+  else
+    systemctl --global disable hyprtrixie-care.timer
+  fi
 }
 
 firmware_refresh_install() {
@@ -300,6 +306,7 @@ verify_12_tip_timer() {
 }
 
 verify_12_care() {
+  [[ $CARE_NOTIFY == yes ]] || return 0
   run_check "The quiet system checks are scheduled" test -L /etc/systemd/user/timers.target.wants/hyprtrixie-care.timer
 }
 

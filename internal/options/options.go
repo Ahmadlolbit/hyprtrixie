@@ -60,6 +60,7 @@ var table = []Option{
 	{"TIPS_TERMINAL", "Tips in new terminals", yesNo, "yes", ""},
 	{"TIPS_WELCOME", "Tips on the welcome screen", yesNo, "yes", ""},
 	{"TIPS_NOTIFY", "Tip notifications", yesNo, "yes", ""},
+	{"CARE_NOTIFY", "Firmware and disk warnings", yesNo, "yes", ""},
 	{"IDLE_LOCK_MINUTES", "Lock after (minutes)", number, "5", ""},
 	{"IDLE_SUSPEND_MINUTES", "Suspend after (minutes)", number, "30", ""},
 	{"BAR_PRESET", "Bar layout", choice, "full", "full floating minimal vertical"},

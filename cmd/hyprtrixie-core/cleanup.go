@@ -51,7 +51,7 @@ func cleanUp(yes bool) int {
 	if use < cleanGoal {
 		return say(fmt.Sprintf("/ is %d%% full, so there is nothing to clean up.\n", use))
 	}
-	all, err := snapshots.All(run.Minute)
+	all, err := snapshots.All()
 	if err != nil {
 		return fail("the snapshots can't be read")
 	}

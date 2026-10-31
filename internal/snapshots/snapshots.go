@@ -47,12 +47,12 @@ func parse(output string) []Snapshot {
 	return found
 }
 
-func All(limit time.Duration) ([]Snapshot, error) {
+func All() ([]Snapshot, error) {
 	args := []string{"--csvout", "--no-headers", "--separator", "\t", "-c", "root", "list", "--columns", "number,type,date,description"}
 	if os.Geteuid() == 0 {
 		args = append([]string{"--no-dbus"}, args...)
 	}
-	output, err := run.Capture(limit, "snapper", args...)
+	output, err := run.Capture(run.Minute, "snapper", args...)
 	return parse(output), err
 }
 

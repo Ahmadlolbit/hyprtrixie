@@ -4,7 +4,16 @@ import (
 	"encoding/json"
 	"slices"
 	"strings"
+	"unicode"
 )
+
+var markup = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
+
+func clean(text string) string {
+	return strings.Join(strings.FieldsFunc(text, func(letter rune) bool {
+		return unicode.IsSpace(letter) || unicode.IsControl(letter)
+	}), " ")
+}
 
 func Updates(data []byte) []string {
 	var found struct {
@@ -21,10 +30,14 @@ func Updates(data []byte) []string {
 	var waiting []string
 	for _, device := range found.Devices {
 		if len(device.Releases) > 0 {
-			waiting = append(waiting, device.Name+" "+device.Releases[0].Version)
+			waiting = append(waiting, clean(device.Name+" "+device.Releases[0].Version))
 		}
 	}
 	return waiting
+}
+
+func Markup(text string) string {
+	return markup.Replace(text)
 }
 
 func Unseen(waiting []string, seen string) []string {

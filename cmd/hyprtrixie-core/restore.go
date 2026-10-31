@@ -110,7 +110,7 @@ func goBack(number string) int {
 }
 
 func showPoints(target string) int {
-	points, err := snapshots.All(run.Minute)
+	points, err := snapshots.All()
 	switch {
 	case err != nil:
 		return fail("the snapshots can't be read")
