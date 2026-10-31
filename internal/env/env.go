@@ -54,6 +54,22 @@ func CacheHome() string {
 	return Or("XDG_CACHE_HOME", filepath.Join(Home(), ".cache"))
 }
 
+func ShareDir() string {
+	return Or("HYPRTRIXIE_SHARE_DIR", "/usr/share/hyprtrixie")
+}
+
+func Root() string {
+	return os.Getenv("HYPRTRIXIE_ROOT")
+}
+
+func BinDir() string {
+	return Or("HYPRTRIXIE_BIN_DIR", "/usr/local/bin")
+}
+
+func ToolsDir() string {
+	return Or("HYPRTRIXIE_TOOLS_DIR", filepath.Join(Root(), "build", "bin"))
+}
+
 func LogDir() string {
 	return Or("HYPRTRIXIE_LOG_DIR", "/var/log/hyprtrixie")
 }

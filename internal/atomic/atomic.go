@@ -38,6 +38,15 @@ func Install(path string, data []byte, perm os.FileMode) error {
 	return replace(path, bytes.NewReader(data), perm, exactly(perm))
 }
 
+func InstallAs(path string, data []byte, perm os.FileMode, uid, gid int) error {
+	return replace(path, bytes.NewReader(data), perm, func(file *os.File) error {
+		if err := file.Chown(uid, gid); err != nil {
+			return err
+		}
+		return file.Chmod(perm)
+	})
+}
+
 func Symlink(target, link string) error {
 	temp := temporary(link)
 	defer cleanup.OnSignal(func() { os.Remove(temp) })()

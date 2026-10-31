@@ -82,6 +82,17 @@ func Text(path string) (string, error) {
 	return strings.TrimRight(string(bytes.ReplaceAll(data, []byte{0}, nil)), "\n"), nil
 }
 
+func Lines(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil || len(data) == 0 {
+		return nil, err
+	}
+	return strings.Split(strings.TrimSuffix(string(data), "\n"), "\n"), nil
+}
+
 func Optional(path string) string {
 	text, err := Text(path)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
