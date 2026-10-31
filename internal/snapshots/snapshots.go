@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ const (
 	dateLayout  = "2006-01-02 15:04:05"
 	shownLayout = "Mon 2 Jan 15:04"
 	maxFolders  = 8
+	keptNewest  = 3
 )
 
 type Snapshot struct {
@@ -98,6 +100,30 @@ func Changes(status string) string {
 		fmt.Fprintf(&text, "%7d %s\n", counts[folder], folder)
 	}
 	return text.String()
+}
+
+func Disposable(all []Snapshot) []string {
+	var numbers []string
+	for _, snapshot := range all[:max(len(all)-keptNewest, 0)] {
+		if snapshot.Description == "timeline" || snapshot.Description == "apt" {
+			numbers = append(numbers, snapshot.Number)
+		}
+	}
+	return numbers
+}
+
+func DiskUse() (int, bool) {
+	output, _ := run.CaptureQuiet(run.Quick, "df", "-P", "/")
+	lines := run.Lines(output)
+	if len(lines) < 2 {
+		return 0, false
+	}
+	fields := strings.Fields(lines[1])
+	if len(fields) < 5 {
+		return 0, false
+	}
+	use, err := strconv.Atoi(strings.TrimSuffix(fields[4], "%"))
+	return use, err == nil
 }
 
 func KernelAdded(status, kernel string) bool {
