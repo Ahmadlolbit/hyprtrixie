@@ -346,7 +346,7 @@ collect_system() {
 }
 
 collect_desktop() {
-  local state="$TARGET_HOME/.local/state/omarchy/current"
+  local state="$TARGET_HOME/.local/state/hyprtrixie/current"
   cat "$state/theme.name"
   ls -l "$state" "$state/theme"
   printf '\n'
@@ -433,7 +433,7 @@ verbose_files() {
 }
 
 verbose_desktop() {
-  local state="$TARGET_HOME/.local/state/omarchy/current" request
+  local state="$TARGET_HOME/.local/state/hyprtrixie/current" request
   verbose_section "Theme"
   cat "$state/theme.name"
   ls -l "$state"

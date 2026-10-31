@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-OMARCHY_PATH="${OMARCHY_PATH:-/usr/share/omarchy}"
+THEME_ROOT="${HYPRTRIXIE_THEME_ROOT:-/usr/share/hyprtrixie}"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-STATE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/current"
-USER_THEMES="$CONFIG_HOME/omarchy/themes"
-USER_TEMPLATES="$CONFIG_HOME/omarchy/themed"
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/hyprtrixie/current"
+USER_THEMES="$CONFIG_HOME/hyprtrixie/themes"
+USER_TEMPLATES="$CONFIG_HOME/hyprtrixie/themed"
 DENIED=" alacritty.toml foot.ini ghostty.conf kitty.conf vscode.json "
 HERE="$(dirname "$(readlink -f "$0")")"
 declare -A COLORS=()
@@ -19,7 +19,7 @@ Usage: hyprtrixie-theme-set <theme>
 
 Applies a theme to Hyprland, the bar, kitty, the launcher, notifications, the
 lock screen, btop, GTK and the wallpaper. Themes come from
-/usr/share/omarchy/themes and ~/.config/omarchy/themes.
+/usr/share/hyprtrixie/themes and ~/.config/hyprtrixie/themes.
 EOF
 }
 
@@ -29,7 +29,7 @@ pretty() {
 
 theme_names() {
   local dir dirs=()
-  for dir in "$OMARCHY_PATH/themes" "$USER_THEMES"; do
+  for dir in "$THEME_ROOT/themes" "$USER_THEMES"; do
     [[ -d $dir ]] && dirs+=("$dir")
   done
   ((${#dirs[@]})) || return 0
@@ -38,7 +38,7 @@ theme_names() {
 
 preview_of() {
   local dir file found=()
-  for dir in "$USER_THEMES/$1" "$OMARCHY_PATH/themes/$1"; do
+  for dir in "$USER_THEMES/$1" "$THEME_ROOT/themes/$1"; do
     for file in "$dir"/preview.{png,jpg,jpeg,webp}; do
       if [[ -f $file ]]; then
         printf '%s\n' "$file"
@@ -46,7 +46,7 @@ preview_of() {
       fi
     done
   done
-  for dir in "$USER_THEMES/$1/backgrounds" "$OMARCHY_PATH/themes/$1/backgrounds"; do
+  for dir in "$USER_THEMES/$1/backgrounds" "$THEME_ROOT/themes/$1/backgrounds"; do
     [[ -d $dir ]] || continue
     mapfile -t found < <(find "$dir" -maxdepth 1 -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) | sort)
     if ((${#found[@]})); then
@@ -65,8 +65,8 @@ stage() {
   local name="$1" next="$2" entry base
   rm -rf "$next"
   mkdir -p "$next" || return 1
-  if [[ -d $OMARCHY_PATH/themes/$name ]]; then
-    cp -r "$OMARCHY_PATH/themes/$name/." "$next/" || return 1
+  if [[ -d $THEME_ROOT/themes/$name ]]; then
+    cp -r "$THEME_ROOT/themes/$name/." "$next/" || return 1
   fi
   [[ -d $USER_THEMES/$name ]] || return 0
   if [[ -L $USER_THEMES/$name || ! -d $USER_THEMES/$name/.git ]]; then
@@ -203,7 +203,7 @@ render() {
       printf 's|{{ %s_rgb }}|%d,%d,%d|g\n' "$key" "$((16#${BASH_REMATCH[1]}))" "$((16#${BASH_REMATCH[2]}))" "$((16#${BASH_REMATCH[3]}))" >>"$script"
     fi
   done
-  for tpl in "$USER_TEMPLATES"/*.tpl "$OMARCHY_PATH/default/themed"/*.tpl; do
+  for tpl in "$USER_TEMPLATES"/*.tpl "$THEME_ROOT/themed"/*.tpl; do
     [[ -f $tpl ]] || continue
     name="$(basename "$tpl" .tpl)"
     [[ -e $dir/$name ]] || sed -f "$script" "$tpl" >"$dir/$name"
@@ -214,7 +214,7 @@ render() {
 pick_background() {
   local name="$1" previous="$2" found=()
   [[ $previous == "$name" && -e $STATE/background ]] && return 0
-  mapfile -t found < <(find "$STATE/theme/backgrounds" "$CONFIG_HOME/omarchy/backgrounds/$name" -maxdepth 1 -type f \
+  mapfile -t found < <(find "$STATE/theme/backgrounds" "$CONFIG_HOME/hyprtrixie/backgrounds/$name" -maxdepth 1 -type f \
     \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) 2>/dev/null | sort)
   ((${#found[@]})) || return 0
   ln -nsf "${found[0]}" "$STATE/background"
@@ -339,7 +339,7 @@ case "${1:-}" in
 esac
 
 name="$(slug "$1")"
-if [[ -z $name || $name == .* || $name == */* ]] || [[ ! -d $OMARCHY_PATH/themes/$name && ! -d $USER_THEMES/$name ]]; then
+if [[ -z $name || $name == .* || $name == */* ]] || [[ ! -d $THEME_ROOT/themes/$name && ! -d $USER_THEMES/$name ]]; then
   printf 'no theme named %s; see hyprtrixie-theme-set --list\n' "$1" >&2
   exit 1
 fi

@@ -49,10 +49,10 @@ option BOOT_MENU_THEME --section look --label "Boot menu in the theme" --type bo
 option CONSOLE_THEME --section look --label "Console colours and font" --type bool --default no \
   --help "The text consoles (Ctrl+Alt+F3) in your theme's colours, with a larger font"
 
-OMARCHY_DIR="${HYPRTRIXIE_OMARCHY_DIR:-/usr/share/omarchy}"
-THEME_STATE=.local/state/omarchy/current
+THEME_ROOT="${HYPRTRIXIE_THEME_ROOT:-$SHARE_DIR}"
+OLD_THEME_ROOT=/usr/share/omarchy
+THEME_STATE=.local/state/hyprtrixie/current
 THEME_APPLIED="$STATE_DIR/theme"
-DROPPED_THEMES=(bloodline neon-plum noir cobalt-night navy-mint porcelain dayshift inkwell terracotta marble green-magic roseglass lumon vantablack)
 declare -gA RENAMED_THEMES=([lumon]=northern-sea [vantablack]=pitch-black)
 FOLLOW_SHARE="$SHARE_DIR/follow"
 GRUB_SETTINGS=/etc/default/grub.d/hyprtrixie.cfg
@@ -92,26 +92,91 @@ config_migration 3 theme_names_update
 
 themes_install() {
   local dir
-  source_current hyprtrixie-themes && [[ -f $OMARCHY_DIR/THIRD-PARTY-LICENSES ]] && return 0
+  source_current hyprtrixie-themes && [[ -f $THEME_ROOT/THIRD-PARTY-LICENSES ]] && return 0
   fetch_git_cached hyprtrixie-themes /themes/ /LICENSE /THIRD-PARTY-LICENSES || return 1
   for dir in "$FETCHED_PATH"/themes/*/; do
     dir="${dir%/}"
-    theme_copy "$dir" "$OMARCHY_DIR/themes/${dir##*/}" || return 1
+    theme_copy "$dir" "$THEME_ROOT/themes/${dir##*/}" || return 1
   done
-  install -D -m 0644 "$FETCHED_PATH/LICENSE" "$OMARCHY_DIR/LICENSE.themes" || return 1
-  install -D -m 0644 "$FETCHED_PATH/THIRD-PARTY-LICENSES" "$OMARCHY_DIR/THIRD-PARTY-LICENSES" || return 1
+  install -D -m 0644 "$FETCHED_PATH/LICENSE" "$THEME_ROOT/LICENSE.themes" || return 1
+  install -D -m 0644 "$FETCHED_PATH/THIRD-PARTY-LICENSES" "$THEME_ROOT/THIRD-PARTY-LICENSES" || return 1
   rm -rf "$FETCHED_PATH"
   source_mark hyprtrixie-themes
   LOOK_CHANGED=1
 }
 
-dropped_themes_remove() {
-  local name
-  for name in "${DROPPED_THEMES[@]}"; do
-    rm -rf "${OMARCHY_DIR:?}/themes/$name"
+theme_folder_move() {
+  local old new
+  old="$(user_path "$1")"
+  new="$(user_path "$2")"
+  [[ -e $old || -L $old ]] || return 0
+  user_mkdir "$(dirname "$2")" || return 1
+  if [[ ! -e $new ]]; then
+    as_user mv "$old" "$new"
+    return
+  fi
+  as_user cp -aln "$old/." "$new/" || return 1
+  as_user rm -rf "$old"
+}
+
+wallpaper_link_follow() {
+  local link target name
+  link="$(user_path "$THEME_STATE/background")"
+  target="$(readlink "$link")" || return 0
+  target="${target/#"$TARGET_HOME/.config/omarchy/"/"$TARGET_HOME/.config/hyprtrixie/"}"
+  target="${target/#"$TARGET_HOME/.local/state/omarchy/"/"$TARGET_HOME/.local/state/hyprtrixie/"}"
+  for name in "${!RENAMED_THEMES[@]}"; do
+    target="${target/#"$TARGET_HOME/.config/hyprtrixie/backgrounds/$name/"/"$TARGET_HOME/.config/hyprtrixie/backgrounds/${RENAMED_THEMES[$name]}/"}"
   done
-  rm -f "$OMARCHY_DIR/LICENSE.community-themes" "$STATE_DIR/sources/community-themes"
-  rm -f "$OMARCHY_DIR/LICENSE.omarchy" "$STATE_DIR/sources/omarchy"
+  as_user ln -sfn "$target" "$link"
+}
+
+old_theme_folders_move() {
+  local name new
+  theme_folder_move .config/omarchy/themes .config/hyprtrixie/themes || return 1
+  theme_folder_move .config/omarchy/backgrounds .config/hyprtrixie/backgrounds || return 1
+  theme_folder_move .config/omarchy/themed .config/hyprtrixie/themed || return 1
+  theme_folder_move .local/state/omarchy/current "$THEME_STATE" || return 1
+  for name in "${!RENAMED_THEMES[@]}"; do
+    new="${RENAMED_THEMES[$name]}"
+    theme_folder_move ".config/hyprtrixie/themes/$name" ".config/hyprtrixie/themes/$new" || return 1
+    theme_folder_move ".config/hyprtrixie/backgrounds/$name" ".config/hyprtrixie/backgrounds/$new" || return 1
+  done
+  wallpaper_link_follow || return 1
+  as_user rmdir "$(user_path .config/omarchy)" "$(user_path .local/state/omarchy)" 2>/dev/null || true
+}
+
+old_theme_includes_update() {
+  local file
+  for file in .config/kitty/kitty.conf .config/mako/config .config/hypr/hyprlock.conf .config/hypr/hyprpaper.conf \
+    .config/hyprtrixie/look.conf; do
+    file="$(user_path "$file")"
+    grep -qE '\.(local/state|config)/omarchy/' "$file" 2>/dev/null || continue
+    as_user sed -i --follow-symlinks -E 's#\.(local/state|config)/omarchy/#.\1/hyprtrixie/#g' "$file" || return 1
+  done
+  for file in /etc/xdg/hypr/hyprlock.conf /etc/xdg/hypr/hyprpaper.conf; do
+    grep -q '\.local/state/omarchy/' "$file" 2>/dev/null || continue
+    sed -i 's|\.local/state/omarchy/|.local/state/hyprtrixie/|g' "$file" || return 1
+  done
+}
+
+theme_migrate() {
+  [[ -d $OLD_THEME_ROOT ]] || return 0
+  LOOK_CHANGED=1
+  old_theme_folders_move || return 1
+  renamed_themes_follow || return 1
+  old_theme_includes_update
+}
+
+theme_move_finished() {
+  [[ ! -d $OLD_THEME_ROOT ]] || { [[ ! -d "$(user_path .local/state/omarchy/current)" ]] && themes_present; }
+}
+
+old_themes_remove() {
+  source_current hyprtrixie-themes || return 0
+  rm -rf "$OLD_THEME_ROOT"
+  rm -f "$STATE_DIR/sources/omarchy" "$STATE_DIR/sources/community-themes"
+  [[ ! -f $FILES_DB ]] || sed -i -e "\|^$OLD_THEME_ROOT/|d" -e "\|^$BIN_DIR/omarchy-theme-|d" "$FILES_DB"
 }
 
 theme_name_replace() {
@@ -133,12 +198,12 @@ renamed_themes_follow() {
 themes_present() {
   local name
   for name in $(option_items THEME); do
-    [[ -f $OMARCHY_DIR/themes/$name/colors.toml ]] || return 1
+    [[ -f $THEME_ROOT/themes/$name/colors.toml ]] || return 1
   done
 }
 
 theme_engine_install() {
-  deploy_tree "$HYPRTRIXIE_ROOT/themed" "$OMARCHY_DIR/default/themed" || return 1
+  deploy_tree "$HYPRTRIXIE_ROOT/themed" "$THEME_ROOT/themed" || return 1
   deploy_tool hyprtrixie-look || return 1
   deploy_tool hyprtrixie-theme-install || return 1
   deploy_tool hyprtrixie-weather || return 1
@@ -165,7 +230,7 @@ btop_theme_setup() {
 theme_in_use() {
   local name
   name="$(cat "$(user_path "$THEME_STATE/theme.name")" 2>/dev/null)"
-  [[ -n $name && (-d $OMARCHY_DIR/themes/$name || -d "$(user_path ".config/omarchy/themes/$name")") ]]
+  [[ -n $name && (-d $THEME_ROOT/themes/$name || -d "$(user_path ".config/hyprtrixie/themes/$name")") ]]
 }
 
 look_install() {
@@ -195,14 +260,15 @@ quiet_on() {
 }
 
 theme_apply() {
+  theme_move_finished || return 1
   if theme_in_use && [[ "$(cat "$THEME_APPLIED" 2>/dev/null)" == "$THEME" ]]; then
     log info "keeping the theme in use; $THEME was applied before"
     if ((LOOK_CHANGED)); then
-      as_user env OMARCHY_PATH="$OMARCHY_DIR" HYPRTRIXIE_LOOK_SYSTEM="$LOOK_CONF" HYPRTRIXIE_LOOK_AUTO=1 "$BIN_DIR/hyprtrixie-theme-set" \
+      as_user env HYPRTRIXIE_THEME_ROOT="$THEME_ROOT" HYPRTRIXIE_LOOK_SYSTEM="$LOOK_CONF" HYPRTRIXIE_LOOK_AUTO=1 "$BIN_DIR/hyprtrixie-theme-set" \
         "$(cat "$(user_path "$THEME_STATE/theme.name")")" || return 1
     fi
   else
-    as_user env OMARCHY_PATH="$OMARCHY_DIR" HYPRTRIXIE_LOOK_SYSTEM="$LOOK_CONF" HYPRTRIXIE_LOOK_AUTO=1 "$BIN_DIR/hyprtrixie-theme-set" "$THEME" || return 1
+    as_user env HYPRTRIXIE_THEME_ROOT="$THEME_ROOT" HYPRTRIXIE_LOOK_SYSTEM="$LOOK_CONF" HYPRTRIXIE_LOOK_AUTO=1 "$BIN_DIR/hyprtrixie-theme-set" "$THEME" || return 1
     mkdir -p "${THEME_APPLIED%/*}" && printf '%s\n' "$THEME" >"$THEME_APPLIED"
   fi
   if [[ -f "$(user_path .config/mako/config)" ]]; then
@@ -290,18 +356,18 @@ follow_watch() {
   deploy_rendered "$HYPRTRIXIE_ROOT/system/systemd/hyprtrixie-follow-theme.path" \
     /etc/systemd/system/hyprtrixie-follow-theme.path 0644 root "HOME=$TARGET_HOME" || return 1
   systemctl daemon-reload || return 1
-  service_start hyprtrixie-follow-theme.path
+  service_enable hyprtrixie-follow-theme.path || return 1
+  systemctl restart hyprtrixie-follow-theme.path
 }
 
 module_14() {
   run_step "Install theme packages" apt_install_list themes
+  run_step "Move your themes to their new folders" theme_migrate
   run_step "Install the themes" themes_install
-  run_step "Remove the dropped themes" dropped_themes_remove
-  run_step "Move to the themes' new names" renamed_themes_follow
   run_step "Install the theme switcher" theme_engine_install
   run_step "Point btop at the theme" btop_theme_setup
   run_step "Write the look settings" look_install
-  run_step "Apply the $THEME theme" theme_apply
+  run_step "Apply the $THEME theme" theme_apply && run_step "Remove the old themes" old_themes_remove
   run_step "Install the theme follower" follow_install
   run_step "Show a boot splash in the theme's colours" boot_splash_install
   run_step "Theme the boot menu" grub_theme_install

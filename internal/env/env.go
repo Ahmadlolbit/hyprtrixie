@@ -38,6 +38,18 @@ func StateHome() string {
 	return Or("XDG_STATE_HOME", filepath.Join(Home(), ".local", "state"))
 }
 
+func ThemeRoot() string {
+	return Or("HYPRTRIXIE_THEME_ROOT", "/usr/share/hyprtrixie")
+}
+
+func AppConfig() string {
+	return filepath.Join(ConfigHome(), "hyprtrixie")
+}
+
+func ThemeState() string {
+	return filepath.Join(StateHome(), "hyprtrixie", "current")
+}
+
 func CacheHome() string {
 	return Or("XDG_CACHE_HOME", filepath.Join(Home(), ".cache"))
 }

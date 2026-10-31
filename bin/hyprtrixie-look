@@ -5,11 +5,11 @@ CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
 USER_LOOK="$CONFIG_HOME/hyprtrixie/look.conf"
 SYSTEM_LOOK="${HYPRTRIXIE_LOOK_SYSTEM:-/etc/hyprtrixie/look.conf}"
-CURRENT="$STATE_HOME/omarchy/current"
+CURRENT="$STATE_HOME/hyprtrixie/current"
 LOOK_STATE="$STATE_HOME/hyprtrixie/look"
 QUIET_STAMP="${XDG_RUNTIME_DIR:-$LOOK_STATE}/hyprtrixie-quiet"
 WEATHER_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/hyprtrixie/weather.json"
-OMARCHY_PATH="${OMARCHY_PATH:-/usr/share/omarchy}"
+THEME_ROOT="${HYPRTRIXIE_THEME_ROOT:-/usr/share/hyprtrixie}"
 HERE="$(dirname "$(readlink -f "$0")")"
 ZONEINFO="${HYPRTRIXIE_ZONEINFO:-/usr/share/zoneinfo}"
 LOCALTIME="${HYPRTRIXIE_LOCALTIME:-/etc/localtime}"
@@ -557,7 +557,7 @@ theme_choice() {
     return 0
   fi
   name="$(sed -E 's/<[^>]+>//g' <<<"$2" | tr '[:upper:] ' '[:lower:]-')"
-  if [[ ! $name =~ ^[a-z0-9][a-z0-9_-]*$ ]] || [[ ! -d $OMARCHY_PATH/themes/$name && ! -d $CONFIG_HOME/omarchy/themes/$name ]]; then
+  if [[ ! $name =~ ^[a-z0-9][a-z0-9_-]*$ ]] || [[ ! -d $THEME_ROOT/themes/$name && ! -d $CONFIG_HOME/hyprtrixie/themes/$name ]]; then
     printf 'no theme named %s; see hyprtrixie-theme-set --list\n' "$2" >&2
     return 2
   fi

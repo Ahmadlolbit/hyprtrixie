@@ -54,7 +54,7 @@ Singleton {
   FileView {
     id: file
 
-    path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/omarchy/current/theme/colors.toml"
+    path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/hyprtrixie/current/theme/colors.toml"
     watchChanges: true
     printErrors: false
     onFileChanged: reload()
@@ -91,7 +91,7 @@ Singleton {
   FileView {
     id: lookFile
 
-    path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/omarchy/current/theme/look.toml"
+    path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/hyprtrixie/current/theme/look.toml"
     watchChanges: true
     printErrors: false
     onFileChanged: reload()

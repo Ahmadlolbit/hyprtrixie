@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-STATE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/current"
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/hyprtrixie/current"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 HERE="$(dirname "$(readlink -f "$0")")"
 
@@ -14,7 +14,7 @@ Usage: hyprtrixie-background <file>
        hyprtrixie-background workspaces
 
 Sets the wallpaper. Backgrounds come from the current theme and from
-~/.config/omarchy/backgrounds/<theme>. With a wallpaper per workspace on
+~/.config/hyprtrixie/backgrounds/<theme>. With a wallpaper per workspace on
 (hyprtrixie-look workspaces on), each workspace shows the next one along,
 and workspaces shows each monitor's.
 EOF
@@ -23,7 +23,7 @@ EOF
 backgrounds() {
   local name dir dirs=()
   name="$(cat "$STATE/theme.name" 2>/dev/null)"
-  for dir in "$STATE/theme/backgrounds" "$CONFIG_HOME/omarchy/backgrounds/$name"; do
+  for dir in "$STATE/theme/backgrounds" "$CONFIG_HOME/hyprtrixie/backgrounds/$name"; do
     [[ -d $dir ]] && dirs+=("$dir")
   done
   ((${#dirs[@]})) || return 0

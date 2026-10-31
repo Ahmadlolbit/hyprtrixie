@@ -80,7 +80,7 @@ copy_wallpaper() {
 
 login_screen() {
   local image extension wallpaper="" red settings
-  image="$(readlink -f "$home/.local/state/omarchy/current/background" 2>/dev/null)"
+  image="$(readlink -f "$home/.local/state/hyprtrixie/current/background" 2>/dev/null)"
   extension="${image##*.}"
   if [[ -f $image && $extension =~ ^[[:alnum:]]+$ ]] && as_user test -r "$image"; then
     wallpaper="wallpaper.$extension"
@@ -132,7 +132,7 @@ esac
 
 user="$(setting user)"
 home="$(getent passwd "$user" | cut -d: -f6)"
-COLORS="$home/.local/state/omarchy/current/theme/colors.toml"
+COLORS="$home/.local/state/hyprtrixie/current/theme/colors.toml"
 if [[ -z $user || ! -f $COLORS ]]; then
   printf 'No theme to follow yet (%s)\n' "${COLORS}"
   exit 0

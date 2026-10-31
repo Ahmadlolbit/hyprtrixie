@@ -25,13 +25,13 @@ const usage = `Usage: hyprtrixie-background <file>
        hyprtrixie-background workspaces
 
 Sets the wallpaper. Backgrounds come from the current theme and from
-~/.config/omarchy/backgrounds/<theme>. With a wallpaper per workspace on
+~/.config/hyprtrixie/backgrounds/<theme>. With a wallpaper per workspace on
 (hyprtrixie-look workspaces on), each workspace shows the next one along,
 and workspaces shows each monitor's.
 `
 
 func state() string {
-	return filepath.Join(env.StateHome(), "omarchy", "current")
+	return env.ThemeState()
 }
 
 func link() string {
@@ -45,7 +45,7 @@ func current() string {
 
 func backgrounds() []string {
 	name, _ := fsutil.Text(filepath.Join(state(), "theme.name"))
-	return fsutil.Images(filepath.Join(state(), "theme", "backgrounds"), filepath.Join(env.ConfigHome(), "omarchy", "backgrounds", name))
+	return fsutil.Images(filepath.Join(state(), "theme", "backgrounds"), filepath.Join(env.AppConfig(), "backgrounds", name))
 }
 
 func next() (string, bool) {
