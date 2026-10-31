@@ -97,7 +97,7 @@ option_valid() {
   case "${OPTION_TYPE[$key]}" in
     choice) option_has_item "$key" "$value" ;;
     bool) [[ $value == yes || $value == no ]] ;;
-    number) [[ $value =~ ^[0-9]+$ ]] ;;
+    number) [[ $value =~ ^(0|[1-9][0-9]*)$ ]] ;;
     multi)
       for word in $value; do
         option_has_item "$key" "$word" || return 1
