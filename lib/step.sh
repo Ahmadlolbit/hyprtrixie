@@ -14,6 +14,9 @@ STEPS_OK=0
 CHECKS_OK=0
 RUN_STARTED=$SECONDS
 RUN_PACKAGES=""
+CORE_RESULT=""
+TOOLS_FAILED=0
+GO_MODULES=(16)
 declare -gA MODULE_TITLES=()
 declare -gA MODULE_STATUS=()
 
@@ -166,8 +169,83 @@ module_skip() {
   log info "module ${CURRENT_MODULE:-none} skipped: $*"
 }
 
+tools_ready() {
+  local title="Build the hyprtrixie tools" rc
+  ((TOOLS_BUILT)) && return 0
+  ((TOOLS_FAILED)) && return 1
+  [[ ${RUN_MODE:-} != verify ]] || command -v go >/dev/null || return 1
+  log info "step: $title"
+  ui_spin_start "$title" "$(log_size)"
+  step_exec tools_build
+  rc=$?
+  ui_spin_stop
+  if ((rc == 0)); then
+    ui_status ok "$title"
+    return 0
+  fi
+  log warn "the tools could not be built, so this module runs in Bash"
+  ui_status warn "The tools could not be built, so this module runs in Bash"
+  TOOLS_FAILED=1
+  return 1
+}
+
+module_in_go() {
+  [[ " ${GO_MODULES[*]} " == *" $1 "* ]] || return 1
+  tools_ready || return 1
+  [[ -x $TOOLS_DIR/hyprtrixie-core ]]
+}
+
+core_results() {
+  local what kind title
+  while IFS='|' read -r what kind title; do
+    case "$what" in
+      steps) STEPS_OK=$((STEPS_OK + kind)) ;;
+      checks) CHECKS_OK=$((CHECKS_OK + kind)) ;;
+      failed)
+        STEP_FAILURES+=("${CURRENT_MODULE:-none}|$kind|$title")
+        MODULE_FAILED=1
+        ;;
+      skipped)
+        STEP_SKIPS+=("${CURRENT_MODULE:-none}|$kind|$title")
+        MODULE_PARTIAL=1
+        ;;
+      module-skipped) MODULE_SKIPPED=1 ;;
+    esac
+  done <"$CORE_RESULT"
+}
+
+core_stopped() {
+  log error "$2"
+  STEP_FAILURES+=("${CURRENT_MODULE:-none}|$1|$2")
+  MODULE_FAILED=1
+  step_halt
+}
+
+core_module() {
+  local rc mode="${FAILURE_MODE:-ask}" kind="${1%s}"
+  [[ $mode != ask ]] || ui_can_ask || mode="continue"
+  CORE_RESULT="$(mktemp)" || core_stopped "$kind" "cannot make a temporary file for module $2"
+  HYPRTRIXIE_ROOT="$HYPRTRIXIE_ROOT" HYPRTRIXIE_LOG_FILE="$LOG_FILE" HYPRTRIXIE_USER_LOG="$USER_LOG" \
+    HYPRTRIXIE_MODULE_RESULT="$CORE_RESULT" HYPRTRIXIE_FAILURE_MODE="$mode" HYPRTRIXIE_USER="$TARGET_USER" \
+    HYPRTRIXIE_RUN_CONFIG="${RUN_CONFIG:-}" "$TOOLS_DIR/hyprtrixie-core" module "$@"
+  rc=$?
+  core_results
+  rm -f "$CORE_RESULT"
+  CORE_RESULT=""
+  case "$rc" in
+    0) ;;
+    1) step_halt ;;
+    130) on_interrupt ;;
+    *) core_stopped "$kind" "hyprtrixie-core stopped with exit code $rc" ;;
+  esac
+}
+
 verify_module() {
   local id="$1" fn checks=()
+  if module_in_go "$id"; then
+    core_module checks "$id"
+    return
+  fi
   mapfile -t checks < <(compgen -A function "verify_${id}_" | sort)
   for fn in "${checks[@]}"; do
     "$fn"
@@ -177,7 +255,9 @@ verify_module() {
 run_module() {
   local id="$1"
   module_begin "$id"
-  if declare -F "module_$id" >/dev/null; then
+  if module_in_go "$id"; then
+    core_module steps "$id"
+  elif declare -F "module_$id" >/dev/null; then
     "module_$id"
   fi
   verify_module "$id"
