@@ -5,7 +5,7 @@ usage() {
   cat <<'USAGE'
 Usage: hyprtrixie-theme-install <https URL of a theme repository>
 
-Clones an Omarchy theme into ~/.config/hyprtrixie/themes and applies it. A theme
+Clones a theme into ~/.config/hyprtrixie/themes and applies it. A theme
 from a repository can change colours and backgrounds, but not run code.
 USAGE
 }
@@ -23,7 +23,7 @@ case "$url" in
     ;;
 esac
 
-name="$(basename -- "${url%/}" .git | sed -E 's/^omarchy-//; s/-theme$//' | tr '[:upper:]' '[:lower:]')"
+name="$(basename -- "${url%/}" .git | sed -E 's/-theme$//' | tr '[:upper:]' '[:lower:]')"
 if [[ ! $name =~ ^[a-z0-9_][a-z0-9._+-]*$ ]]; then
   printf 'cannot tell the theme name from %s\n' "$url" >&2
   exit 1

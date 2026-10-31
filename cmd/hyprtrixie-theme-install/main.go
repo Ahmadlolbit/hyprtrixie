@@ -16,7 +16,7 @@ import (
 
 const usage = `Usage: hyprtrixie-theme-install <https URL of a theme repository>
 
-Clones an Omarchy theme into ~/.config/hyprtrixie/themes and applies it. A theme
+Clones a theme into ~/.config/hyprtrixie/themes and applies it. A theme
 from a repository can change colours and backgrounds, but not run code.
 `
 
@@ -25,7 +25,6 @@ var validName = regexp.MustCompile(`^[a-z0-9_][a-z0-9._+-]*$`)
 func themeName(url string) string {
 	name := path.Base(strings.TrimRight(url, "/"))
 	name = strings.TrimSuffix(name, ".git")
-	name = strings.TrimPrefix(name, "omarchy-")
 	name = strings.TrimSuffix(name, "-theme")
 	return strings.ToLower(name)
 }
