@@ -20,16 +20,14 @@ func verboseOn(flag string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return fail("cannot write %s", flag)
 	}
-	fmt.Println("Verbose logging is on from the next login: log out and back in.")
-	return 0
+	return say("Verbose logging is on from the next login: log out and back in.\n")
 }
 
-func verboseStatus(flag string) {
+func verboseStatus(flag string) int {
 	if fsutil.IsFile(flag) {
-		fmt.Println("on")
-	} else {
-		fmt.Println("off")
+		return say("on\n")
 	}
+	return say("off\n")
 }
 
 func verbose() int {
@@ -43,11 +41,9 @@ func verbose() int {
 		return verboseOn(flag)
 	case "off":
 		remove(flag)
-		fmt.Println("Verbose logging is off from the next login.")
+		return say("Verbose logging is off from the next login.\n")
 	case "status":
-		verboseStatus(flag)
-	default:
-		return fail("usage: hyprtrixie verbose [on|off|status]")
+		return verboseStatus(flag)
 	}
-	return 0
+	return fail("usage: hyprtrixie verbose [on|off|status]")
 }

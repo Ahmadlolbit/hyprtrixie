@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
@@ -54,11 +55,27 @@ var commands = map[string]func() int{
 	"verbose":   verbose,
 	"changes":   changes,
 	"update":    update,
+	"config":    configCommand,
 }
 
 func fail(format string, args ...any) int {
 	fmt.Fprintf(os.Stderr, format+"\n", args...)
 	return 1
+}
+
+func asRoot(mode string, command func() int) int {
+	if os.Geteuid() != 0 {
+		return fail("hyprtrixie needs root for this. Run it again with sudo: sudo %s %s", os.Args[0], mode)
+	}
+	return command()
+}
+
+func say(text string) int {
+	if _, err := os.Stdout.WriteString(text); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	return 0
 }
 
 func remove(path string) int {
@@ -70,13 +87,11 @@ func remove(path string) int {
 }
 
 func showVersion() int {
-	fmt.Printf("hyprtrixie %s\n", version)
-	return 0
+	return say("hyprtrixie " + version + "\n")
 }
 
 func showHelp() int {
-	fmt.Printf(usage, version, env.Or("HYPRTRIXIE_CONFIG", "/etc/hyprtrixie/hyprtrixie.conf"), env.Or("HYPRTRIXIE_LOG_DIR", "/var/log/hyprtrixie"))
-	return 0
+	return say(fmt.Sprintf(usage, version, config.Path(), env.Or("HYPRTRIXIE_LOG_DIR", "/var/log/hyprtrixie")))
 }
 
 func root() string {

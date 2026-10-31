@@ -40,9 +40,9 @@ func changes() int {
 		return notifyChanges(dir)
 	}
 	if text := fsutil.Optional(filepath.Join(dir, "changes.txt")); text != "" {
-		fmt.Println(text)
+		say(text + "\n")
 	} else {
-		fmt.Println("No update notes yet. hyprtrixie update writes them.")
+		say("No update notes yet. hyprtrixie update writes them.\n")
 	}
 	return remove(filepath.Join(dir, "changes-unseen"))
 }
