@@ -56,17 +56,6 @@ func InCategory(catalogue []App, category string) []App {
 	return found
 }
 
-func Installed() map[string]bool {
-	output, _ := run.CaptureQuiet(run.Slow, "dpkg-query", "-W", "-f", "${Package}\t${Status}\n")
-	found := map[string]bool{}
-	for _, line := range run.Lines(output) {
-		if name, status, _ := strings.Cut(line, "\t"); status == "install ok installed" {
-			found[name] = true
-		}
-	}
-	return found
-}
-
 func (app App) Present(installed map[string]bool, teamsSource string) bool {
 	switch app.Source {
 	case "webapp":

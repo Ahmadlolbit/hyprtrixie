@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apps"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 )
@@ -43,7 +44,7 @@ func appCommand() int {
 	if cmp.Or(env.Arg(2), "list") != "list" {
 		return backToBash()
 	}
-	packages := apps.Installed()
+	packages := apt.Installed()
 	teamsSource := config.Read(config.Path()).Get("TEAMS_SOURCE")
 	present := func(app apps.App) bool { return app.Present(packages, teamsSource) }
 	catalogue := apps.All()
