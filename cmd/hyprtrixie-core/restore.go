@@ -101,8 +101,11 @@ func kernelAdvice(snapshotModules, boot, root string) string {
 		return ""
 	}
 	kernels, err := kernelsIn(boot)
-	if _, unread := os.ReadDir(snapshotModules); err != nil || unread != nil || len(kernels) == 0 {
+	if err != nil || len(kernels) == 0 {
 		return couldNot
+	}
+	if _, err := os.ReadDir(snapshotModules); err != nil {
+		return "Couldn't read the kernels in this snapshot, so this can't tell if it has one that will start.\n"
 	}
 	newest, err := newestKernel(boot, kernels)
 	if err != nil {
