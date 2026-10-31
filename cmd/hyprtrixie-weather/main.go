@@ -8,7 +8,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
-	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/look"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/weather"
 )
 
@@ -24,18 +24,14 @@ func cache() string {
 	return filepath.Join(env.CacheHome(), "hyprtrixie", "weather.json")
 }
 
-func look(args ...string) string {
-	output, _ := run.Capture(run.Quick, run.Sibling("hyprtrixie-look"), args...)
-	return output
-}
-
 func update() int {
-	coordinates := look("coordinates")
-	if coordinates == "" {
+	settings := look.Open()
+	coordinates, ok := settings.Coordinates()
+	if !ok {
 		fmt.Fprintln(os.Stderr, "no location: set one with hyprtrixie-look location LATITUDE,LONGITUDE")
 		return 1
 	}
-	url := weather.URL(coordinates, look("get", "weather_units"))
+	url := weather.URL(coordinates, settings.Get("weather_units"))
 	if err := os.MkdirAll(filepath.Dir(cache()), 0o777); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
