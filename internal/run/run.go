@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -11,6 +12,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -29,13 +31,18 @@ const (
 	notFound    = 127
 )
 
+var (
+	ErrStopped = errors.New("stopped before it started")
+	stopped    atomic.Bool
+)
+
 func Exec(name string, args ...string) error {
 	path, err := exec.LookPath(name)
 	if err != nil {
 		return err
 	}
 	if err := syscall.Exec(path, append([]string{name}, args...), os.Environ()); err != nil {
-		return fmt.Errorf("%s: %w", name, err)
+		return &fs.PathError{Op: "fork/exec", Path: name, Err: err}
 	}
 	return nil
 }
@@ -62,7 +69,7 @@ func Within(limit time.Duration, name string, args ...string) int {
 
 func Quiet(limit time.Duration, name string, args ...string) int {
 	command, finish := bounded(limit, name, args)
-	return exitCode(finish(command.Run()))
+	return Code(finish(command.Run()))
 }
 
 func Feed(limit time.Duration, input *os.File, name string, args ...string) int {
@@ -84,11 +91,40 @@ func Record(limit time.Duration, output *os.File, name string, args ...string) i
 	command.Stdout = output
 	command.Stderr = output
 	err := finish(command.Run())
-	explain(output, err)
+	Explain(output, err)
 	if caught := signalOf(err); caught != 0 && caught != syscall.SIGTERM {
 		fmt.Fprintf(output, "%s: %v\n", name, caught)
 	}
-	return exitCode(err)
+	return Code(err)
+}
+
+func Stop() {
+	stopped.Store(true)
+}
+
+func Logged(output io.Writer, name string, args ...string) error {
+	if stopped.Load() {
+		return ErrStopped
+	}
+	command := exec.Command(name, args...)
+	command.Stdout = output
+	command.Stderr = output
+	command.WaitDelay = grace
+	err := done(command.Run())
+	if caught := signalOf(err); caught != 0 {
+		fmt.Fprintf(output, "%s: %v\n", name, caught)
+	}
+	return err
+}
+
+func Page(text string) {
+	command := exec.Command("less")
+	command.Stdin = strings.NewReader(text)
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+	if command.Run() != nil {
+		fmt.Println(text)
+	}
 }
 
 func Output(name string, args ...string) (string, error) {
@@ -124,16 +160,20 @@ func TimedOut(err error) bool {
 func shown(command *exec.Cmd, messages *os.File) (string, error) {
 	command.Stderr = messages
 	output, err := collect(command)
-	explain(messages, err)
+	Explain(messages, err)
 	return output, err
+}
+
+func done(err error) error {
+	if errors.Is(err, exec.ErrWaitDelay) {
+		return nil
+	}
+	return err
 }
 
 func collect(command *exec.Cmd) (string, error) {
 	data, err := command.Output()
-	if errors.Is(err, exec.ErrWaitDelay) {
-		err = nil
-	}
-	return strings.TrimRight(string(data), "\n"), err
+	return strings.TrimRight(string(data), "\n"), done(err)
 }
 
 func inherit(command *exec.Cmd) {
@@ -177,18 +217,25 @@ func Sibling(name string) string {
 }
 
 func Report(err error) int {
-	explain(os.Stderr, err)
-	return exitCode(err)
+	Explain(os.Stderr, err)
+	return Code(err)
 }
 
-func explain(output *os.File, err error) {
+type Reported string
+
+func (text Reported) Error() string {
+	return string(text)
+}
+
+func Explain(output io.Writer, err error) {
 	var exit *exec.ExitError
-	if err != nil && !errors.As(err, &exit) && !errors.Is(err, context.DeadlineExceeded) {
+	var reported Reported
+	if err != nil && !errors.As(err, &exit) && !errors.Is(err, context.DeadlineExceeded) && !errors.As(err, &reported) {
 		fmt.Fprintln(output, err)
 	}
 }
 
-func exitCode(err error) int {
+func Code(err error) int {
 	if err == nil {
 		return 0
 	}
@@ -202,10 +249,19 @@ func exitCode(err error) int {
 	if errors.Is(err, context.DeadlineExceeded) {
 		return bySignal + int(syscall.SIGTERM)
 	}
+	if !couldNotStart(err) {
+		return 1
+	}
 	if errors.Is(err, exec.ErrNotFound) || errors.Is(err, fs.ErrNotExist) {
 		return notFound
 	}
 	return notRunnable
+}
+
+func couldNotStart(err error) bool {
+	var lookup *exec.Error
+	var start *fs.PathError
+	return errors.As(err, &lookup) || (errors.As(err, &start) && start.Op == "fork/exec")
 }
 
 func signalOf(err error) syscall.Signal {

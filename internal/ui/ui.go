@@ -3,13 +3,17 @@ package ui
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
+	"unicode/utf8"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/term"
 )
 
 const (
-	width = 64
+	width   = 64
+	minFill = 3
 
 	reset  = "\x1b[0m"
 	bold   = "\x1b[1m"
@@ -17,6 +21,7 @@ const (
 	red    = "\x1b[31m"
 	green  = "\x1b[32m"
 	yellow = "\x1b[33m"
+	blue   = "\x1b[34m"
 	accent = "\x1b[35m"
 )
 
@@ -48,7 +53,8 @@ func Header(title, line string) {
 }
 
 func Rule(text string) {
-	Print("\n" + paint(accent+bold, "── "+text+" "+strings.Repeat("─", width-len(text)-4)) + "\n")
+	fill := max(width-utf8.RuneCountInString(text)-4, minFill)
+	Print("\n" + paint(accent+bold, "── "+text+" "+strings.Repeat("─", fill)) + "\n")
 }
 
 func status(colour, tag, text string) {
@@ -71,6 +77,29 @@ func Warn(text string) {
 	status(yellow, "warn", text)
 }
 
+func Busy(text string) {
+	if term.IsTerminal(os.Stdout) {
+		Print("  " + paint(blue, "[ .. ]") + " " + text)
+	}
+}
+
+func Done() {
+	if term.IsTerminal(os.Stdout) {
+		Print("\r\x1b[K")
+	}
+}
+
+func Page(text string) {
+	if text == "" {
+		return
+	}
+	if term.IsTerminal(os.Stdout) {
+		run.Page(text)
+		return
+	}
+	Print(text + "\n")
+}
+
 func Note(text string) {
 	Print("         " + paint(dim, text) + "\n")
 }
@@ -85,6 +114,23 @@ func Confirm(prompt string) bool {
 	}
 	answer, err := term.ReadAnswer(prompt + " [y/N] ")
 	return err == nil && clearYes(answer)
+}
+
+func Choose(header string, items []string) (string, bool) {
+	for {
+		Print(header + "\n")
+		for index, item := range items {
+			Print(fmt.Sprintf("  %2d) %s\n", index+1, item))
+		}
+		answer, err := term.ReadAnswer("> ")
+		if err != nil {
+			return "", false
+		}
+		number, err := strconv.Atoi(strings.TrimSpace(answer))
+		if err == nil && number >= 1 && number <= len(items) {
+			return items[number-1], true
+		}
+	}
 }
 
 func clearYes(answer string) bool {
