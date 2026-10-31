@@ -12,10 +12,10 @@ declare -A COLORS=()
 
 usage() {
   cat <<'EOF'
-Usage: omarchy-theme-set <theme>
-       omarchy-theme-set --list
-       omarchy-theme-set --previews
-       omarchy-theme-set --current
+Usage: hyprtrixie-theme-set <theme>
+       hyprtrixie-theme-set --list
+       hyprtrixie-theme-set --previews
+       hyprtrixie-theme-set --current
 
 Applies a theme to Hyprland, the bar, kitty, the launcher, notifications, the
 lock screen, btop, GTK and the wallpaper. Themes come from
@@ -340,7 +340,7 @@ esac
 
 name="$(slug "$1")"
 if [[ -z $name || $name == .* || $name == */* ]] || [[ ! -d $OMARCHY_PATH/themes/$name && ! -d $USER_THEMES/$name ]]; then
-  printf 'no theme named %s; see omarchy-theme-set --list\n' "$1" >&2
+  printf 'no theme named %s; see hyprtrixie-theme-set --list\n' "$1" >&2
   exit 1
 fi
 

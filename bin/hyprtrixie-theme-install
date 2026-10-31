@@ -3,7 +3,7 @@ set -uo pipefail
 
 usage() {
   cat <<'USAGE'
-Usage: omarchy-theme-install <https URL of a theme repository>
+Usage: hyprtrixie-theme-install <https URL of a theme repository>
 
 Clones an Omarchy theme into ~/.config/omarchy/themes and applies it. A theme
 from a repository can change colours and backgrounds, but not run code.
@@ -35,4 +35,4 @@ rm -rf "$dir.part"
 git clone --quiet --depth 1 -- "$url" "$dir.part" || exit 1
 rm -rf "$dir"
 mv "$dir.part" "$dir" || exit 1
-exec omarchy-theme-set "$name"
+exec hyprtrixie-theme-set "$name"
