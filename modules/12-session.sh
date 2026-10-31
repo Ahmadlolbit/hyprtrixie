@@ -193,6 +193,17 @@ tips_timer_install() {
   systemctl --global enable hyprtrixie-tip.timer
 }
 
+care_install() {
+  deploy_tool hyprtrixie-care || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/system/systemd/hyprtrixie-care.service" /etc/systemd/user/hyprtrixie-care.service || return 1
+  deploy_file "$HYPRTRIXIE_ROOT/system/systemd/hyprtrixie-care.timer" /etc/systemd/user/hyprtrixie-care.timer || return 1
+  systemctl --global enable hyprtrixie-care.timer
+}
+
+firmware_refresh_install() {
+  service_start fwupd-refresh.timer
+}
+
 brightness_access() {
   deploy_file "$HYPRTRIXIE_ROOT/system/udev/90-hyprtrixie-brightness.rules" /etc/udev/rules.d/90-hyprtrixie-brightness.rules || return 1
   user_add_groups video || return 1
@@ -218,6 +229,8 @@ module_12() {
   run_step "Install the package picker" package_picker_install
   run_step "Install the tips" tips_install
   run_step "Show a tip now and then" tips_timer_install
+  run_step "Keep the firmware list fresh" firmware_refresh_install
+  run_step "Look after the system quietly" care_install
   run_step "Apply display and input settings" hyprland_options
   run_step "Set up your Hyprland config" hyprland_user_config
   run_step "Set up the lock screen" hyprlock_setup
@@ -284,6 +297,14 @@ verify_12_tips() {
 
 verify_12_tip_timer() {
   run_check "Tip notifications are scheduled" test -L /etc/systemd/user/timers.target.wants/hyprtrixie-tip.timer
+}
+
+verify_12_care() {
+  run_check "The quiet system checks are scheduled" test -L /etc/systemd/user/timers.target.wants/hyprtrixie-care.timer
+}
+
+verify_12_firmware_refresh() {
+  run_check "The firmware list is refreshed" service_enabled fwupd-refresh.timer
 }
 
 verify_12_brightness() {
