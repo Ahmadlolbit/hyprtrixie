@@ -49,8 +49,8 @@ func today() string {
 	return time.Now().Format(time.DateOnly)
 }
 
-func offer(app, urgency, title, body string) bool {
-	return notify.Post("--app-name="+app, "--urgency="+urgency, "--expire-time=0", "--hint=string:x-dunst-stack-tag:"+app, "--", title, body) == 0
+func offer(app, urgency string, text ...string) bool {
+	return notify.Post(append([]string{"--app-name=" + app, "--urgency=" + urgency, "--expire-time=0", "--hint=string:x-dunst-stack-tag:" + app, "--"}, text...)...) == 0
 }
 
 func firmware() bool {
@@ -59,7 +59,7 @@ func firmware() bool {
 	seen := filepath.Join(stateFolder(), "firmware-seen")
 	fresh := care.Unseen(waiting, fsutil.Optional(seen))
 	if len(fresh) > 0 {
-		if !offer("hyprtrixie-firmware", "normal", "Firmware update", care.Markup(strings.Join(fresh, "\n"))+"\nClick to update.") {
+		if !offer("hyprtrixie-firmware", "normal", "Firmware update", "Click to update.\n"+care.Markup(strings.Join(fresh, "\n"))) {
 			return false
 		}
 		save(seen, strings.Join(waiting, "\n")+"\n")
@@ -78,7 +78,7 @@ func warned(use int) bool {
 	title := fmt.Sprintf("The disk is %d%% full", use)
 	all, _ := snapshots.All()
 	if len(snapshots.Disposable(all)) == 0 {
-		return notify.Post("--app-name=hyprtrixie", "--urgency=critical", "--", title) == 0
+		return offer("hyprtrixie", "critical", title)
 	}
 	return offer("hyprtrixie-disk", "critical", title, fmt.Sprintf("%d snapshots are on it. Click to delete the oldest automatic ones.", len(all)))
 }

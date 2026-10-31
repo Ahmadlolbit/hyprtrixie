@@ -135,8 +135,12 @@ hyprpaper_setup() {
 }
 
 mako_setup() {
+  local changed
   deploy_file "$HYPRTRIXIE_ROOT/config/mako/defaults" "$SHARE_DIR/mako/defaults" || return 1
-  deploy_user_once "$HYPRTRIXIE_ROOT/config/mako/config" .config/mako/config
+  changed=$DEPLOY_CHANGED
+  deploy_user_once "$HYPRTRIXIE_ROOT/config/mako/config" .config/mako/config || return 1
+  ((changed)) && user_session_running && as_user makoctl reload
+  return 0
 }
 
 walker_install() {
