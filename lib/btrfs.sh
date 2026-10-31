@@ -92,9 +92,14 @@ fstab_drop() {
 }
 
 mount_subvolume() {
-  local name="$1" target="$2" options="${3:-noatime}"
+  local name="$1" target="$2" options="${3:-noatime}" uuid
   btrfs_subvolume_ensure "$name" || return 1
   mkdir -p "$target" || return 1
-  fstab_ensure "UUID=$(root_uuid)" "$target" btrfs "subvol=$name,$options" || return 1
+  uuid="$(root_uuid)"
+  if [[ -z $uuid ]]; then
+    log error "cannot find the root filesystem's UUID"
+    return 1
+  fi
+  fstab_ensure "UUID=$uuid" "$target" btrfs "subvol=$name,$options" || return 1
   mountpoint -q "$target" || mount "$target"
 }
