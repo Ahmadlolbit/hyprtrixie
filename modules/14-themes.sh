@@ -62,7 +62,7 @@ LOOK_CONF="${HYPRTRIXIE_LOOK_CONF:-/etc/hyprtrixie/look.conf}"
 LOOK_CHANGED=0
 
 theme_copy() {
-  local src="$1" dest="$2" old="${3:-}" new="${4:-}" file base
+  local src="$1" dest="$2" file
   [[ -f $src/colors.toml ]] || return 0
   rm -rf "$dest.part"
   mkdir -p "$dest.part/backgrounds" || return 1
@@ -73,9 +73,7 @@ theme_copy() {
   done
   for file in "$src"/backgrounds/*; do
     [[ -f $file && ! -L $file ]] || continue
-    base="${file##*/}"
-    [[ -n $old ]] && base="${base//"$old"/"$new"}"
-    install -m 0644 "$file" "$dest.part/backgrounds/$base" || return 1
+    install -m 0644 "$file" "$dest.part/backgrounds/${file##*/}" || return 1
   done
   rm -rf "$dest"
   mv "$dest.part" "$dest"
