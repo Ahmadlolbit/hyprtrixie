@@ -21,6 +21,7 @@ type Module struct {
 
 var Modules = map[string]Module{
 	"06": {hyprlandSteps, hyprlandChecks},
+	"07": {sddmSteps, sddmChecks},
 	"08": {terminalSteps, terminalChecks},
 	"09": {cliSteps, cliChecks},
 	"13": {barSteps, barChecks},

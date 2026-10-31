@@ -2,6 +2,7 @@ package setup
 
 import (
 	"errors"
+	"slices"
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
@@ -13,6 +14,7 @@ import (
 
 const (
 	programMode = 0o755
+	plainMode   = 0o644
 )
 
 func packages(lists ...string) step.Work {
@@ -21,6 +23,15 @@ func packages(lists ...string) step.Work {
 
 func commands(names ...string) step.Work {
 	return func(*runlog.Log) error { return apt.Commands(names...) }
+}
+
+func lineHasPrefix(text, prefix string) bool {
+	return slices.ContainsFunc(strings.Split(text, "\n"), func(line string) bool { return strings.HasPrefix(line, prefix) })
+}
+
+func fileLineHasPrefix(path, prefix string) bool {
+	text, err := fsutil.Text(path)
+	return err == nil && lineHasPrefix(text, prefix)
 }
 
 func mentions(path, text string) bool {
@@ -51,6 +62,10 @@ func holds(ok bool) error {
 
 func fileThere(path string) error {
 	return expect(fsutil.IsFile(path), path+" is missing")
+}
+
+func filesCheck(path string) step.Work {
+	return func(*runlog.Log) error { return fileThere(path) }
 }
 
 func give(log *runlog.Log, person, path string) error {
