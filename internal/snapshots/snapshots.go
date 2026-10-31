@@ -3,17 +3,20 @@ package snapshots
 import (
 	"cmp"
 	"fmt"
+	"maps"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
 const (
 	dateLayout  = "2006-01-02 15:04:05"
-	shownLayout = "Mon 2 Jan 15:04"
+	shownLayout = "Mon 2 Jan 2006 15:04"
 	maxFolders  = 8
 	keptNewest  = 3
 )
@@ -37,12 +40,18 @@ func parse(output string) []Snapshot {
 			found = append(found, Snapshot{fields[0], fields[1], fields[2], fields[3]})
 		}
 	}
+	slices.SortStableFunc(found, func(first, second Snapshot) int {
+		return cmp.Or(cmp.Compare(len(first.Number), len(second.Number)), cmp.Compare(first.Number, second.Number))
+	})
 	return found
 }
 
-func All(limit time.Duration, options ...string) ([]Snapshot, error) {
-	args := append(options, "--csvout", "--no-headers", "--separator", "\t", "-c", "root", "list", "--columns", "number,type,date,description")
-	output, err := run.CaptureQuiet(limit, "snapper", args...)
+func All(limit time.Duration) ([]Snapshot, error) {
+	args := []string{"--csvout", "--no-headers", "--separator", "\t", "-c", "root", "list", "--columns", "number,type,date,description"}
+	if os.Geteuid() == 0 {
+		args = append([]string{"--no-dbus"}, args...)
+	}
+	output, err := run.Capture(limit, "snapper", args...)
 	return parse(output), err
 }
 
@@ -75,23 +84,28 @@ func folderOf(path string) string {
 }
 
 func biggest(counts map[string]int) []string {
-	folders := make([]string, 0, len(counts))
-	for folder := range counts {
-		folders = append(folders, folder)
-	}
-	slices.SortFunc(folders, func(first, second string) int {
+	folders := slices.SortedFunc(maps.Keys(counts), func(first, second string) int {
 		return cmp.Or(cmp.Compare(counts[second], counts[first]), cmp.Compare(first, second))
 	})
 	return folders[:min(maxFolders, len(folders))]
+}
+
+func printable(text string) string {
+	return strings.Map(func(letter rune) rune {
+		if unicode.IsControl(letter) {
+			return -1
+		}
+		return letter
+	}, text)
 }
 
 func Changes(status string) string {
 	kinds := map[byte]int{}
 	counts := map[string]int{}
 	for _, line := range run.Lines(status) {
-		if fields := strings.Fields(line); len(fields) >= 2 {
-			kinds[fields[0][0]]++
-			counts[folderOf(fields[1])]++
+		if kind, path, found := strings.Cut(strings.TrimLeft(line, " "), " "); found {
+			kinds[kind[0]]++
+			counts[folderOf(printable(strings.TrimLeft(path, " ")))]++
 		}
 	}
 	var text strings.Builder
