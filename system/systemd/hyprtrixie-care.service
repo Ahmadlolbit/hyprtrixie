@@ -1,0 +1,6 @@
+[Unit]
+Description=Check for firmware updates
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/hyprtrixie-care
