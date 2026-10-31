@@ -25,11 +25,11 @@ Makes snapshot number SNAPSHOT the root filesystem from the next restart. The
 root as it is now stays on the disk under a dated name. Nothing on the disk
 changes until you type CONFIRM. It needs root.
 `
-	word       = "CONFIRM"
-	folderMode = 0o755
-	usageCode  = 2
-	fstabPath  = 1
-	fstabFlags = 3
+	confirmWord = "CONFIRM"
+	folderMode  = 0o755
+	usageCode   = 2
+	fstabPath   = 1
+	fstabFlags  = 3
 )
 
 var unstoppable = []os.Signal{
@@ -43,14 +43,16 @@ type layout struct {
 	device     string
 }
 
-type names struct {
+type rootPaths struct {
 	root   string
 	source string
-	fresh  string
 	kept   string
 }
 
 func readLayout(path string) (layout, error) {
+	if !fsutil.IsFile(path) {
+		return layout{}, errors.New(path + " is missing")
+	}
 	lines, err := fsutil.Lines(path)
 	if err != nil {
 		return layout{}, err
@@ -72,12 +74,11 @@ func readLayout(path string) (layout, error) {
 	return found, nil
 }
 
-func namesFor(top layout, number string, now time.Time) names {
+func pathsFor(top layout, number string, now time.Time) rootPaths {
 	root := filepath.Join(top.mountpoint, top.main)
-	return names{
+	return rootPaths{
 		root:   root,
 		source: filepath.Join(top.mountpoint, top.snapshots, number, "snapshot"),
-		fresh:  root + ".new",
 		kept:   root + now.Format("2006-01-02T15:04"),
 	}
 }
@@ -97,6 +98,35 @@ func (top layout) mount() (bool, error) {
 		return false, fmt.Errorf("cannot mount the top of the disk at %s", top.mountpoint)
 	}
 	return true, nil
+}
+
+func (top layout) unmount() {
+	if run.Quiet(run.Minute, "umount", top.mountpoint) != 0 {
+		fmt.Fprintln(os.Stderr, top.mountpoint, "stays mounted until the next restart")
+	}
+}
+
+func (top layout) whileMounted(work func() error) error {
+	mounted, err := top.mount()
+	if err != nil {
+		return err
+	}
+	if mounted {
+		defer top.unmount()
+	}
+	return work()
+}
+
+func lock(path string) (*os.File, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	if err := syscall.Flock(int(file.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+		file.Close()
+		return nil, errors.New("another rollback is running")
+	}
+	return file, nil
 }
 
 func diskID(path string) string {
@@ -124,11 +154,15 @@ func bootsByNumber(table, commandLine string) bool {
 	})
 }
 
-func (top layout) check(paths names) error {
+func startsByNumber() bool {
+	return bootsByNumber(fsutil.Optional(env.Or("HYPRTRIXIE_FSTAB", "/etc/fstab")), fsutil.Optional(env.Or("HYPRTRIXIE_CMDLINE", "/proc/cmdline")))
+}
+
+func (top layout) check(paths rootPaths) error {
 	switch {
 	case !sameDisk(top.mountpoint):
-		return fmt.Errorf("%s holds a different disk from the root: unmount it first", top.mountpoint)
-	case bootsByNumber(fsutil.Optional(env.Or("HYPRTRIXIE_FSTAB", "/etc/fstab")), fsutil.Optional(env.Or("HYPRTRIXIE_CMDLINE", "/proc/cmdline"))):
+		return fmt.Errorf("%s holds a different disk from the root: check what's mounted there and the dev line in the config", top.mountpoint)
+	case startsByNumber():
 		return errors.New("this machine starts its root by subvolume number, so a new root wouldn't be used: change it to subvol= first")
 	case !fsutil.IsDir(paths.root):
 		return fmt.Errorf("%s is missing: is the disk mounted at %s with subvolid=5?", paths.root, top.mountpoint)
@@ -136,8 +170,6 @@ func (top layout) check(paths names) error {
 		return fmt.Errorf("there is no such snapshot: %s is missing", paths.source)
 	case fsutil.Exists(paths.kept):
 		return fmt.Errorf("%s is already there: try again in a minute", paths.kept)
-	case fsutil.Exists(paths.fresh):
-		return fmt.Errorf("%s is left over from an earlier try: remove it with btrfs subvolume delete", paths.fresh)
 	}
 	return nil
 }
@@ -157,67 +189,69 @@ func step(args ...string) bool {
 	return run.Within(run.Slow, args[0], args[1:]...) == 0
 }
 
-func (paths names) discard() error {
-	if !fsutil.Exists(paths.fresh) {
-		return errors.New("nothing changed")
-	}
-	step("btrfs", "-q", "subvolume", "set-default", paths.root)
-	if !step("btrfs", "-q", "subvolume", "delete", paths.fresh) {
-		return fmt.Errorf("the root didn't change, but %s is left over: remove it with btrfs subvolume delete", paths.fresh)
+func (paths rootPaths) discard() error {
+	if fsutil.Exists(paths.kept) && !step("btrfs", "-q", "subvolume", "delete", paths.kept) {
+		return fmt.Errorf("the root didn't change, but the unused copy %s stays on the disk", filepath.Base(paths.kept))
 	}
 	return errors.New("nothing changed")
 }
 
-func (paths names) stillHolds(root os.FileInfo) bool {
-	now, err := os.Stat(paths.root)
-	return err == nil && os.SameFile(root, now)
+func (paths rootPaths) stillHolds(root os.FileInfo) bool {
+	current, err := os.Stat(paths.root)
+	return err == nil && os.SameFile(root, current)
 }
 
-func (paths names) swap() error {
+func (paths rootPaths) swap() error {
 	root, err := os.Stat(paths.root)
 	if err != nil {
 		return errors.New("nothing changed")
 	}
-	if !step("btrfs", "-q", "subvolume", "snapshot", paths.source, paths.fresh) ||
-		!step("btrfs", "-q", "subvolume", "set-default", paths.fresh) {
+	if !step("btrfs", "-q", "subvolume", "snapshot", paths.source, paths.kept) {
 		return paths.discard()
 	}
-	step("mv", "--exchange", "--no-copy", "-T", paths.fresh, paths.root)
+	step("mv", "--exchange", "--no-copy", "-T", paths.kept, paths.root)
 	if paths.stillHolds(root) {
 		return paths.discard()
 	}
-	if err := os.Rename(paths.fresh, paths.kept); err != nil {
-		return fmt.Errorf("the rollback is done, but the old root is still called %s: %w", paths.fresh, err)
+	if !step("btrfs", "-q", "subvolume", "set-default", paths.root) {
+		fmt.Println("The default subvolume didn't change, so a machine that starts without subvol= would still use the old root.")
 	}
 	return nil
 }
 
-func goBack(top layout, number string) error {
-	paths := namesFor(top, number, time.Now())
-	mounted, err := top.mount()
-	if err != nil {
-		return err
-	}
-	if mounted {
-		defer run.Quiet(run.Minute, "umount", top.mountpoint)
-	}
+func (top layout) ready(paths rootPaths) error {
 	if err := top.check(paths); err != nil {
 		return err
 	}
 	if inside := nested(paths.root); len(inside) > 0 {
 		fmt.Println("These stay with the old root, because a snapshot doesn't hold them:", strings.Join(inside, ", "))
 	}
-	answer, err := term.ReadAnswer("Are you SURE you want to go back to snapshot " + number + "? Type '" + word + "' to continue: ")
-	if err != nil || answer != word {
+	return nil
+}
+
+func (top layout) replace(paths rootPaths) error {
+	if err := top.check(paths); err != nil {
+		return err
+	}
+	return paths.swap()
+}
+
+func goBack(top layout, number string) error {
+	paths := pathsFor(top, number, time.Now())
+	if err := top.whileMounted(func() error { return top.ready(paths) }); err != nil {
+		return err
+	}
+	answer, err := term.ReadAnswer("Are you SURE you want to go back to snapshot " + number + "? Type '" + confirmWord + "' to continue: ")
+	if err != nil || answer != confirmWord {
 		return errors.New("nothing changed")
 	}
 	signal.Ignore(unstoppable...)
-	err = paths.swap()
+	err = top.whileMounted(func() error { return top.replace(paths) })
 	syscall.Sync()
 	if err != nil {
 		return err
 	}
-	fmt.Printf("The rollback is done. The old root stays as %s.\n", filepath.Base(paths.kept))
+	fmt.Printf("The rollback is done. What was %s stays on the disk as %s.\n", top.main, filepath.Base(paths.kept))
 	fmt.Printf("Restart now to use snapshot %s. Until then, anything that updates the boot menu, like a new kernel, would point it at the old root.\n", number)
 	return nil
 }
@@ -234,6 +268,19 @@ func arguments() (string, string, bool) {
 	return config, args[0], true
 }
 
+func rollBack(config, number string) error {
+	top, err := readLayout(config)
+	if err != nil {
+		return err
+	}
+	held, err := lock(config)
+	if err != nil {
+		return err
+	}
+	defer held.Close()
+	return goBack(top, number)
+}
+
 func main() {
 	if first := env.Arg(1); first == "-h" || first == "--help" {
 		fmt.Print(usage)
@@ -248,11 +295,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "snapper-rollback needs root: run it with sudo")
 		os.Exit(1)
 	}
-	top, err := readLayout(config)
-	if err == nil {
-		err = goBack(top, number)
-	}
-	if err != nil {
+	if err := rollBack(config, number); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
