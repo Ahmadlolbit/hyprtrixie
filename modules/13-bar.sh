@@ -18,7 +18,7 @@ bar_horizontal() {
 
 bar_install() {
   deploy_tree "$HYPRTRIXIE_ROOT/shell" "$BAR_DIR" || return 1
-  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-sensors" "$BIN_DIR/hyprtrixie-sensors" 0755
+  deploy_tool hyprtrixie-sensors
 }
 
 bar_settings() {
