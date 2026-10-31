@@ -57,18 +57,22 @@ ssh_server_disabled() {
 }
 
 wifi_from_interfaces() {
-  awk '$1 == "iface" { iface = $2 } $1 == "wpa-ssid" { $1 = ""; sub(/^ /, ""); gsub(/^"|"$/, ""); ssid[iface] = $0 }
+  awk '$1 == "iface" { iface = $2 } $1 == "wpa-ssid" { sub(/^[[:space:]]*wpa-ssid[[:space:]]+/, ""); gsub(/^"|"$/, ""); ssid[iface] = $0 }
     $1 == "wpa-psk" { psk[iface] = $2 } END { for (i in ssid) printf "%s\t%s\t%s\n", i, ssid[i], psk[i] }' "$INTERFACES"
+}
+
+interfaces_beyond_loopback() {
+  awk '$1 == "iface" && $2 != "lo" { found = 1 } END { exit !found }' "$INTERFACES" 2>/dev/null
 }
 
 nm_handover() {
   local iface ssid psk
   [[ -f $INTERFACES ]] || return 0
-  grep -qE '^[[:space:]]*iface[[:space:]]+[^l[:space:]]' "$INTERFACES" || return 0
+  interfaces_beyond_loopback || return 0
   systemctl is-active --quiet NetworkManager || systemctl start NetworkManager || return 1
   while IFS=$'\t' read -r iface ssid psk; do
     [[ -n $ssid ]] || continue
-    nmcli -t -f NAME connection show | grep -xF -- "$ssid" >/dev/null && continue
+    nmcli -t -e no -f NAME connection show | grep -xF -- "$ssid" >/dev/null && continue
     if [[ -n $psk ]]; then
       nmcli connection add type wifi ifname "$iface" con-name "$ssid" ssid "$ssid" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "$psk" >/dev/null
     else
@@ -81,7 +85,7 @@ nm_handover() {
 }
 
 nm_ready() {
-  ! grep -qE '^[[:space:]]*iface[[:space:]]+[^l[:space:]]' "$INTERFACES" 2>/dev/null
+  ! interfaces_beyond_loopback
 }
 
 module_15() {
