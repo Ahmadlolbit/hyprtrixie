@@ -1,7 +1,9 @@
 package account
 
 import (
+	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -52,7 +54,7 @@ func humans() []Account {
 	return found
 }
 
-func lookup(name string) (Account, bool) {
+func Lookup(name string) (Account, bool) {
 	output, err := run.Capture(run.Quick, "getent", "passwd", name)
 	if err != nil {
 		return Account{}, false
@@ -64,7 +66,7 @@ func lookup(name string) (Account, bool) {
 func Target() (Account, bool) {
 	name := env.Or("HYPRTRIXIE_USER", os.Getenv("SUDO_USER"))
 	if name != "" && name != "root" {
-		return lookup(name)
+		return Lookup(name)
 	}
 	if people := humans(); len(people) == 1 {
 		return people[0], true
@@ -72,16 +74,29 @@ func Target() (Account, bool) {
 	return Account{}, false
 }
 
-func (person Account) Own(file *os.File) error {
+func (person Account) IDs() (int, int, error) {
 	uid, err := strconv.Atoi(person.UID)
 	if err != nil {
-		return err
+		return 0, 0, err
 	}
 	gid, err := strconv.Atoi(person.GID)
+	return uid, gid, err
+}
+
+func (person Account) Own(file *os.File) error {
+	uid, gid, err := person.IDs()
 	if err != nil {
 		return err
 	}
 	return file.Chown(uid, gid)
+}
+
+func (person Account) Path(rel string) string {
+	return filepath.Join("/", person.Home, rel)
+}
+
+func (person Account) Run(out io.Writer, args ...string) error {
+	return run.Logged(out, "runuser", person.RunuserArgs(args...)...)
 }
 
 func (person Account) Runtime() string {
