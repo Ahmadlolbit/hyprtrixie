@@ -164,7 +164,8 @@ session_start_install() {
 }
 
 command_install() {
-  mkdir -p "$BIN_DIR" && ln -sfn "$HYPRTRIXIE_ROOT/hyprtrixie" "$BIN_DIR/hyprtrixie"
+  mkdir -p "$BIN_DIR" && ln -sfn "$HYPRTRIXIE_ROOT/hyprtrixie" "$BIN_DIR/hyprtrixie" || return 1
+  deploy_tool hyprtrixie-core
 }
 
 command_ready() {

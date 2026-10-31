@@ -3,6 +3,12 @@ set -uo pipefail
 
 HYPRTRIXIE_VERSION="0.1.0"
 HYPRTRIXIE_ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+HYPRTRIXIE_CORE="${HYPRTRIXIE_CORE:-/usr/local/bin/hyprtrixie-core}"
+if [[ -n ${HYPRTRIXIE_FROM_CORE:-} ]]; then
+  unset HYPRTRIXIE_FROM_CORE
+elif [[ -f $HYPRTRIXIE_CORE && -x $HYPRTRIXIE_CORE && -s $HYPRTRIXIE_CORE ]]; then
+  HYPRTRIXIE_ROOT="$HYPRTRIXIE_ROOT" exec -a "$0" "$HYPRTRIXIE_CORE" "$@"
+fi
 LOCK_FILE="${HYPRTRIXIE_LOCK:-/run/hyprtrixie.lock}"
 ASSUME_YES=0
 ONLY=""

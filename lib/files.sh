@@ -163,5 +163,6 @@ tools_build() {
 
 deploy_tool() {
   tools_build || return 1
+  rm -f "$BIN_DIR/$1"
   deploy_file "$TOOLS_DIR/$1" "$BIN_DIR/$1" 0755
 }
