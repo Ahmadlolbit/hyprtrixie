@@ -122,9 +122,9 @@ grub_btrfs_ready() {
 }
 
 rollback_install() {
-  apt_install_list rollback || return 1
-  fetch_git_cached snapper-rollback || return 1
-  deploy_file "$FETCHED_PATH/snapper-rollback.py" /usr/local/sbin/snapper-rollback 0755 || return 1
+  tools_build || return 1
+  rm -f /usr/local/sbin/snapper-rollback
+  deploy_file "$TOOLS_DIR/snapper-rollback" /usr/local/sbin/snapper-rollback 0755 || return 1
   deploy_rendered "$HYPRTRIXIE_ROOT/system/snapper-rollback.conf" /etc/snapper-rollback.conf 0644 root \
     "SUBVOL=$(root_subvolume)" "DEVICE=$(root_device)" || return 1
   mkdir -p /btrfsroot
