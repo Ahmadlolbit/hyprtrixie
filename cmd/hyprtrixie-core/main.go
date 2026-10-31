@@ -60,6 +60,7 @@ var commands = map[string]func() int{
 	"modules":   modulesCommand,
 	"collect":   collect,
 	"doctor":    doctor,
+	"app":       appCommand,
 }
 
 func fail(format string, args ...any) int {

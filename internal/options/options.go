@@ -94,13 +94,13 @@ func All() []Option {
 	all := slices.Clone(table)
 	for index := range all {
 		if all[index].Key == "APPS" {
-			all[index].values = appValues(catalogue())
+			all[index].values = appValues(Catalogue())
 		}
 	}
 	return all
 }
 
-func catalogue() string {
+func Catalogue() string {
 	path := filepath.Join(manifests(), "apps")
 	if !fsutil.IsFile(path) {
 		return ""
