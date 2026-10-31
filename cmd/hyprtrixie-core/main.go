@@ -39,6 +39,7 @@ USAGE
   hyprtrixie restore [NUMBER]      List the restore points, or show what changed since one and go back to it
                                      (run it without sudo)
   hyprtrixie doctor                Check the system and offer the safe fixes (run it with sudo)
+  hyprtrixie cleanup [--yes]       Delete the oldest automatic snapshots until / is under 85%% (run it with sudo)
   hyprtrixie app list              List the apps you can install, by category (* = installed)
   hyprtrixie app install|remove APP
                                    Install or remove one app and tick or untick it in the configuration
@@ -64,6 +65,7 @@ var commands = map[string]func() int{
 	"doctor":    doctor,
 	"app":       appCommand,
 	"restore":   restore,
+	"cleanup":   cleanupCommand,
 }
 
 func fail(format string, args ...any) int {
