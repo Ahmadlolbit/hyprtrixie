@@ -176,9 +176,9 @@ ui_choose() {
       ${current:+--selected "$current"} -- "$@"
     return
   fi
-  printf '%s\n' "$header"
+  printf '%s\n' "$header" >&2
   for ((i = 1; i <= $#; i++)); do
-    printf '  %2d) %s\n' "$i" "${!i}"
+    printf '  %2d) %s\n' "$i" "${!i}" >&2
   done
   read -r -p "> " reply
   [[ $reply =~ ^[0-9]+$ ]] && ((reply >= 1 && reply <= $#)) || return 1
@@ -201,7 +201,7 @@ ui_choose_many() {
       ${selected:+--selected "$selected"} -- "$@"
     return
   fi
-  printf '%s (space-separated, current: %s)\n' "$header" "${selected//,/ }"
+  printf '%s (space-separated, current: %s)\n' "$header" "${selected//,/ }" >&2
   read -r -p "> " reply
   for item in $reply; do
     picked+=("$item")
@@ -233,7 +233,8 @@ ui_password() {
     return
   fi
   read -r -s -p "$header " reply
-  printf '\n%s\n' "$reply"
+  printf '\n' >&2
+  printf '%s\n' "$reply"
 }
 
 ui_pager() {
