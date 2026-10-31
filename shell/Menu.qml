@@ -161,43 +161,33 @@ Scope {
   }
 
   function catalogue(kind, text) {
-    return text.split("\n").filter(line => line.includes("\t")).map(line => {
+    const glyphs = {
+      install: "\u{f01da}",
+      remove: "\u{f0b4c}",
+      restore: "\u{f02da}"
+    };
+    const command = kind === "restore" ? "hyprtrixie restore" : "sudo hyprtrixie app " + kind;
+    const row = (id, label, words) => ({
+          id: kind + ":" + id,
+          glyph: glyphs[kind],
+          label: label,
+          action: "hyprtrixie-terminal --wait " + words,
+          shell: "",
+          state: "",
+          color: "",
+          font: "",
+          page: false,
+          icon: "",
+          app: null,
+          path: ""
+        });
+    const rows = text.split("\n").filter(line => line.includes("\t")).map(line => {
       const fields = line.split("\t");
-      return {
-        id: kind + ":" + fields[0],
-        glyph: kind === "install" ? "\u{f01da}" : "\u{f0b4c}",
-        label: fields[1],
-        action: "hyprtrixie-terminal --wait sudo hyprtrixie app " + kind + " " + fields[0],
-        shell: "",
-        state: "",
-        color: "",
-        font: "",
-        page: false,
-        icon: "",
-        app: null,
-        path: ""
-      };
+      return row(fields[0], fields[1], command + " " + fields[0]);
     });
-  }
-
-  function restorePoints(text) {
-    return text.split("\n").filter(line => line.includes("\t")).map(line => {
-      const fields = line.split("\t");
-      return {
-        id: "restore:" + fields[0],
-        glyph: "\u{f02da}",
-        label: fields[1],
-        action: "hyprtrixie-terminal --wait hyprtrixie restore " + fields[0],
-        shell: "",
-        state: "",
-        color: "",
-        font: "",
-        page: false,
-        icon: "",
-        app: null,
-        path: ""
-      };
-    });
+    if (kind === "restore" && rows.length === 0)
+      return [row("terminal", "Open restore points in a terminal", command)];
+    return rows;
   }
 
   function quote(text) {
@@ -309,14 +299,8 @@ Scope {
     stdout: StdioCollector {
       onStreamFinished: {
         const entry = root.entries[root.page];
-        if (!entry || entry.list !== lister.kind)
-          return;
-        if (lister.kind.endsWith("fonts"))
-          root.listed = root.fonts(lister.kind, text);
-        else if (lister.kind === "restore")
-          root.listed = root.restorePoints(text);
-        else
-          root.listed = root.catalogue(lister.kind, text);
+        if (entry && entry.list === lister.kind)
+          root.listed = lister.kind.endsWith("fonts") ? root.fonts(lister.kind, text) : root.catalogue(lister.kind, text);
       }
     }
   }
