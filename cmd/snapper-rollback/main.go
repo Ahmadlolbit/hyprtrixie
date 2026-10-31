@@ -26,6 +26,8 @@ root as it is now stays on the disk under a dated name. Nothing on the disk
 changes until you type CONFIRM. It needs root.
 `
 	confirmWord = "CONFIRM"
+	lockFile    = "/run/snapper-rollback.lock"
+	lockMode    = 0o600
 	folderMode  = 0o755
 	usageCode   = 2
 	fstabPath   = 1
@@ -94,7 +96,7 @@ func (top layout) mount() (bool, error) {
 	if top.device != "" {
 		args = append(args, top.device)
 	}
-	if run.Status("mount", append(args, top.mountpoint)...) != 0 {
+	if run.Within(run.Minute, "mount", append(args, top.mountpoint)...) != 0 {
 		return false, fmt.Errorf("cannot mount the top of the disk at %s", top.mountpoint)
 	}
 	return true, nil
@@ -118,7 +120,7 @@ func (top layout) whileMounted(work func() error) error {
 }
 
 func lock(path string) (*os.File, error) {
-	file, err := os.Open(path)
+	file, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, lockMode)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +275,7 @@ func rollBack(config, number string) error {
 	if err != nil {
 		return err
 	}
-	held, err := lock(config)
+	held, err := lock(lockFile)
 	if err != nil {
 		return err
 	}
