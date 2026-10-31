@@ -25,6 +25,10 @@ func git(args ...string) string {
 	return output
 }
 
+func gitLog(args ...string) string {
+	return git(append([]string{"log", "--no-show-signature"}, args...)...)
+}
+
 func updateSystem() int {
 	if installed("snapper") && fsutil.IsFile(env.Or("HYPRTRIXIE_SNAPPER_CONFIG", "/etc/snapper/configs/root")) {
 		fmt.Println("Taking a snapshot first")
@@ -68,8 +72,8 @@ func firstLine(text string) string {
 }
 
 func mergeHeading(commit string) string {
-	subject := git("log", "-1", "--format=%s", commit)
-	heading := firstLine(git("log", "-1", "--format=%b", commit))
+	subject := gitLog("-1", "--format=%s", commit)
+	heading := firstLine(gitLog("-1", "--format=%b", commit))
 	if heading == "" {
 		heading = subject
 	}
@@ -82,14 +86,14 @@ func mergeHeading(commit string) string {
 
 func changesBetween(from, to string) string {
 	var text strings.Builder
-	for _, line := range run.Lines(git("log", "--first-parent", "--merges", "--format=%H %P", from+".."+to)) {
+	for _, line := range run.Lines(gitLog("--first-parent", "--merges", "--format=%H %P", from+".."+to)) {
 		fields := strings.Fields(line)
 		text.WriteString(mergeHeading(fields[0]) + "\n")
-		if merged := git("log", "--no-merges", "--format=  - %s", fields[1]+".."+fields[2]); merged != "" {
+		if merged := gitLog("--no-merges", "--format=  - %s", fields[1]+".."+fields[2]); merged != "" {
 			text.WriteString(merged + "\n")
 		}
 	}
-	if others := git("log", "--first-parent", "--no-merges", "--format=  - %s", from+".."+to); others != "" {
+	if others := gitLog("--first-parent", "--no-merges", "--format=  - %s", from+".."+to); others != "" {
 		text.WriteString("Other changes\n" + others + "\n")
 	}
 	return text.String()
