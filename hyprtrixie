@@ -399,7 +399,7 @@ verbose_summary() {
   verbose_section "Summary"
   printf 'Date          %s\n' "$(date '+%F %T %z')"
   printf 'hyprtrixie    %s from %s\n' "$HYPRTRIXIE_VERSION" "$HYPRTRIXIE_ROOT"
-  printf 'Repo          %s\n' "$(git -C "$HYPRTRIXIE_ROOT" log -1 --format='%h %s (%D)' 2>/dev/null || printf 'not a git checkout')"
+  printf 'Repo          %s\n' "$(git -C "$HYPRTRIXIE_ROOT" log --no-show-signature -1 --format='%h %s (%D)' 2>/dev/null || printf 'not a git checkout')"
   printf 'Last install  from %s\n' "$(last_run_commit)"
   printf 'Verbose       %s\n\n' "$verbose"
   detect_all
@@ -589,15 +589,15 @@ changes_dir() {
 
 changes_between() {
   local old="$1" new="$2" commit first second subject title number others
-  git -C "$HYPRTRIXIE_ROOT" log --first-parent --merges --format='%H %P' "$old..$new" |
+  git -C "$HYPRTRIXIE_ROOT" log --no-show-signature --first-parent --merges --format='%H %P' "$old..$new" |
     while read -r commit first second; do
-      subject="$(git -C "$HYPRTRIXIE_ROOT" log -1 --format=%s "$commit")"
-      title="$(git -C "$HYPRTRIXIE_ROOT" log -1 --format=%b "$commit" | sed -n '/./{p;q}')"
+      subject="$(git -C "$HYPRTRIXIE_ROOT" log --no-show-signature -1 --format=%s "$commit")"
+      title="$(git -C "$HYPRTRIXIE_ROOT" log --no-show-signature -1 --format=%b "$commit" | sed -n '/./{p;q}')"
       number="$(sed -n 's/^Merge pull request #\([0-9]*\) .*/\1/p' <<<"$subject")"
       printf '%s\n' "${number:+#$number }${title:-$subject}"
-      git -C "$HYPRTRIXIE_ROOT" log --no-merges --format='  - %s' "$first..$second"
+      git -C "$HYPRTRIXIE_ROOT" log --no-show-signature --no-merges --format='  - %s' "$first..$second"
     done
-  others="$(git -C "$HYPRTRIXIE_ROOT" log --first-parent --no-merges --format='  - %s' "$old..$new")"
+  others="$(git -C "$HYPRTRIXIE_ROOT" log --no-show-signature --first-parent --no-merges --format='  - %s' "$old..$new")"
   [[ -n $others ]] && printf 'Other changes\n%s\n' "$others"
   return 0
 }
