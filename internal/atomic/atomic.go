@@ -38,15 +38,6 @@ func Install(path string, data []byte, perm os.FileMode) error {
 	return replace(path, bytes.NewReader(data), perm, exactly(perm))
 }
 
-func Copy(source, path string, perm os.FileMode) error {
-	input, err := os.Open(source)
-	if err != nil {
-		return err
-	}
-	defer input.Close()
-	return replace(path, input, perm, exactly(perm))
-}
-
 func Symlink(target, link string) error {
 	temp := temporary(link)
 	defer cleanup.OnSignal(func() { os.Remove(temp) })()
