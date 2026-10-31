@@ -53,6 +53,7 @@ var commands = map[string]func() int{
 	"--help":    showHelp,
 	"verbose":   verbose,
 	"changes":   changes,
+	"update":    update,
 }
 
 func fail(format string, args ...any) int {
