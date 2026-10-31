@@ -624,6 +624,18 @@
       "problems"
     ]
   },
+  "system.restore": {
+    "glyph": "\udb80\udeda",
+    "label": "Restore points",
+    "list": "restore",
+    "keywords": [
+      "restore",
+      "rollback",
+      "snapshot",
+      "undo",
+      "back"
+    ]
+  },
   "system.lock": {
     "glyph": "\uf023",
     "label": "Lock",
