@@ -1,5 +1,5 @@
 [Unit]
-Description=Check for firmware updates every hour
+Description=Check for firmware updates and disk space every hour
 
 [Timer]
 OnStartupSec=15min
