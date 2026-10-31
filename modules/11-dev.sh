@@ -10,6 +10,8 @@ option DOCKER_PORTS --section dev --label "Docker publishes ports on" --type cho
   --default localhost --values "localhost all" --when docker_wanted \
   --help "Container ports reach only this computer, or every network"
 
+DOCKER_RESTART=0
+
 tool_wanted() {
   option_enabled DEV_TOOLS "$1"
 }
@@ -26,9 +28,11 @@ docker_install() {
   extrepo_try docker-ce || return 1
   apt_install_list dev-docker || return 1
   deploy_file "$HYPRTRIXIE_ROOT/system/docker/daemon-$DOCKER_PORTS.json" /etc/docker/daemon.json || return 1
-  if ((DEPLOY_CHANGED)) && service_active docker.service; then
+  ((DEPLOY_CHANGED)) && DOCKER_RESTART=1
+  if ((DOCKER_RESTART)) && service_active docker.service; then
     systemctl restart docker.service || return 1
   fi
+  DOCKER_RESTART=0
   user_add_groups docker
 }
 
