@@ -10,12 +10,19 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 )
 
-func attributes(request uintptr, state *syscall.Termios) error {
-	_, _, failed := syscall.Syscall(syscall.SYS_IOCTL, os.Stdin.Fd(), request, uintptr(unsafe.Pointer(state)))
+const discardTyped = 0x540b
+
+func attributes(file *os.File, request uintptr, state *syscall.Termios) error {
+	_, _, failed := syscall.Syscall(syscall.SYS_IOCTL, file.Fd(), request, uintptr(unsafe.Pointer(state)))
 	if failed != 0 {
 		return failed
 	}
 	return nil
+}
+
+func IsTerminal(file *os.File) bool {
+	var state syscall.Termios
+	return attributes(file, syscall.TCGETS, &state) == nil
 }
 
 func Raw() func() {
@@ -36,15 +43,15 @@ func noEcho() (func(), bool) {
 
 func adjust(change func(*syscall.Termios)) (func(), bool) {
 	var saved syscall.Termios
-	if attributes(syscall.TCGETS, &saved) != nil {
+	if attributes(os.Stdin, syscall.TCGETS, &saved) != nil {
 		return nil, false
 	}
 	allowQuit := cleanup.IgnoreQuit()
-	restore := func() { attributes(syscall.TCSETS, &saved) }
+	restore := func() { attributes(os.Stdin, syscall.TCSETS, &saved) }
 	stop := cleanup.OnSignal(restore)
 	changed := saved
 	change(&changed)
-	attributes(syscall.TCSETS, &changed)
+	attributes(os.Stdin, syscall.TCSETS, &changed)
 	return func() {
 		stop()
 		restore()
@@ -67,6 +74,12 @@ func ReadSecret(prompt string) (string, error) {
 	line, err := readLine(os.Stdin)
 	fmt.Fprintln(os.Stderr)
 	return line, err
+}
+
+func ReadAnswer(prompt string) (string, error) {
+	syscall.Syscall(syscall.SYS_IOCTL, os.Stdin.Fd(), discardTyped, syscall.TCIFLUSH)
+	fmt.Print(prompt)
+	return readLine(os.Stdin)
 }
 
 func readLine(input io.Reader) (string, error) {
