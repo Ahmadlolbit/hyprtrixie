@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -95,12 +96,34 @@ func (person Account) Path(rel string) string {
 	return filepath.Join("/", person.Home, rel)
 }
 
+func (person Account) InGroup(group string) bool {
+	output, err := run.CaptureQuiet(run.Quick, "id", "-nG", person.Name)
+	return err == nil && slices.Contains(strings.Fields(output), group)
+}
+
+func (person Account) AddGroups(out io.Writer, groups ...string) error {
+	for _, group := range groups {
+		if run.Quiet(run.Quick, "getent", "group", group) != 0 || person.InGroup(group) {
+			continue
+		}
+		if err := run.Logged(out, "usermod", "-aG", group, person.Name); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (person Account) Run(out io.Writer, args ...string) error {
 	return run.Logged(out, "runuser", person.RunuserArgs(args...)...)
 }
 
 func (person Account) Runtime() string {
 	return "/run/user/" + person.UID
+}
+
+func (person Account) SessionRunning() bool {
+	info, err := os.Stat(person.Runtime() + "/bus")
+	return err == nil && info.Mode()&os.ModeSocket != 0
 }
 
 func (person Account) RunuserArgs(args ...string) []string {

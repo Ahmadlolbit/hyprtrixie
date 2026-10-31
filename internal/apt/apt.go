@@ -34,7 +34,7 @@ func extrepoConfig() string {
 	return env.Or("HYPRTRIXIE_EXTREPO_CONFIG", "/etc/extrepo/config.yaml")
 }
 
-func sourcesDir() string {
+func SourcesDir() string {
 	return env.Or("HYPRTRIXIE_SOURCES_DIR", "/etc/apt/sources.list.d")
 }
 
@@ -292,7 +292,7 @@ func Commands(names ...string) error {
 }
 
 func sourceFile(name string) string {
-	return filepath.Join(sourcesDir(), "extrepo_"+name+".sources")
+	return filepath.Join(SourcesDir(), "extrepo_"+name+".sources")
 }
 
 func ExtrepoEnabled(name string) bool {
@@ -313,6 +313,11 @@ func extrepoEnable(log *runlog.Log, name string) error {
 		return err
 	}
 	return run.Logged(log, "extrepo", "enable", name)
+}
+
+func ExtrepoAllows(policy string) (bool, error) {
+	lines, err := fsutil.Lines(extrepoConfig())
+	return slices.Contains(lines, "- "+policy), err
 }
 
 func ExtrepoPolicy(policy string) error {
@@ -340,8 +345,12 @@ func ExtrepoPolicy(policy string) error {
 	return atomic.Write(extrepoConfig(), []byte(strings.Join(lines, "\n")+"\n"), configMode)
 }
 
-func Candidate(name string) string {
-	output, _ := run.CaptureQuiet(run.Minute, "apt-cache", "policy", name)
+func Bare(spec string) string {
+	return strings.TrimSuffix(spec, backportsMark)
+}
+
+func Candidate(spec string) string {
+	output, _ := run.CaptureQuiet(run.Minute, "apt-cache", "policy", Bare(spec))
 	for _, line := range run.Lines(output) {
 		if rest, found := strings.CutPrefix(strings.TrimSpace(line), "Candidate:"); found {
 			if version := strings.TrimSpace(rest); version != "(none)" {

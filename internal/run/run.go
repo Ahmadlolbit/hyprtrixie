@@ -62,32 +62,32 @@ func Status(name string, args ...string) int {
 }
 
 func Within(limit time.Duration, name string, args ...string) int {
-	command, finish := bounded(limit, name, args)
+	command, finish := bounded(limit, os.Stderr, name, args)
 	inherit(command)
 	return Report(finish(command.Run()))
 }
 
 func Quiet(limit time.Duration, name string, args ...string) int {
-	command, finish := bounded(limit, name, args)
+	command, finish := bounded(limit, nil, name, args)
 	return Code(finish(command.Run()))
 }
 
 func Feed(limit time.Duration, input *os.File, name string, args ...string) int {
-	command, finish := bounded(limit, name, args)
+	command, finish := bounded(limit, os.Stderr, name, args)
 	command.Stdin = input
 	command.Stderr = os.Stderr
 	return Report(finish(command.Run()))
 }
 
 func Into(limit time.Duration, output *os.File, name string, args ...string) int {
-	command, finish := bounded(limit, name, args)
+	command, finish := bounded(limit, os.Stderr, name, args)
 	command.Stdout = output
 	command.Stderr = os.Stderr
 	return Report(finish(command.Run()))
 }
 
 func Record(limit time.Duration, output *os.File, name string, args ...string) int {
-	command, finish := bounded(limit, name, args)
+	command, finish := bounded(limit, output, name, args)
 	command.Stdout = output
 	command.Stderr = output
 	err := finish(command.Run())
@@ -141,14 +141,14 @@ func Capture(limit time.Duration, name string, args ...string) (string, error) {
 	return CaptureTo(limit, os.Stderr, name, args...)
 }
 
-func CaptureTo(limit time.Duration, messages *os.File, name string, args ...string) (string, error) {
-	command, finish := bounded(limit, name, args)
+func CaptureTo(limit time.Duration, messages io.Writer, name string, args ...string) (string, error) {
+	command, finish := bounded(limit, messages, name, args)
 	output, err := shown(command, messages)
 	return output, finish(err)
 }
 
 func CaptureQuiet(limit time.Duration, name string, args ...string) (string, error) {
-	command, finish := bounded(limit, name, args)
+	command, finish := bounded(limit, nil, name, args)
 	output, err := collect(command)
 	return output, finish(err)
 }
@@ -157,7 +157,7 @@ func TimedOut(err error) bool {
 	return errors.Is(err, context.DeadlineExceeded)
 }
 
-func shown(command *exec.Cmd, messages *os.File) (string, error) {
+func shown(command *exec.Cmd, messages io.Writer) (string, error) {
 	command.Stderr = messages
 	output, err := collect(command)
 	Explain(messages, err)
@@ -182,12 +182,12 @@ func inherit(command *exec.Cmd) {
 	command.Stderr = os.Stderr
 }
 
-func bounded(limit time.Duration, name string, args []string) (*exec.Cmd, func(error) error) {
+func bounded(limit time.Duration, messages io.Writer, name string, args []string) (*exec.Cmd, func(error) error) {
 	ctx, cancel := context.WithTimeout(context.Background(), limit)
 	command := exec.CommandContext(ctx, name, args...)
 	command.Cancel = func() error {
-		if file, ok := command.Stderr.(*os.File); ok {
-			fmt.Fprintf(file, "%s took longer than %s\n", name, limit)
+		if messages != nil {
+			fmt.Fprintf(messages, "%s took longer than %s\n", name, limit)
 		}
 		return command.Process.Signal(syscall.SIGTERM)
 	}
@@ -278,7 +278,7 @@ func Sorted(lines []string) []string {
 	if len(lines) == 0 {
 		return nil
 	}
-	command, finish := bounded(Quick, "sort", []string{"-z"})
+	command, finish := bounded(Quick, nil, "sort", []string{"-z"})
 	defer finish(nil)
 	command.Stdin = strings.NewReader(strings.Join(lines, "\x00") + "\x00")
 	output, err := command.Output()
