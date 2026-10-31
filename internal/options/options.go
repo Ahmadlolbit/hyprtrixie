@@ -101,15 +101,11 @@ func All() []Option {
 }
 
 func Catalogue() string {
-	path := filepath.Join(manifests(), "apps")
+	path := filepath.Join(env.Manifests(), "apps")
 	if !fsutil.IsFile(path) {
 		return ""
 	}
 	return fsutil.Optional(path)
-}
-
-func manifests() string {
-	return env.Or("HYPRTRIXIE_MANIFESTS", filepath.Join(env.Or("HYPRTRIXIE_ROOT", "."), "manifests"))
 }
 
 func appValues(text string) string {

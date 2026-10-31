@@ -70,6 +70,14 @@ func ToolsDir() string {
 	return Or("HYPRTRIXIE_TOOLS_DIR", filepath.Join(Root(), "build", "bin"))
 }
 
+func Manifests() string {
+	return Or("HYPRTRIXIE_MANIFESTS", filepath.Join(Or("HYPRTRIXIE_ROOT", "."), "manifests"))
+}
+
+func CacheDir() string {
+	return Or("HYPRTRIXIE_CACHE_DIR", "/var/cache/hyprtrixie")
+}
+
 func LogDir() string {
 	return Or("HYPRTRIXIE_LOG_DIR", "/var/log/hyprtrixie")
 }
