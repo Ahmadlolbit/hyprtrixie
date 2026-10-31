@@ -122,8 +122,14 @@ print_summary() {
   return 0
 }
 
+terminal_back() {
+  [[ -n ${TERMINAL_OUT:-} ]] && exec 1>&"$TERMINAL_OUT" 2>&"$TERMINAL_ERR"
+  return 0
+}
+
 on_exit() {
   local rc=$?
+  terminal_back
   ui_spin_stop
   status_save
   if declare -F write_report >/dev/null && [[ -n $TARGET_HOME ]]; then
@@ -136,6 +142,7 @@ on_exit() {
 }
 
 on_interrupt() {
+  terminal_back
   ui_spin_stop
   printf '\n'
   log warn "interrupted"
@@ -156,6 +163,7 @@ start_run() {
   if detect_target_user; then
     log_attach_user "$TARGET_HOME" "$TARGET_USER"
   fi
+  exec {TERMINAL_OUT}>&1 {TERMINAL_ERR}>&2
   trap on_exit EXIT
   trap on_interrupt INT TERM
 }
