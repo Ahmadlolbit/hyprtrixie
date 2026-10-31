@@ -1,5 +1,5 @@
 [Unit]
-Description=Check for firmware updates
+Description=Check for firmware updates and disk space
 
 [Service]
 Type=oneshot
