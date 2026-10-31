@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
@@ -127,4 +128,56 @@ func image(name string) bool {
 		return true
 	}
 	return false
+}
+
+func CopyTree(source, target string) error {
+	entries, err := os.ReadDir(source)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if err := CopyEntry(filepath.Join(source, entry.Name()), filepath.Join(target, entry.Name())); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func CopyEntry(source, target string) error {
+	info, err := os.Lstat(source)
+	if err != nil {
+		return err
+	}
+	switch {
+	case info.Mode()&os.ModeSymlink != 0:
+		return copyLink(source, target)
+	case info.IsDir():
+		return copyDir(source, target, info.Mode().Perm())
+	case info.Mode().IsRegular():
+		return copyFile(source, target, info.Mode().Perm())
+	}
+	return nil
+}
+
+func copyLink(source, target string) error {
+	link, err := os.Readlink(source)
+	if err != nil {
+		return err
+	}
+	return atomic.Symlink(link, target)
+}
+
+func copyDir(source, target string, perm os.FileMode) error {
+	if err := os.MkdirAll(target, perm|0o700); err != nil {
+		return err
+	}
+	return CopyTree(source, target)
+}
+
+func copyFile(source, target string, perm os.FileMode) error {
+	data, err := os.ReadFile(source)
+	if err != nil {
+		return err
+	}
+	return atomic.Write(target, data, perm)
 }
