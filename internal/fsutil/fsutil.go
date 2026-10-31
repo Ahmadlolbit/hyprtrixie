@@ -7,12 +7,49 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
+
+const dfFields = 6
+
+type Filesystem struct {
+	Device string
+	Mount  string
+	Use    int
+	Known  bool
+}
+
+func percent(text string) (int, bool) {
+	digits, found := strings.CutSuffix(text, "%")
+	if !found || strings.Trim(digits, "0123456789") != "" {
+		return 0, false
+	}
+	use, err := strconv.Atoi(digits)
+	if err != nil {
+		return 0, false
+	}
+	return use, true
+}
+
+func Filesystems(df string) []Filesystem {
+	seen := map[string]bool{}
+	var found []Filesystem
+	for _, line := range strings.Split(df, "\n")[1:] {
+		fields := strings.Fields(line)
+		if len(fields) < dfFields || seen[fields[0]] {
+			continue
+		}
+		seen[fields[0]] = true
+		use, known := percent(fields[4])
+		found = append(found, Filesystem{fields[0], fields[5], use, known})
+	}
+	return found
+}
 
 func RealPath(path string) (string, error) {
 	full, err := absolute(path)

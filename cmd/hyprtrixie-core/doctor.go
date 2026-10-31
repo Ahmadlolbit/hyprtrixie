@@ -46,11 +46,6 @@ type checkup struct {
 	fixes  []fix
 }
 
-type filesystem struct {
-	path string
-	use  int
-}
-
 func tooLong(check string) {
 	ui.Skip(check + " took longer than a minute")
 }
@@ -220,20 +215,9 @@ func freeSpace() bool {
 	return succeeded("journalctl", "--vacuum-time=2weeks")
 }
 
-func filesystems(limit time.Duration) ([]filesystem, error) {
+func filesystems(limit time.Duration) ([]fsutil.Filesystem, error) {
 	output, err := run.CaptureQuiet(limit, "df", "-P", "/", "/home")
-	lines := run.Lines(output)
-	seen := map[string]bool{}
-	var found []filesystem
-	for _, line := range lines[min(1, len(lines)):] {
-		fields := strings.Fields(line)
-		if len(fields) >= 6 && !seen[fields[0]] {
-			seen[fields[0]] = true
-			use, _ := strconv.Atoi(strings.TrimSuffix(fields[4], "%"))
-			found = append(found, filesystem{fields[5], use})
-		}
-	}
-	return found, err
+	return fsutil.Filesystems(output), err
 }
 
 func (visit *checkup) disk() {
@@ -244,12 +228,12 @@ func (visit *checkup) disk() {
 	}
 	offered := false
 	for _, one := range found {
-		text := fmt.Sprintf("%s is %d%% full", one.path, one.use)
+		text := fmt.Sprintf("%s is %d%% full", one.Mount, one.Use)
 		switch {
-		case one.use < warnedFull:
+		case one.Use < warnedFull:
 			ui.OK(text)
 			continue
-		case one.use < failedFull:
+		case one.Use < failedFull:
 			ui.Warn(text)
 		default:
 			ui.Fail(text)
