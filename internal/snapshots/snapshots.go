@@ -11,6 +11,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
@@ -127,17 +128,19 @@ func Disposable(all []Snapshot) []string {
 }
 
 func DiskUse() (int, bool) {
-	output, _ := run.CaptureQuiet(run.Quick, "df", "-P", "/")
-	lines := run.Lines(output)
-	if len(lines) < 2 {
+	output, err := run.CaptureQuiet(run.Quick, "df", "-P", "/")
+	found := fsutil.Filesystems(output)
+	if err != nil || len(found) == 0 || !found[0].Known {
 		return 0, false
 	}
-	fields := strings.Fields(lines[1])
-	if len(fields) < 5 {
-		return 0, false
+	return found[0].Use, true
+}
+
+func Count(number int, noun string) string {
+	if number == 1 {
+		return "1 " + noun
 	}
-	use, err := strconv.Atoi(strings.TrimSuffix(fields[4], "%"))
-	return use, err == nil
+	return strconv.Itoa(number) + " " + noun + "s"
 }
 
 func KernelAdded(status, kernel string) bool {

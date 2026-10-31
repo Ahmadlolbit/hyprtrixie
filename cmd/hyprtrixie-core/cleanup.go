@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
@@ -16,22 +15,29 @@ const (
 	deleteLimit = 30 * time.Minute
 )
 
-func deleteUntilClean(numbers []string, use int) int {
-	deleted := 0
+func stopped(deleted int, format string, args ...any) int {
+	if deleted > 0 {
+		say("Deleted " + snapshots.Count(deleted, "snapshot") + ".\n")
+	}
+	return fail(format, args...)
+}
+
+func deleteUntilClean(numbers []string) int {
+	deleted, use := 0, 0
 	for _, number := range numbers {
 		if run.Within(deleteLimit, "snapper", "--no-dbus", "-c", "root", "delete", "--sync", number) != 0 {
-			return fail("snapshot %s could not be deleted", number)
+			return stopped(deleted, "snapshot %s could not be deleted", number)
 		}
 		deleted++
-		now, ok := snapshots.DiskUse()
-		if !ok {
-			return fail("cannot tell how full / is")
+		var ok bool
+		if use, ok = snapshots.DiskUse(); !ok {
+			return stopped(deleted, "cannot tell how full / is")
 		}
-		if use = now; use < cleanGoal {
+		if use < cleanGoal {
 			break
 		}
 	}
-	return say("Deleted " + strconv.Itoa(deleted) + " snapshots. / is " + strconv.Itoa(use) + "% full.\n")
+	return say(fmt.Sprintf("Deleted %s. / is %d%% full.\n", snapshots.Count(deleted, "snapshot"), use))
 }
 
 func cleanUp(yes bool) int {
@@ -53,12 +59,15 @@ func cleanUp(yes bool) int {
 	if len(numbers) == 0 {
 		return say(fmt.Sprintf("/ is %d%% full, but there are no old automatic snapshots to delete.\n", use))
 	}
-	say(fmt.Sprintf("/ is %d%% full. Up to %d old automatic snapshots can go, oldest first, until it is under %d%%.\n"+
-		"The newest three and the ones with your own description stay.\n", use, len(numbers), cleanGoal))
+	say(fmt.Sprintf("/ is %d%% full. Up to %s can go, oldest first, until it is under %d%%.\n"+
+		"The newest three and the ones with your own description stay.\n", use, snapshots.Count(len(numbers), "old automatic snapshot"), cleanGoal))
+	if !yes && !ui.CanAsk() {
+		return say("Nothing was deleted. Run it in a terminal to answer, or with --yes.\n")
+	}
 	if !yes && !ui.Confirm("Delete them?") {
 		return 0
 	}
-	return deleteUntilClean(numbers, use)
+	return deleteUntilClean(numbers)
 }
 
 func cleanupCommand() int {
