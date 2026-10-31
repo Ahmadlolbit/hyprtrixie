@@ -51,6 +51,10 @@ func Read(path string) *Config {
 	return current
 }
 
+func (current *Config) Get(key string) string {
+	return current.values[key]
+}
+
 func parseLine(line string) (string, string, bool) {
 	key, rest, found := strings.Cut(line, "=")
 	if !found || key == "" || key[0] < 'A' || key[0] > 'Z' || strings.Trim(key, keyCharacters) != "" {
