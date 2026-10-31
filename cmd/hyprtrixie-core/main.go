@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -49,6 +51,20 @@ var commands = map[string]func() int{
 	"help":      showHelp,
 	"-h":        showHelp,
 	"--help":    showHelp,
+	"verbose":   verbose,
+}
+
+func fail(format string, args ...any) int {
+	fmt.Fprintf(os.Stderr, format+"\n", args...)
+	return 1
+}
+
+func remove(path string) int {
+	if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	return 0
 }
 
 func showVersion() int {
