@@ -11,14 +11,14 @@ require("hyprtrixie.hypr.windows")
 require("hyprtrixie.hypr.autostart")
 require("hyprtrixie.hypr.bindings")
 
-if package.searchpath("omarchy.current.theme.hyprland", package.path) then
-  require("omarchy.current.theme.hyprland")
+if package.searchpath("hyprtrixie.current.theme.hyprland", package.path) then
+  require("hyprtrixie.current.theme.hyprland")
 end
 
 if package.searchpath("hyprtrixie.hypr.options", package.path) then
   require("hyprtrixie.hypr.options")
 end
 
-if package.searchpath("omarchy.current.theme.glass", package.path) then
-  require("omarchy.current.theme.glass")
+if package.searchpath("hyprtrixie.current.theme.glass", package.path) then
+  require("hyprtrixie.current.theme.glass")
 end

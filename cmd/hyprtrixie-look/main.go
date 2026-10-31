@@ -67,7 +67,7 @@ const (
 
 var (
 	settings   = look.Open()
-	systemRoot = env.Or("OMARCHY_PATH", "/usr/share/omarchy")
+	systemRoot = env.ThemeRoot()
 )
 
 func stateHome(parts ...string) string {
@@ -75,7 +75,7 @@ func stateHome(parts ...string) string {
 }
 
 func currentTheme() string {
-	name, _ := fsutil.Text(stateHome("omarchy", "current", "theme.name"))
+	name, _ := fsutil.Text(filepath.Join(env.ThemeState(), "theme.name"))
 	return name
 }
 
@@ -198,7 +198,7 @@ func background(args ...string) int {
 }
 
 func flatWallpaper() int {
-	shown, err := os.Readlink(stateHome("omarchy", "current", "background"))
+	shown, err := os.Readlink(filepath.Join(env.ThemeState(), "background"))
 	if err != nil || shown == "" {
 		return 0
 	}
@@ -282,7 +282,7 @@ func themeChoice(key, value string) int {
 }
 
 func themeExists(name string) bool {
-	return fsutil.IsDir(filepath.Join(systemRoot, "themes", name)) || fsutil.IsDir(filepath.Join(env.ConfigHome(), "omarchy", "themes", name))
+	return fsutil.IsDir(filepath.Join(systemRoot, "themes", name)) || fsutil.IsDir(filepath.Join(env.AppConfig(), "themes", name))
 }
 
 func validTimes(args []string) bool {

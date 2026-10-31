@@ -165,7 +165,7 @@ func copyWallpaper(user, image, name string) bool {
 }
 
 func wallpaper(current theme) (string, bool) {
-	image, err := fsutil.RealPath(filepath.Join(current.home, ".local/state/omarchy/current/background"))
+	image, err := fsutil.RealPath(filepath.Join(current.home, ".local/state/hyprtrixie/current/background"))
 	if err != nil {
 		return "", true
 	}
@@ -202,7 +202,7 @@ func load() (theme, bool) {
 	settings := string(data)
 	user := follow.Setting(settings, "user")
 	home := homeOf(user)
-	file := home + "/.local/state/omarchy/current/theme/colors.toml"
+	file := home + "/.local/state/hyprtrixie/current/theme/colors.toml"
 	if user == "" || !fsutil.IsFile(file) {
 		fmt.Printf("No theme to follow yet (%s)\n", file)
 		return theme{}, false

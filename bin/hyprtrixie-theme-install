@@ -5,7 +5,7 @@ usage() {
   cat <<'USAGE'
 Usage: hyprtrixie-theme-install <https URL of a theme repository>
 
-Clones an Omarchy theme into ~/.config/omarchy/themes and applies it. A theme
+Clones an Omarchy theme into ~/.config/hyprtrixie/themes and applies it. A theme
 from a repository can change colours and backgrounds, but not run code.
 USAGE
 }
@@ -29,7 +29,7 @@ if [[ ! $name =~ ^[a-z0-9_][a-z0-9._+-]*$ ]]; then
   exit 1
 fi
 
-dir="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/themes/$name"
+dir="${XDG_CONFIG_HOME:-$HOME/.config}/hyprtrixie/themes/$name"
 mkdir -p "${dir%/*}" || exit 1
 rm -rf "$dir.part"
 git clone --quiet --depth 1 -- "$url" "$dir.part" || exit 1

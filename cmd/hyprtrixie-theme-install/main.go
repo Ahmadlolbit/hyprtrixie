@@ -16,7 +16,7 @@ import (
 
 const usage = `Usage: hyprtrixie-theme-install <https URL of a theme repository>
 
-Clones an Omarchy theme into ~/.config/omarchy/themes and applies it. A theme
+Clones an Omarchy theme into ~/.config/hyprtrixie/themes and applies it. A theme
 from a repository can change colours and backgrounds, but not run code.
 `
 
@@ -78,7 +78,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "cannot tell the theme name from %s\n", url)
 		os.Exit(1)
 	}
-	if !install(url, filepath.Join(env.ConfigHome(), "omarchy", "themes", name)) {
+	if !install(url, filepath.Join(env.AppConfig(), "themes", name)) {
 		os.Exit(1)
 	}
 	os.Exit(run.Report(run.Exec("hyprtrixie-theme-set", name)))

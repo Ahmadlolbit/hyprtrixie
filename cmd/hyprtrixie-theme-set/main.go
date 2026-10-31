@@ -29,7 +29,7 @@ const usage = `Usage: hyprtrixie-theme-set <theme>
 
 Applies a theme to Hyprland, the bar, kitty, the launcher, notifications, the
 lock screen, btop, GTK and the wallpaper. Themes come from
-/usr/share/omarchy/themes and ~/.config/omarchy/themes.
+/usr/share/hyprtrixie/themes and ~/.config/hyprtrixie/themes.
 `
 
 const (
@@ -38,17 +38,17 @@ const (
 )
 
 var (
-	systemRoot = env.Or("OMARCHY_PATH", "/usr/share/omarchy")
+	systemRoot = env.ThemeRoot()
 	iconName   = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
 	settings   = look.Open()
 )
 
 func state() string {
-	return filepath.Join(env.StateHome(), "omarchy", "current")
+	return env.ThemeState()
 }
 
 func userThemes() string {
-	return filepath.Join(env.ConfigHome(), "omarchy", "themes")
+	return filepath.Join(env.AppConfig(), "themes")
 }
 
 func themesIn(dir string) []string {
@@ -200,7 +200,7 @@ func renderOne(template, target string, replacer *strings.Replacer) {
 
 func render(dir string, colors theme.Colors) {
 	replacer := colors.Replacer()
-	found := append(templates(filepath.Join(env.ConfigHome(), "omarchy", "themed")), templates(filepath.Join(systemRoot, "default", "themed"))...)
+	found := append(templates(filepath.Join(env.AppConfig(), "themed")), templates(filepath.Join(systemRoot, "themed"))...)
 	for _, template := range found {
 		target := filepath.Join(dir, strings.TrimSuffix(filepath.Base(template), ".tpl"))
 		if !fsutil.Exists(target) {
@@ -239,7 +239,7 @@ func pickBackground(name, previous string) {
 	if previous == name && fsutil.Exists(link) {
 		return
 	}
-	found := fsutil.Images(filepath.Join(state(), "theme", "backgrounds"), filepath.Join(env.ConfigHome(), "omarchy", "backgrounds", name))
+	found := fsutil.Images(filepath.Join(state(), "theme", "backgrounds"), filepath.Join(env.AppConfig(), "backgrounds", name))
 	if len(found) > 0 {
 		symlink(found[0], link)
 	}
