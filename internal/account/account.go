@@ -19,6 +19,7 @@ const (
 type Account struct {
 	Name  string
 	UID   string
+	GID   string
 	Home  string
 	Shell string
 }
@@ -28,7 +29,7 @@ func parse(line string) (Account, bool) {
 	if len(fields) < passwdFields {
 		return Account{}, false
 	}
-	return Account{Name: fields[0], UID: fields[2], Home: fields[5], Shell: fields[6]}, true
+	return Account{Name: fields[0], UID: fields[2], GID: fields[3], Home: fields[5], Shell: fields[6]}, true
 }
 
 func (person Account) human() bool {
@@ -69,6 +70,18 @@ func Target() (Account, bool) {
 		return people[0], true
 	}
 	return Account{}, false
+}
+
+func (person Account) Own(file *os.File) error {
+	uid, err := strconv.Atoi(person.UID)
+	if err != nil {
+		return err
+	}
+	gid, err := strconv.Atoi(person.GID)
+	if err != nil {
+		return err
+	}
+	return file.Chown(uid, gid)
 }
 
 func (person Account) Runtime() string {

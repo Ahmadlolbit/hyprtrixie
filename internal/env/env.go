@@ -53,3 +53,11 @@ func ThemeState() string {
 func CacheHome() string {
 	return Or("XDG_CACHE_HOME", filepath.Join(Home(), ".cache"))
 }
+
+func LogDir() string {
+	return Or("HYPRTRIXIE_LOG_DIR", "/var/log/hyprtrixie")
+}
+
+func StateDir() string {
+	return Or("HYPRTRIXIE_STATE_DIR", "/var/lib/hyprtrixie")
+}

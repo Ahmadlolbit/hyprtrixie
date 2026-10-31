@@ -34,7 +34,7 @@ var All = []Module{
 }
 
 func StatusFile() string {
-	return filepath.Join(env.Or("HYPRTRIXIE_STATE_DIR", "/var/lib/hyprtrixie"), "status")
+	return filepath.Join(env.StateDir(), "status")
 }
 
 func StatusOf(text, id string) (string, string) {
