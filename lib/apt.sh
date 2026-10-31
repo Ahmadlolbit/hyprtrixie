@@ -36,7 +36,9 @@ apt_update() {
 }
 
 pkg_installed() {
-  [[ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null)" == "install ok installed" ]]
+  local status
+  status="$(dpkg-query -W -f='${Status}\n' "$1" 2>/dev/null)"
+  [[ $'\n'$status$'\n' == *$'\n'"install ok installed"$'\n'* ]]
 }
 
 pkg_version() {
