@@ -18,10 +18,11 @@ import (
 )
 
 const (
-	Quick = 10 * time.Second
-	Slow  = 5 * time.Minute
+	Quick  = 10 * time.Second
+	Minute = time.Minute
+	Slow   = 5 * time.Minute
 
-	grace       = 2 * time.Second
+	grace       = 3 * time.Second
 	executable  = 1
 	bySignal    = 128
 	notRunnable = 126
@@ -54,60 +55,76 @@ func Status(name string, args ...string) int {
 }
 
 func Within(limit time.Duration, name string, args ...string) int {
-	command, cancel := bounded(limit, name, args)
-	defer cancel()
+	command, finish := bounded(limit, name, args)
 	inherit(command)
-	return Report(command.Run())
+	return Report(finish(command.Run()))
 }
 
 func Quiet(limit time.Duration, name string, args ...string) int {
-	command, cancel := bounded(limit, name, args)
-	defer cancel()
-	return exitCode(command.Run())
+	command, finish := bounded(limit, name, args)
+	return exitCode(finish(command.Run()))
 }
 
 func Feed(limit time.Duration, input *os.File, name string, args ...string) int {
-	command, cancel := bounded(limit, name, args)
-	defer cancel()
+	command, finish := bounded(limit, name, args)
 	command.Stdin = input
 	command.Stderr = os.Stderr
-	return Report(command.Run())
+	return Report(finish(command.Run()))
 }
 
 func Into(limit time.Duration, output *os.File, name string, args ...string) int {
-	command, cancel := bounded(limit, name, args)
-	defer cancel()
+	command, finish := bounded(limit, name, args)
 	command.Stdout = output
 	command.Stderr = os.Stderr
-	return Report(command.Run())
+	return Report(finish(command.Run()))
+}
+
+func Record(limit time.Duration, output *os.File, name string, args ...string) int {
+	command, finish := bounded(limit, name, args)
+	command.Stdout = output
+	command.Stderr = output
+	err := finish(command.Run())
+	explain(output, err)
+	if caught := signalOf(err); caught != 0 && caught != syscall.SIGTERM {
+		fmt.Fprintf(output, "%s: %v\n", name, caught)
+	}
+	return exitCode(err)
 }
 
 func Output(name string, args ...string) (string, error) {
-	return shown(exec.Command(name, args...))
+	return shown(exec.Command(name, args...), os.Stderr)
 }
 
 func Filter(input, name string, args ...string) (string, error) {
 	command := exec.Command(name, args...)
 	command.Stdin = strings.NewReader(input)
-	return shown(command)
+	return shown(command, os.Stderr)
 }
 
 func Capture(limit time.Duration, name string, args ...string) (string, error) {
-	command, cancel := bounded(limit, name, args)
-	defer cancel()
-	return shown(command)
+	return CaptureTo(limit, os.Stderr, name, args...)
+}
+
+func CaptureTo(limit time.Duration, messages *os.File, name string, args ...string) (string, error) {
+	command, finish := bounded(limit, name, args)
+	output, err := shown(command, messages)
+	return output, finish(err)
 }
 
 func CaptureQuiet(limit time.Duration, name string, args ...string) (string, error) {
-	command, cancel := bounded(limit, name, args)
-	defer cancel()
-	return collect(command)
+	command, finish := bounded(limit, name, args)
+	output, err := collect(command)
+	return output, finish(err)
 }
 
-func shown(command *exec.Cmd) (string, error) {
-	command.Stderr = os.Stderr
+func TimedOut(err error) bool {
+	return errors.Is(err, context.DeadlineExceeded)
+}
+
+func shown(command *exec.Cmd, messages *os.File) (string, error) {
+	command.Stderr = messages
 	output, err := collect(command)
-	explain(err)
+	explain(messages, err)
 	return output, err
 }
 
@@ -125,17 +142,23 @@ func inherit(command *exec.Cmd) {
 	command.Stderr = os.Stderr
 }
 
-func bounded(limit time.Duration, name string, args []string) (*exec.Cmd, context.CancelFunc) {
+func bounded(limit time.Duration, name string, args []string) (*exec.Cmd, func(error) error) {
 	ctx, cancel := context.WithTimeout(context.Background(), limit)
 	command := exec.CommandContext(ctx, name, args...)
 	command.Cancel = func() error {
-		if command.Stderr == os.Stderr {
-			fmt.Fprintf(os.Stderr, "%s took longer than %s\n", name, limit)
+		if file, ok := command.Stderr.(*os.File); ok {
+			fmt.Fprintf(file, "%s took longer than %s\n", name, limit)
 		}
 		return command.Process.Signal(syscall.SIGTERM)
 	}
 	command.WaitDelay = grace
-	return command, cancel
+	return command, func(err error) error {
+		defer cancel()
+		if err != nil && ctx.Err() != nil {
+			return fmt.Errorf("%w: %w", context.DeadlineExceeded, err)
+		}
+		return err
+	}
 }
 
 func Sibling(name string) string {
@@ -154,14 +177,14 @@ func Sibling(name string) string {
 }
 
 func Report(err error) int {
-	explain(err)
+	explain(os.Stderr, err)
 	return exitCode(err)
 }
 
-func explain(err error) {
+func explain(output *os.File, err error) {
 	var exit *exec.ExitError
 	if err != nil && !errors.As(err, &exit) && !errors.Is(err, context.DeadlineExceeded) {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(output, err)
 	}
 }
 
@@ -199,8 +222,8 @@ func Sorted(lines []string) []string {
 	if len(lines) == 0 {
 		return nil
 	}
-	command, cancel := bounded(Quick, "sort", []string{"-z"})
-	defer cancel()
+	command, finish := bounded(Quick, "sort", []string{"-z"})
+	defer finish(nil)
 	command.Stdin = strings.NewReader(strings.Join(lines, "\x00") + "\x00")
 	output, err := command.Output()
 	if err != nil {

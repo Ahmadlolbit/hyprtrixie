@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
@@ -57,6 +58,7 @@ var commands = map[string]func() int{
 	"update":    update,
 	"config":    configCommand,
 	"modules":   modulesCommand,
+	"collect":   collect,
 }
 
 func fail(format string, args ...any) int {
@@ -68,6 +70,7 @@ func asRoot(mode string, command func() int) int {
 	if os.Geteuid() != 0 {
 		return fail("hyprtrixie needs root for this. Run it again with sudo: sudo %s %s", os.Args[0], mode)
 	}
+	defer cleanup.IgnoreQuit()()
 	return command()
 }
 
@@ -92,7 +95,7 @@ func showVersion() int {
 }
 
 func showHelp() int {
-	return say(fmt.Sprintf(usage, version, config.Path(), env.Or("HYPRTRIXIE_LOG_DIR", "/var/log/hyprtrixie")))
+	return say(fmt.Sprintf(usage, version, config.Path(), env.LogDir()))
 }
 
 func root() string {
