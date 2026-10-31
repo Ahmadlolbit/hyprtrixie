@@ -1,7 +1,7 @@
 CONFIG_FILE="${HYPRTRIXIE_CONFIG:-/etc/hyprtrixie/hyprtrixie.conf}"
 CONFIG_CHARS='[A-Za-z0-9 ._:/@+,-]'
 PROFILES=(minimal everyday developer)
-CONFIG_VERSION=2
+CONFIG_VERSION=3
 CONFIG_LOADED_VERSION=""
 CONFIG_MIGRATIONS=()
 OPTION_KEYS=()
@@ -166,8 +166,8 @@ config_load() {
     fi
     printf -v "$key" '%s' "${BASH_REMATCH[2]}"
   done <"$file"
-  config_validate
   config_migrate "${CONFIG_LOADED_VERSION:-1}"
+  config_validate
   return 0
 }
 
