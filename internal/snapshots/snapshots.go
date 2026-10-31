@@ -128,7 +128,7 @@ func Disposable(all []Snapshot) []string {
 }
 
 func DiskUse() (int, bool) {
-	output, err := run.CaptureQuiet(run.Quick, "df", "-P", "/")
+	output, err := run.Capture(run.Quick, "df", "-P", "/")
 	found := fsutil.Filesystems(output)
 	if err != nil || len(found) == 0 || !found[0].Known {
 		return 0, false

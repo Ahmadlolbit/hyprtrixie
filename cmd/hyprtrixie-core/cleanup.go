@@ -72,7 +72,7 @@ func cleanUp(yes bool) int {
 
 func cleanupCommand() int {
 	yes := env.Arg(2) == "--yes"
-	if env.Arg(2) != "" && !yes {
+	if (env.Arg(2) != "" && !yes) || env.Arg(3) != "" {
 		return fail("usage: hyprtrixie cleanup [--yes]")
 	}
 	return asRoot("cleanup", func() int { return cleanUp(yes) })
