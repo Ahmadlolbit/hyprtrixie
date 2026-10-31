@@ -204,7 +204,7 @@ screenshot_install() {
 }
 
 screensaver_install() {
-  deploy_file "$HYPRTRIXIE_ROOT/bin/hyprtrixie-screensaver" "$BIN_DIR/hyprtrixie-screensaver" 0755 || return 1
+  deploy_tool hyprtrixie-screensaver || return 1
   deploy_file "$HYPRTRIXIE_ROOT/system/screensaver.txt" "$SHARE_DIR/screensaver.txt"
 }
 
