@@ -134,7 +134,7 @@ func (option Option) Valid(value string) bool {
 	case yesNo:
 		return value == "yes" || value == "no"
 	case number:
-		return value != "" && strings.Trim(value, "0123456789") == ""
+		return value == "0" || value != "" && value[0] != '0' && strings.Trim(value, "0123456789") == ""
 	case multi:
 		items := option.items()
 		return !slices.ContainsFunc(strings.Fields(value), func(word string) bool { return !slices.Contains(items, word) })
