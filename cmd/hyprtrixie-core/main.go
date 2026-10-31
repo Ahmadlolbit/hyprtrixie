@@ -64,6 +64,7 @@ var commands = map[string]func() int{
 	"collect":   collect,
 	"doctor":    doctor,
 	"app":       appCommand,
+	"module":    module,
 	"restore":   restore,
 	"cleanup":   cleanupCommand,
 }

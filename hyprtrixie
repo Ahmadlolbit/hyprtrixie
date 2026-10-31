@@ -131,6 +131,10 @@ on_exit() {
   local rc=$?
   terminal_back
   ui_spin_stop
+  if [[ -n $CORE_RESULT ]]; then
+    core_results
+    rm -f "$CORE_RESULT"
+  fi
   status_save
   if declare -F write_report >/dev/null && [[ -n $TARGET_HOME ]]; then
     write_report >/dev/null 2>&1 || log warn "could not write the report"
@@ -165,7 +169,7 @@ start_run() {
   fi
   exec {TERMINAL_OUT}>&1 {TERMINAL_ERR}>&2
   trap on_exit EXIT
-  trap on_interrupt INT TERM
+  trap on_interrupt INT TERM HUP
 }
 
 parse_run_options() {
