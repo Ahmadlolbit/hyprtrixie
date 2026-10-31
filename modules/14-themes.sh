@@ -57,6 +57,7 @@ FOLLOW_SHARE="$SHARE_DIR/follow"
 GRUB_SETTINGS=/etc/default/grub.d/hyprtrixie.cfg
 GRUB_THEME_DIR="${HYPRTRIXIE_GRUB_THEME_DIR:-/boot/grub/themes/hyprtrixie}"
 FOLLOW_INITRAMFS=0
+GRUB_UPDATE=0
 LOOK_CONF="${HYPRTRIXIE_LOOK_CONF:-/etc/hyprtrixie/look.conf}"
 LOOK_CHANGED=0
 
@@ -227,9 +228,11 @@ grub_settings() {
   rc=$?
   rm -f "$tmp"
   ((rc == 0)) || return 1
-  if ((DEPLOY_CHANGED)) && command -v update-grub >/dev/null 2>&1; then
-    update-grub
+  ((DEPLOY_CHANGED)) && GRUB_UPDATE=1
+  if ((GRUB_UPDATE)) && command -v update-grub >/dev/null 2>&1; then
+    update-grub || return 1
   fi
+  GRUB_UPDATE=0
 }
 
 console_theme_install() {
