@@ -33,6 +33,7 @@ if (( $+commands[eza] )); then
 fi
 (( $+commands[bat] )) && export BAT_THEME=ansi
 (( $+commands[fd] )) && export FZF_DEFAULT_COMMAND='fd --type f --hidden --exclude .git'
+[[ $TERM == (xterm-kitty|tmux-256color) ]] && alias ssh='TERM=xterm-256color ssh'
 
 if [[ "$(cat /var/lib/hyprtrixie/container-engine 2>/dev/null)" == podman ]]; then
   export DOCKER_HOST="unix://${XDG_RUNTIME_DIR:-/run/user/$UID}/podman/podman.sock"
