@@ -1,5 +1,6 @@
 [Unit]
 Description=Check for firmware updates and disk space
+ConditionUser=!@system
 
 [Service]
 Type=oneshot

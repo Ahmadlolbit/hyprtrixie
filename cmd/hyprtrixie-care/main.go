@@ -25,17 +25,7 @@ offers to clean up old snapshots. Without an argument it does both, the
 firmware once a day. A user timer runs it every hour.
 `
 
-const (
-	firmwareGap = 20 * time.Hour
-	askFirmware = "--ask-firmware"
-	runFirmware = "--update-firmware"
-	askDisk     = "--ask-disk"
-	diskLimit   = 90
-)
-
-func stateFile(name string) string {
-	return filepath.Join(env.StateHome(), "hyprtrixie", name)
-}
+const diskLimit = 90
 
 func save(path, text string) {
 	err := os.MkdirAll(filepath.Dir(path), 0o777)
@@ -47,102 +37,73 @@ func save(path, text string) {
 	}
 }
 
-func self() string {
-	return run.Sibling("hyprtrixie-care")
+func stateFolder() string {
+	return filepath.Join(env.StateHome(), "hyprtrixie")
 }
 
-func askApart(unit string, args ...string) bool {
-	return run.Within(run.Quick, "systemd-run", append([]string{"--user", "--collect", "--quiet", "--unit=" + unit, self()}, args...)...) == 0
+func stamp(name string) string {
+	return filepath.Join(env.Or("XDG_RUNTIME_DIR", stateFolder()), "hyprtrixie-"+name)
 }
 
-func firmware(limit time.Duration) bool {
-	output, err := run.CaptureQuiet(limit, "fwupdmgr", "get-updates", "--json")
-	if run.TimedOut(err) {
-		return false
-	}
+func today() string {
+	return time.Now().Format(time.DateOnly)
+}
+
+func offer(app, urgency, title, body string) bool {
+	return notify.Post("--app-name="+app, "--urgency="+urgency, "--expire-time=0", "--hint=string:x-dunst-stack-tag:"+app, "--", title, body) == 0
+}
+
+func firmware() bool {
+	output, err := run.Capture(run.Minute, "fwupdmgr", "get-updates", "--json")
 	waiting := care.Updates([]byte(output))
-	seen := stateFile("firmware-seen")
+	seen := filepath.Join(stateFolder(), "firmware-seen")
 	fresh := care.Unseen(waiting, fsutil.Optional(seen))
-	if len(fresh) > 0 && askApart("hyprtrixie-care-firmware", askFirmware, strings.Join(fresh, "\n")) {
+	if len(fresh) > 0 {
+		if !offer("hyprtrixie-firmware", "normal", "Firmware update", care.Markup(strings.Join(fresh, "\n"))+"\nClick to update.") {
+			return false
+		}
 		save(seen, strings.Join(waiting, "\n")+"\n")
 	}
-	return true
+	return err == nil
 }
 
-func dailyFirmware(limit time.Duration) {
-	stamp := stateFile("firmware-checked")
-	if info, err := os.Stat(stamp); err == nil && time.Since(info.ModTime()) < firmwareGap {
-		return
-	}
-	if firmware(limit) {
-		save(stamp, "")
+func dailyFirmware() {
+	checked := stamp("firmware-checked")
+	if fsutil.Optional(checked) != today() && firmware() {
+		save(checked, today())
 	}
 }
 
-func offerFirmware(body string) int {
-	action := notify.Ask("--app-name=hyprtrixie", "--expire-time=0", "--action=default=Update", "Firmware update", body)
-	if action != "default" {
-		return 0
-	}
-	return run.Report(run.Exec("hyprtrixie-terminal", "--wait", self(), runFirmware))
-}
-
-func updateFirmware() int {
-	run.Status("fwupdmgr", "refresh", "--force")
-	return run.Status("fwupdmgr", "update")
-}
-
-func warned(use int, limit time.Duration) bool {
+func warned(use int) bool {
 	title := fmt.Sprintf("The disk is %d%% full", use)
-	all, err := snapshots.All(limit)
-	if run.TimedOut(err) {
-		return false
+	all, _ := snapshots.All()
+	if len(snapshots.Disposable(all)) == 0 {
+		return notify.Post("--app-name=hyprtrixie", "--urgency=critical", "--", title) == 0
 	}
-	if len(all) == 0 {
-		return notify.Post("--app-name=hyprtrixie", "--urgency=critical", title, "There are no snapshots to clean up.") == 0
-	}
-	return askApart("hyprtrixie-care-disk", askDisk, title, fmt.Sprintf("%d snapshots are on it. Clean up deletes the oldest automatic ones.", len(all)))
+	return offer("hyprtrixie-disk", "critical", title, fmt.Sprintf("%d snapshots are on it. Click to delete the oldest automatic ones.", len(all)))
 }
 
-func disk(limit time.Duration) {
+func disk() {
 	full, err := strconv.Atoi(os.Getenv("HYPRTRIXIE_DISK_LIMIT"))
 	if err != nil {
 		full = diskLimit
 	}
 	use, ok := snapshots.DiskUse()
-	if !ok || use < full {
-		return
+	warnedToday := stamp("disk-warned")
+	if ok && use >= full && fsutil.Optional(warnedToday) != today() && warned(use) {
+		save(warnedToday, today())
 	}
-	stamp := stateFile("disk-warned")
-	today := time.Now().Format(time.DateOnly)
-	if fsutil.Optional(stamp) != today && warned(use, limit) {
-		save(stamp, today+"\n")
-	}
-}
-
-func offerCleanup(title, body string) int {
-	action := notify.Ask("--app-name=hyprtrixie", "--urgency=critical", "--expire-time=0", "--action=default=Clean up", title, body)
-	if action != "default" {
-		return 0
-	}
-	return run.Report(run.Exec("hyprtrixie-terminal", "--wait", "sudo", "hyprtrixie", "cleanup"))
 }
 
 func main() {
 	switch env.Arg(1) {
 	case "":
-		disk(run.Minute)
-		dailyFirmware(run.Minute)
+		disk()
+		dailyFirmware()
 	case "firmware":
-		firmware(run.Minute)
+		firmware()
 	case "disk":
-		disk(run.Minute)
-	case askFirmware:
-		os.Exit(offerFirmware(env.Arg(2)))
-	case runFirmware:
-		os.Exit(updateFirmware())
-	case askDisk:
-		os.Exit(offerCleanup(env.Arg(2), env.Arg(3)))
+		disk()
 	case "-h", "--help":
 		fmt.Print(usage)
 	default:
