@@ -15,7 +15,11 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/snapshots"
 )
 
-const kernelFile = "vmlinuz-"
+const (
+	kernelFile = "vmlinuz-"
+	initrdFile = "initrd.img-"
+	mountField = 4
+)
 
 func restoreRows(points []snapshots.Snapshot, format string) string {
 	var rows strings.Builder
@@ -33,18 +37,34 @@ func separate(path, root string) bool {
 	return one.Dev != other.Dev
 }
 
-func keptWords(root string) string {
-	text := "/home is part of this snapshot, so your files go back too."
-	if separate(filepath.Join(root, "home"), root) {
-		text = "Going back keeps your files in /home as they are."
+func mountedAt(table, path string) bool {
+	for _, line := range strings.Split(table, "\n") {
+		if fields := strings.Fields(line); len(fields) > mountField && fields[mountField] == path {
+			return true
+		}
 	}
-	if separate(filepath.Join(root, "var/log"), root) {
-		text += " The logs in /var/log stay as they are."
-	}
-	return text + "\n"
+	return false
 }
 
-func kernelsIn(boot, modules string) ([]string, error) {
+func keptWord(root, table, rel, inside, apart, nested string) string {
+	switch {
+	case !separate(filepath.Join(root, rel), root):
+		return inside
+	case mountedAt(table, "/"+rel):
+		return apart
+	}
+	return nested
+}
+
+func keptWords(root, table string) string {
+	return keptWord(root, table, "home", "/home is part of this snapshot, so your files go back too.",
+		"Going back keeps your files in /home as they are.",
+		"/home is a subvolume inside the root, so it comes up empty after going back, and your files stay in the old root.") +
+		keptWord(root, table, "var/log", "", " The logs in /var/log stay as they are.",
+			" /var/log comes up empty, and the old logs stay in the old root.") + "\n"
+}
+
+func kernelsIn(boot string) ([]string, error) {
 	entries, err := os.ReadDir(boot)
 	if err != nil {
 		return nil, err
@@ -52,41 +72,56 @@ func kernelsIn(boot, modules string) ([]string, error) {
 	var kernels []string
 	for _, entry := range entries {
 		version, found := strings.CutPrefix(entry.Name(), kernelFile)
-		if found && fsutil.IsDir(filepath.Join(modules, version)) {
+		if found && fsutil.IsFile(filepath.Join(boot, initrdFile+version)) {
 			kernels = append(kernels, version)
 		}
 	}
 	return kernels, nil
 }
 
-func newestKernel(boot string, kernels []string) string {
-	args := []string{"-v"}
+func newestKernel(boot string, kernels []string) (string, error) {
+	args := []string{"-v", "--quoting-style=literal"}
 	for _, kernel := range kernels {
 		args = append(args, filepath.Join(boot, kernelFile+kernel))
 	}
-	sorted, _ := run.CaptureQuiet(run.Quick, "ls", args...)
+	sorted, err := run.CaptureQuiet(run.Quick, "ls", args...)
+	if err == nil && sorted == "" {
+		err = os.ErrNotExist
+	}
 	last := sorted[strings.LastIndexByte(sorted, '\n')+1:]
-	return strings.TrimPrefix(filepath.Base(last), kernelFile)
+	return strings.TrimPrefix(filepath.Base(last), kernelFile), err
 }
 
-func kernelAdvice(status, boot, modules, root string) string {
-	kernels, err := kernelsIn(boot, modules)
-	if err != nil || len(kernels) == 0 {
-		return "Couldn't read the kernels in " + boot + ", so this can't tell if the snapshot has one that will start.\n"
+func kernelAdvice(snapshotModules, boot, root string) string {
+	couldNot := "Couldn't read the kernels in " + boot + ", so this can't tell if the snapshot has one that will start.\n"
+	if !fsutil.IsDir(boot) {
+		return couldNot
 	}
 	if !separate(boot, root) {
 		return ""
 	}
-	newest := newestKernel(boot, kernels)
-	if !snapshots.KernelAdded(status, newest) {
+	kernels, err := kernelsIn(boot)
+	if _, unread := os.ReadDir(snapshotModules); err != nil || unread != nil || len(kernels) == 0 {
+		return couldNot
+	}
+	newest, err := newestKernel(boot, kernels)
+	if err != nil {
+		return couldNot
+	}
+	inSnapshot := func(kernel string) bool { return fsutil.IsDir(filepath.Join(snapshotModules, kernel)) }
+	if inSnapshot(newest) {
 		return ""
 	}
-	left := slices.DeleteFunc(kernels, func(kernel string) bool { return snapshots.KernelAdded(status, kernel) })
+	left := slices.DeleteFunc(kernels, func(kernel string) bool { return !inSnapshot(kernel) })
 	if len(left) == 0 {
 		return "This snapshot has no kernel that will start: every kernel in " + boot + " came after it.\n"
 	}
+	pick, err := newestKernel(boot, left)
+	if err != nil {
+		return couldNot
+	}
 	return "This snapshot doesn't have the newest kernel, " + newest + ". When the machine restarts, press Esc right after the laptop's logo, " +
-		"open Advanced options and pick " + newestKernel(boot, left) + ".\n"
+		"open Advanced options and pick " + pick + ". Do that at every restart until the next update brings " + newest + " back.\n"
 }
 
 func goBack(number string) int {
@@ -98,13 +133,15 @@ func goBack(number string) int {
 	if err != nil {
 		return fail("snapshot %s can't be read: see hyprtrixie restore", number)
 	}
-	advice := kernelAdvice(status, env.Or("HYPRTRIXIE_BOOT", "/boot"), env.Or("HYPRTRIXIE_KERNEL_MODULES", "/usr/lib/modules"), "/")
-	if code := say(snapshots.Changes(status) + "\n" + keptWords("/") + advice + "\n"); code != 0 {
+	modules := filepath.Join(env.Or("HYPRTRIXIE_SNAPSHOTS", "/.snapshots"), number, "snapshot/usr/lib/modules")
+	advice := kernelAdvice(modules, env.Or("HYPRTRIXIE_BOOT", "/boot"), "/")
+	kept := keptWords("/", fsutil.Optional("/proc/self/mountinfo"))
+	if code := say(snapshots.Changes(status) + "\n" + kept + advice + "\n"); code != 0 {
 		return code
 	}
 	code := run.Status("sudo", "snapper-rollback", number)
-	if closing := say("\nIf it says the rollback is done, restart to use the snapshot.\n"); closing != 0 {
-		return closing
+	if code == 0 && advice != "" {
+		return say("\n" + advice)
 	}
 	return code
 }

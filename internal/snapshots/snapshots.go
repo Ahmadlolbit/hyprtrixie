@@ -142,7 +142,3 @@ func Count(number int, noun string) string {
 	}
 	return strconv.Itoa(number) + " " + noun + "s"
 }
-
-func KernelAdded(status, kernel string) bool {
-	return strings.Contains("\n"+status+"\n", "\n+..... /usr/lib/modules/"+kernel+"\n")
-}
