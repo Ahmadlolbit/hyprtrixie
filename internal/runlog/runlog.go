@@ -9,6 +9,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
 const fileMode = 0o644
@@ -51,6 +53,11 @@ func (log *Log) Write(data []byte) (int, error) {
 
 func (log *Log) Line(level, text string) {
 	fmt.Fprintf(log, "%s [%-5s] %s\n", time.Now().Format(time.DateTime), level, text)
+}
+
+func (log *Log) Failed(text string) error {
+	log.Line("error", text)
+	return run.Reported(text)
 }
 
 func (log *Log) Size() int64 {
