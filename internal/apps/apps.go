@@ -1,14 +1,20 @@
 package apps
 
 import (
+	"path/filepath"
 	"strings"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/options"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
-const nameField = 5
+const (
+	WebFolder = "/usr/local/share/applications"
+	TeamsApp  = "teams-for-linux"
+	nameField = 5
+)
 
 var Categories = [][2]string{
 	{"browsers", "Browsers"}, {"chat", "Chat and calls"}, {"office", "Office and notes"}, {"viewers", "Viewers"},
@@ -59,15 +65,15 @@ func InCategory(catalogue []App, category string) []App {
 func (app App) Present(installed map[string]bool, teamsSource string) bool {
 	switch app.Source {
 	case "webapp":
-		return fsutil.IsFile("/usr/local/share/applications/" + app.ID + "-web.desktop")
+		return fsutil.IsFile(filepath.Join(WebFolder, app.ID+"-web.desktop"))
 	case "teams":
 		if teamsSource == "snap" {
-			return run.Quiet(run.Quick, "snap", "list", "teams-for-linux") == 0
+			return run.Quiet(run.Minute, "snap", "list", TeamsApp) == 0
 		}
-		return installed["teams-for-linux"]
+		return installed[TeamsApp]
 	}
 	for _, spec := range app.Packages {
-		if !installed[strings.TrimSuffix(spec, "/backports")] {
+		if !installed[apt.Bare(spec)] {
 			return false
 		}
 	}

@@ -3,6 +3,7 @@ package config
 import (
 	"cmp"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -30,6 +31,10 @@ type Config struct {
 	values  map[string]string
 }
 
+func RenamedThemes() map[string]string {
+	return maps.Clone(renamedThemes)
+}
+
 func Path() string {
 	return env.Or("HYPRTRIXIE_CONFIG", "/etc/hyprtrixie/hyprtrixie.conf")
 }
@@ -42,17 +47,23 @@ func Defaults() *Config {
 	return current
 }
 
-func Read(path string) *Config {
+func Read(paths ...string) *Config {
 	current := Defaults()
-	if fsutil.IsFile(path) {
-		current.migrate(current.apply(fsutil.Optional(path)))
-		current.validate()
+	for _, path := range paths {
+		if fsutil.IsFile(path) {
+			current.migrate(current.apply(fsutil.Optional(path)))
+			current.validate()
+		}
 	}
 	return current
 }
 
 func (current *Config) Get(key string) string {
 	return current.values[key]
+}
+
+func (current *Config) Enabled(key, item string) bool {
+	return slices.Contains(strings.Fields(current.Get(key)), item)
 }
 
 func parseLine(line string) (string, string, bool) {

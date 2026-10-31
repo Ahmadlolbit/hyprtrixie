@@ -15,7 +15,10 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
-const dfFields = 6
+const (
+	dfFields   = 6
+	executable = 1
+)
 
 type Filesystem struct {
 	Device string
@@ -94,6 +97,10 @@ func absolute(path string) (string, error) {
 func IsDir(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()
+}
+
+func Runnable(path string) bool {
+	return syscall.Access(path, executable) == nil
 }
 
 func IsFile(path string) bool {

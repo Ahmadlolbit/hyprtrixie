@@ -91,6 +91,10 @@ var table = []Option{
 	{"NM_HANDOVER", "NetworkManager for everything", yesNo, "yes", ""},
 }
 
+func Themes() []string {
+	return strings.Fields(themes)
+}
+
 func All() []Option {
 	all := slices.Clone(table)
 	for index := range all {

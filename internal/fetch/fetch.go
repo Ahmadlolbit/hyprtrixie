@@ -15,10 +15,11 @@ import (
 )
 
 const (
-	folderMode    = 0o755
-	stateFileMode = 0o644
-	releaseFields = 4
-	sourceFields  = 3
+	folderMode     = 0o755
+	stateFileMode  = 0o644
+	executableBits = 0o111
+	releaseFields  = 4
+	sourceFields   = 3
 )
 
 type Release struct {
@@ -200,8 +201,12 @@ func GitCached(log *runlog.Log, name string, paths ...string) (string, error) {
 	return target, Git(log, name, target, paths...)
 }
 
+func inPlace(target string, mode os.FileMode) bool {
+	return fsutil.Exists(target) && (mode&executableBits == 0 || fsutil.Runnable(target))
+}
+
 func ReleaseExtract(log *runlog.Log, name, member, target string, mode os.FileMode) error {
-	if ReleaseCurrent(log, name) && fsutil.Exists(target) {
+	if ReleaseCurrent(log, name) && inPlace(target, mode) {
 		return nil
 	}
 	file, err := FetchRelease(log, name)

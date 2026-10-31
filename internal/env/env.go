@@ -39,7 +39,7 @@ func StateHome() string {
 }
 
 func ThemeRoot() string {
-	return Or("HYPRTRIXIE_THEME_ROOT", "/usr/share/hyprtrixie")
+	return Or("HYPRTRIXIE_THEME_ROOT", ShareDir())
 }
 
 func AppConfig() string {
