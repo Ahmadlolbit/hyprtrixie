@@ -761,7 +761,7 @@ doctor_check_snapshots() {
     return 0
   fi
   last="$(snapper --csvout --no-headers -c root list --columns date 2>/dev/null | tail -n 1)"
-  if ! last="$(date -d "$last" +%s 2>/dev/null)"; then
+  if [[ -z $last ]] || ! last="$(date -d "$last" +%s 2>/dev/null)"; then
     ui_status warn "No snapshot of the system yet"
     return 0
   fi
