@@ -2,6 +2,7 @@ package setup
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
@@ -20,6 +21,11 @@ func packages(lists ...string) step.Work {
 
 func commands(names ...string) step.Work {
 	return func(*runlog.Log) error { return apt.Commands(names...) }
+}
+
+func mentions(path, text string) bool {
+	found, err := fsutil.Text(path)
+	return err == nil && strings.Contains(found, text)
 }
 
 func quietly(what string, name string, args ...string) error {
@@ -45,4 +51,8 @@ func holds(ok bool) error {
 
 func fileThere(path string) error {
 	return expect(fsutil.IsFile(path), path+" is missing")
+}
+
+func give(log *runlog.Log, person, path string) error {
+	return run.Logged(log, "chown", "-R", person+":", path)
 }
