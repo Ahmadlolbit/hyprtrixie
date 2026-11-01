@@ -105,8 +105,9 @@ neovim_install() {
     fetch_release neovim || return 1
     tmp="$(mktemp -d)" || return 1
     tar -xzf "$FETCHED_PATH" -C "$tmp" || return 1
-    rm -rf "$dir"
-    mv "$tmp/nvim-linux-x86_64" "$dir" || return 1
+    rm -rf "$dir" "$dir.part"
+    mv "$tmp/nvim-linux-x86_64" "$dir.part" || return 1
+    mv "$dir.part" "$dir" || return 1
     rm -rf "$tmp"
   fi
   ln -sfn "$dir/bin/nvim" "$BIN_DIR/nvim" || return 1
@@ -115,14 +116,17 @@ neovim_install() {
 }
 
 lazyvim_setup() {
-  local config
+  local config part
   config="$(user_path .config/nvim)"
+  part="$config.part"
   [[ -e $config ]] && return 0
   fetch_git_cached lazyvim-starter || return 1
   user_mkdir .config || return 1
-  cp -a "$FETCHED_PATH" "$config" || return 1
-  rm -rf "$config/.git"
-  chown -R "$TARGET_USER:" "$config"
+  rm -rf "$part"
+  cp -a "$FETCHED_PATH" "$part" || return 1
+  rm -rf "$part/.git"
+  chown -R "$TARGET_USER:" "$part" || return 1
+  mv "$part" "$config"
 }
 
 lazyvim_plugins() {
