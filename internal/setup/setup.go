@@ -12,6 +12,7 @@ type Context struct {
 	Deploy *files.Deployer
 	Person account.Account
 	Config *config.Config
+	CanAsk bool
 }
 
 type Module struct {
@@ -20,6 +21,8 @@ type Module struct {
 }
 
 var Modules = map[string]Module{
+	"00": {initSteps, initChecks},
+	"01": {preflightSteps, preflightChecks},
 	"02": {repositorySteps, repositoryChecks},
 	"03": {kernelSteps, kernelChecks},
 	"04": {swapSteps, swapChecks},

@@ -191,7 +191,7 @@ func secureBootVariable() string {
 	return "unknown"
 }
 
-func secureBoot() string {
+func SecureBoot() string {
 	if !fsutil.IsDir(at("/sys/firmware/efi")) {
 		return "legacy"
 	}
@@ -296,7 +296,7 @@ func (hardware Hardware) HasWifi(vendor string) bool {
 func all() machine {
 	found := machine{
 		laptop:     laptop(),
-		secureBoot: secureBoot(),
+		secureBoot: SecureBoot(),
 		memoryMiB:  memory(),
 		vendor:     dmi("sys_vendor"),
 		product:    product(),
