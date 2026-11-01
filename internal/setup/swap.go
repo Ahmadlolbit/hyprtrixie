@@ -69,7 +69,8 @@ func swapDirPrepare(log *runlog.Log) error {
 
 func (context *Context) swapFileFits() bool {
 	info, err := os.Stat(swapFile())
-	return err == nil && info.Mode().IsRegular() && info.Size() == int64(context.number("SWAPFILE_GB"))*bytesPerGiB
+	return err == nil && info.Mode().IsRegular() && info.Size() == int64(context.number("SWAPFILE_GB"))*bytesPerGiB &&
+		run.Quiet(run.Quick, "swaplabel", swapFile()) == 0
 }
 
 func swapOff(log *runlog.Log) error {
