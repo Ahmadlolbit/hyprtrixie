@@ -190,10 +190,17 @@ func neovimUnpack(log *runlog.Log, target string) error {
 		return err
 	}
 	defer os.RemoveAll(dir)
+	part := target + ".part"
 	if err := os.RemoveAll(target); err != nil {
 		return err
 	}
-	return run.Logged(log, "mv", filepath.Join(dir, "nvim-linux-x86_64"), target)
+	if err := os.RemoveAll(part); err != nil {
+		return err
+	}
+	if err := run.Logged(log, "mv", filepath.Join(dir, "nvim-linux-x86_64"), part); err != nil {
+		return err
+	}
+	return os.Rename(part, target)
 }
 
 func (context *Context) neovimInstall(log *runlog.Log) error {
@@ -228,13 +235,20 @@ func (context *Context) lazyvimSetup(log *runlog.Log) error {
 	if err := context.userFolder(log, ".config"); err != nil {
 		return err
 	}
-	if err := run.Logged(log, "cp", "-a", cached, config); err != nil {
+	part := config + ".part"
+	if err := os.RemoveAll(part); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(config, ".git")); err != nil {
+	if err := run.Logged(log, "cp", "-a", cached, part); err != nil {
 		return err
 	}
-	return give(log, context.Person.Name, config)
+	if err := os.RemoveAll(filepath.Join(part, ".git")); err != nil {
+		return err
+	}
+	if err := give(log, context.Person.Name, part); err != nil {
+		return err
+	}
+	return os.Rename(part, config)
 }
 
 func (context *Context) lazyvimPlugins(log *runlog.Log) error {
