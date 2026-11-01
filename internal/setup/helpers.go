@@ -2,10 +2,12 @@ package setup
 
 import (
 	"errors"
+	"os"
 	"slices"
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
@@ -74,6 +76,22 @@ func keepOld(log *runlog.Log, path string) error {
 		return nil
 	}
 	return run.Logged(log, "cp", "-a", path, path+".hyprtrixie-old")
+}
+
+func unpackedRelease(log *runlog.Log, name string) (string, error) {
+	file, err := fetch.FetchRelease(log, name)
+	if err != nil {
+		return "", err
+	}
+	dir, err := os.MkdirTemp("", "hyprtrixie")
+	if err != nil {
+		return "", err
+	}
+	if err := run.Logged(log, "tar", "-xzf", file, "-C", dir); err != nil {
+		os.RemoveAll(dir)
+		return "", err
+	}
+	return dir, nil
 }
 
 func give(log *runlog.Log, person, path string) error {
