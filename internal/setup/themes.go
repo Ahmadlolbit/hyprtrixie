@@ -103,7 +103,7 @@ func themeCopyFiles(log *runlog.Log, source, part string) error {
 	}
 	backgrounds, _ := filepath.Glob(filepath.Join(source, "backgrounds", "*"))
 	for _, file := range backgrounds {
-		if fsutil.IsFile(file) && !fsutil.IsLink(file) {
+		if fsutil.IsFile(file) && !fsutil.IsLink(file) && !strings.HasPrefix(filepath.Base(file), ".") {
 			if err := installPlain(log, file, filepath.Join(part, "backgrounds", filepath.Base(file))); err != nil {
 				return err
 			}

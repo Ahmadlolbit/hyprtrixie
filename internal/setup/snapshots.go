@@ -3,6 +3,7 @@ package setup
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -60,8 +61,11 @@ func snapperArgs(args ...string) []string {
 }
 
 func empty(dir string) bool {
-	entries, _ := os.ReadDir(dir)
-	return len(entries) == 0
+	if _, err := os.Lstat(dir); errors.Is(err, fs.ErrNotExist) {
+		return true
+	}
+	entries, err := os.ReadDir(dir)
+	return err == nil && len(entries) == 0
 }
 
 func holdsSnapshots(options string) bool {
