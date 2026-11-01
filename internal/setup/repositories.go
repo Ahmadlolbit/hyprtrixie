@@ -138,12 +138,7 @@ func (context *Context) firmwarePackages(log *runlog.Log, lists []string) ([]str
 		}
 		packages = append(packages, more...)
 	}
-	if context.Config.Get("KERNEL") == "stable" {
-		for index, name := range packages {
-			packages[index] = apt.Bare(name)
-		}
-	}
-	return packages, nil
+	return context.kernelSpecs(packages...), nil
 }
 
 func (context *Context) firmwareInstall(log *runlog.Log) error {

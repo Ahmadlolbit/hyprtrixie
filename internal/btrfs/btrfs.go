@@ -60,12 +60,12 @@ func RootSubvolume() string {
 	return ""
 }
 
-func mounted(path string) bool {
+func Mounted(path string) bool {
 	return run.Quiet(run.Quick, "mountpoint", "-q", path) == 0
 }
 
 func mountTop(log *runlog.Log) error {
-	if mounted(top()) {
+	if Mounted(top()) {
 		return nil
 	}
 	if err := os.MkdirAll(top(), folderMode); err != nil {
@@ -155,7 +155,7 @@ func MountSubvolume(log *runlog.Log, name, target string) error {
 	if err := FstabEnsure(log, "UUID="+uuid, target, "btrfs", "subvol="+name+",noatime"); err != nil {
 		return err
 	}
-	if mounted(target) {
+	if Mounted(target) {
 		return nil
 	}
 	return run.Logged(log, "mount", target)
