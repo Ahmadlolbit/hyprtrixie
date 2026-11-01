@@ -1,10 +1,21 @@
 package modules
 
 import (
+	"maps"
+	"os"
 	"path/filepath"
+	"slices"
 	"strings"
+	"time"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+)
+
+const (
+	statusMode = 0o644
+	folderMode = 0o755
 )
 
 type Module struct {
@@ -45,4 +56,27 @@ func StatusOf(text, id string) (string, string) {
 		}
 	}
 	return "", ""
+}
+
+func SaveStatus(results map[string]string) error {
+	if err := os.MkdirAll(env.StateDir(), folderMode); err != nil {
+		return err
+	}
+	var lines []string
+	for _, line := range strings.Split(fsutil.Optional(StatusFile()), "\n") {
+		id, _, _ := strings.Cut(line, "|")
+		if _, fresh := results[id]; line != "" && !fresh {
+			lines = append(lines, line)
+		}
+	}
+	now := time.Now().Format(time.DateTime)
+	for _, id := range slices.Sorted(maps.Keys(results)) {
+		lines = append(lines, id+"|"+results[id]+"|"+now)
+	}
+	slices.Sort(lines)
+	var text strings.Builder
+	for _, line := range lines {
+		text.WriteString(line + "\n")
+	}
+	return atomic.Install(StatusFile(), []byte(text.String()), statusMode)
 }
