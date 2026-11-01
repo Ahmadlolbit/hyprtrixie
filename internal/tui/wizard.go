@@ -16,7 +16,13 @@ const (
 	defaultHeight = 24
 	frameLines    = 5
 	summaryParts  = 3
+
+	profileAt  = 1
+	appsAt     = 2
+	settingsAt = 3
 )
+
+var reviewAt = settingsAt + len(settingsSections)
 
 var keyGuide = []string{
 	"Arrows or j and k   Move",
@@ -42,16 +48,17 @@ type stage interface {
 }
 
 type wizard struct {
-	settings *config.Config
-	nvidia   bool
-	stages   []stage
-	at       int
-	width    int
-	height   int
-	dialogs  []*dialog
-	guide    bool
-	notice   string
-	exit     int
+	settings  *config.Config
+	nvidia    bool
+	stages    []stage
+	at        int
+	width     int
+	height    int
+	dialogs   []*dialog
+	guide     bool
+	notice    string
+	exit      int
+	reviewing bool
 }
 
 func newWizard(settings *config.Config) *wizard {
@@ -124,15 +131,24 @@ func (flow *wizard) interrupt() tea.Cmd {
 	return flow.open(confirmation(leaveTitle, func() tea.Cmd { return tea.Quit }))
 }
 
+func (flow *wizard) backToReview() bool {
+	if !flow.reviewing {
+		return false
+	}
+	flow.reviewing = false
+	flow.jump(reviewAt)
+	return true
+}
+
 func (flow *wizard) forward() tea.Cmd {
-	if flow.at < len(flow.stages)-1 {
+	if !flow.backToReview() && flow.at < len(flow.stages)-1 {
 		flow.jump(flow.at + 1)
 	}
 	return nil
 }
 
 func (flow *wizard) backward() tea.Cmd {
-	if flow.at > 0 {
+	if !flow.backToReview() && flow.at > 0 {
 		flow.jump(flow.at - 1)
 	}
 	return nil
