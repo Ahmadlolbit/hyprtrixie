@@ -81,10 +81,10 @@ func loginShell(name string) string {
 	return person.Shell
 }
 
-func (context *Context) zshrcSetup() error {
+func (context *Context) zshrcSetup(log *runlog.Log) error {
 	zshrc := context.Person.Path(".zshrc")
 	if fsutil.Exists(zshrc) {
-		return files.EnsureLine(zshrc, "source "+filepath.Join(zshShare(), "hyprtrixie.zsh"))
+		return files.EnsureUserLine(log, context.Person, zshrc, "source "+filepath.Join(zshShare(), "hyprtrixie.zsh"))
 	}
 	return context.Deploy.UserOnce("config/zsh/zshrc", ".zshrc")
 }
@@ -96,7 +96,7 @@ func (context *Context) zshSetup(log *runlog.Log) error {
 	if err := context.Deploy.File("config/zsh/hyprtrixie.zsh", filepath.Join(zshShare(), "hyprtrixie.zsh")); err != nil {
 		return err
 	}
-	if err := context.zshrcSetup(); err != nil {
+	if err := context.zshrcSetup(log); err != nil {
 		return err
 	}
 	if loginShell(context.Person.Name) == loginZsh {

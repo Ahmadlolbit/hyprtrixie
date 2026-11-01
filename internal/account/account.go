@@ -122,6 +122,18 @@ func (person Account) RunWithin(limit time.Duration, out io.Writer, args ...stri
 	return run.LoggedWithin(limit, out, "runuser", person.RunuserArgs(args...)...)
 }
 
+func (person Account) Read(out io.Writer, path string) (string, error) {
+	return run.CaptureTo(run.Quick, out, "runuser", person.RunuserArgs("cat", path)...)
+}
+
+func (person Account) Write(out io.Writer, path, text string) error {
+	return run.Supply(run.Quick, out, text, "runuser", person.RunuserArgs("tee", path)...)
+}
+
+func (person Account) Append(out io.Writer, path, text string) error {
+	return run.Supply(run.Quick, out, text, "runuser", person.RunuserArgs("tee", "-a", path)...)
+}
+
 func (person Account) Runtime() string {
 	return "/run/user/" + person.UID
 }
