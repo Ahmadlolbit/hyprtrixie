@@ -117,7 +117,7 @@ func (context *Context) hyprlandConfigOK(log *runlog.Log) error {
 		return err
 	}
 	var output bytes.Buffer
-	context.Person.Run(&output, "env", "XDG_RUNTIME_DIR="+runtime, "Hyprland", "--verify-config")
+	context.Person.RunWithin(run.Minute, &output, "env", "XDG_RUNTIME_DIR="+runtime, "Hyprland", "--verify-config")
 	lines := strings.Split(strings.TrimRight(output.String(), "\n"), "\n")
 	accepted := hyprlandAccepted(lines)
 	if !accepted {

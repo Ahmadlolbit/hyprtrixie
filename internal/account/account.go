@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
@@ -115,6 +116,10 @@ func (person Account) AddGroups(out io.Writer, groups ...string) error {
 
 func (person Account) Run(out io.Writer, args ...string) error {
 	return run.Logged(out, "runuser", person.RunuserArgs(args...)...)
+}
+
+func (person Account) RunWithin(limit time.Duration, out io.Writer, args ...string) error {
+	return run.LoggedWithin(limit, out, "runuser", person.RunuserArgs(args...)...)
 }
 
 func (person Account) Runtime() string {

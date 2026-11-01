@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -115,6 +116,25 @@ func Logged(output io.Writer, name string, args ...string) error {
 		fmt.Fprintf(output, "%s: %v\n", name, caught)
 	}
 	return err
+}
+
+type serial struct {
+	lock   sync.Mutex
+	output io.Writer
+}
+
+func (writer *serial) Write(data []byte) (int, error) {
+	writer.lock.Lock()
+	defer writer.lock.Unlock()
+	return writer.output.Write(data)
+}
+
+func LoggedWithin(limit time.Duration, output io.Writer, name string, args ...string) error {
+	shared := &serial{output: output}
+	command, finish := bounded(limit, shared, name, args)
+	command.Stdout = shared
+	command.Stderr = shared
+	return finish(command.Run())
 }
 
 func Page(text string) {
