@@ -26,7 +26,13 @@ const (
 
 var renamedThemes = map[string]string{"lumon": "northern-sea", "vantablack": "pitch-black"}
 
+type Note struct {
+	Level string
+	Text  string
+}
+
 type Config struct {
+	Notes   []Note
 	options []options.Option
 	values  map[string]string
 }
@@ -51,7 +57,7 @@ func Read(paths ...string) *Config {
 	current := Defaults()
 	for _, path := range paths {
 		if fsutil.IsFile(path) {
-			current.migrate(current.apply(fsutil.Optional(path)))
+			current.migrate(current.apply(path, fsutil.Optional(path)))
 			current.validate()
 		}
 	}
@@ -60,6 +66,10 @@ func Read(paths ...string) *Config {
 
 func (current *Config) Get(key string) string {
 	return current.values[key]
+}
+
+func (current *Config) Set(key, value string) {
+	current.values[key] = value
 }
 
 func (current *Config) Enabled(key, item string) bool {
@@ -78,14 +88,35 @@ func parseLine(line string) (string, string, bool) {
 	return key, value, strings.Trim(value, safeCharacters) == ""
 }
 
-func (current *Config) apply(text string) string {
+func (current *Config) note(level, text string) {
+	current.Notes = append(current.Notes, Note{level, text})
+}
+
+func (current *Config) applyLine(path, line string) string {
+	key, value, ok := parseLine(line)
+	if !ok {
+		current.note("warn", "ignoring malformed line in "+path+": "+line)
+		return ""
+	}
+	if key == versionKey {
+		return value
+	}
+	if _, known := current.values[key]; known {
+		current.values[key] = value
+	} else {
+		current.note("warn", "ignoring unknown setting "+key+" in "+path)
+	}
+	return ""
+}
+
+func (current *Config) apply(path, text string) string {
 	loaded := ""
 	for _, line := range strings.Split(text, "\n") {
-		key, value, ok := parseLine(line)
-		if ok && key == versionKey {
-			loaded = value
-		} else if _, known := current.values[key]; ok && known {
-			current.values[key] = value
+		if line == "" {
+			continue
+		}
+		if found := current.applyLine(path, line); found != "" {
+			loaded = found
 		}
 	}
 	return loaded
@@ -93,8 +124,10 @@ func (current *Config) apply(text string) string {
 
 func (current *Config) validate() {
 	for _, option := range current.options {
-		if !option.Valid(current.values[option.Key]) {
-			current.values[option.Key] = option.DefaultFor(current.values["PROFILE"])
+		if value := current.values[option.Key]; !option.Valid(value) {
+			fallback := option.DefaultFor(current.values["PROFILE"])
+			current.note("warn", "invalid "+option.Key+"='"+value+"' in the configuration, using '"+fallback+"'")
+			current.values[option.Key] = fallback
 		}
 	}
 }
@@ -105,9 +138,11 @@ func (current *Config) migrate(loaded string) {
 		from = 1
 	}
 	if from < 2 {
+		current.note("info", "updating the configuration for version 2: apps_add_new_defaults")
 		current.addNewApps()
 	}
 	if from < 3 {
+		current.note("info", "updating the configuration for version 3: theme_names_update")
 		current.renameThemes()
 	}
 }
