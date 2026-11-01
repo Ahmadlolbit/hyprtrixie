@@ -57,7 +57,7 @@ var (
 type themeRun struct {
 	*Context
 	lookChanged bool
-	bootChanged bool
+	bootImage   followUp
 	grubUpdate  followUp
 }
 
@@ -377,10 +377,10 @@ func (theme *themeRun) lookInstall(*runlog.Log) error {
 		pairs = append(pairs, option[0]+"="+theme.Config.Get(option[1]))
 	}
 	changed, err := theme.Deploy.Changed("system/look.conf", lookConf(), pairs...)
+	theme.lookChanged = theme.lookChanged || changed
 	if err != nil || !changed {
 		return err
 	}
-	theme.lookChanged = true
 	return removeFiles(theme.Person.Path(".local/state/hyprtrixie/look/period"))
 }
 
@@ -448,7 +448,7 @@ func (theme *themeRun) followInstall(*runlog.Log) error {
 
 func (theme *themeRun) splashFile(source, target string) error {
 	changed, err := theme.Deploy.Changed("system/"+source, target)
-	theme.bootChanged = theme.bootChanged || changed
+	theme.bootImage.need(changed)
 	return err
 }
 
@@ -515,10 +515,10 @@ func (theme *themeRun) grubSetup(log *runlog.Log) error {
 		return err
 	}
 	changed, err := theme.Deploy.Content(text, grubSettings())
+	theme.grubUpdate.need(changed)
 	if err != nil {
 		return err
 	}
-	theme.grubUpdate.need(changed)
 	return theme.grubUpdate.do(func() error {
 		if apt.Commands("update-grub") != nil {
 			return nil
@@ -550,10 +550,10 @@ func (theme *themeRun) consoleInstall(log *runlog.Log) error {
 }
 
 func (theme *themeRun) followRun(log *runlog.Log) error {
-	if theme.bootChanged {
-		return run.Logged(log, followProgram(), "--initramfs")
+	if !theme.bootImage.due() {
+		return run.Logged(log, followProgram())
 	}
-	return run.Logged(log, followProgram())
+	return theme.bootImage.do(func() error { return run.Logged(log, followProgram(), "--initramfs") })
 }
 
 func (theme *themeRun) followWatch(log *runlog.Log) error {
@@ -580,7 +580,7 @@ func (theme *themeRun) ready(*runlog.Log) error {
 }
 
 func themeSteps(context *Context) {
-	theme := &themeRun{Context: context}
+	theme := &themeRun{Context: context, bootImage: followUp{name: "boot-image"}, grubUpdate: followUp{name: "update-grub"}}
 	context.Run.Step("Install theme packages", packages("themes"))
 	context.Run.Step("Move your themes to their new folders", theme.migrate)
 	context.Run.Step("Install the themes", theme.themesInstall)
