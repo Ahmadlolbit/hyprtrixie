@@ -172,14 +172,10 @@ func timersActive(*runlog.Log) error {
 	return nil
 }
 
-func mountedAt(dir string) bool {
-	return run.Quiet(run.Minute, "mountpoint", "-q", dir) == 0
-}
-
 func containerStorage(log *runlog.Log) error {
 	for _, store := range containerStores {
 		dir, subvolume := store[0], store[1]
-		if mountedAt(dir) {
+		if btrfs.Mounted(dir) {
 			continue
 		}
 		if !empty(dir) {
@@ -195,7 +191,7 @@ func containerStorage(log *runlog.Log) error {
 
 func containerStorageOK(*runlog.Log) error {
 	for _, store := range containerStores {
-		if !mountedAt(store[0]) && empty(store[0]) {
+		if !btrfs.Mounted(store[0]) && empty(store[0]) {
 			return errors.New(store[0] + " is neither its own subvolume nor in use")
 		}
 	}
