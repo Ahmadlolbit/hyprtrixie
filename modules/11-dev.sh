@@ -146,7 +146,7 @@ vscodium_install() {
 }
 
 zed_install() {
-  local app tmp desktop
+  local app tmp desktop entry
   app="$(user_path .local/zed.app)"
   if ! release_current zed || [[ ! -x $app/bin/zed ]]; then
     fetch_release zed || return 1
@@ -163,9 +163,9 @@ zed_install() {
   as_user ln -sfn "$app/bin/zed" "$(user_path .local/bin/zed)" || return 1
   user_mkdir .local/share/applications || return 1
   desktop="$(user_path .local/share/applications/dev.zed.Zed.desktop)"
-  sed -e "s|Exec=zed|Exec=$app/bin/zed|g" -e "s|Icon=zed|Icon=$app/share/icons/hicolor/512x512/apps/zed.png|g" \
-    "$app/share/applications/dev.zed.Zed.desktop" >"$desktop" || return 1
-  chown "$TARGET_USER:" "$desktop"
+  entry="$(as_user sed -e "s|Exec=zed|Exec=$app/bin/zed|g" -e "s|Icon=zed|Icon=$app/share/icons/hicolor/512x512/apps/zed.png|g" \
+    "$app/share/applications/dev.zed.Zed.desktop")" || return 1
+  printf '%s\n' "$entry" | as_user tee "$desktop" >/dev/null
 }
 
 editors_ready() {
