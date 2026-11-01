@@ -56,26 +56,33 @@ func moveDebianEntries(log *runlog.Log) error {
 	return nil
 }
 
-func (context *Context) sourcesWrite(log *runlog.Log) error {
+type sourcesSetup struct {
+	*Context
+	update followUp
+}
+
+func (sources *sourcesSetup) write(log *runlog.Log) error {
 	if err := apt.Install(log, "ca-certificates"); err != nil {
 		return err
 	}
 	if err := moveDebianEntries(log); err != nil {
 		return err
 	}
-	mirror := "MIRROR=" + context.Config.Get("DEBIAN_MIRROR")
-	debian, err := context.Deploy.Changed("system/apt/debian.sources", filepath.Join(apt.SourcesDir(), "debian.sources"), mirror, "SECURITY="+securityMirror)
+	mirror := "MIRROR=" + sources.Config.Get("DEBIAN_MIRROR")
+	debian, err := sources.Deploy.Changed("system/apt/debian.sources", filepath.Join(apt.SourcesDir(), "debian.sources"), mirror, "SECURITY="+securityMirror)
 	if err != nil {
 		return err
 	}
-	backports, err := context.Deploy.Changed("system/apt/debian-backports.sources", filepath.Join(apt.SourcesDir(), "debian-backports.sources"), mirror)
+	sources.update.need(debian)
+	backports, err := sources.Deploy.Changed("system/apt/debian-backports.sources", filepath.Join(apt.SourcesDir(), "debian-backports.sources"), mirror)
 	if err != nil {
 		return err
 	}
-	if debian || backports {
-		return apt.ForceUpdate(log)
+	sources.update.need(backports)
+	if !sources.update.owed {
+		return apt.Update(log)
 	}
-	return apt.Update(log)
+	return sources.update.do(func() error { return apt.ForceUpdate(log) })
 }
 
 func extrepoSetup(log *runlog.Log) error {
@@ -173,7 +180,8 @@ func firmwareComponent(*runlog.Log) error {
 }
 
 func repositorySteps(context *Context) {
-	context.Run.Step("Use Debian over HTTPS with backports", context.sourcesWrite)
+	sources := sourcesSetup{Context: context}
+	context.Run.Step("Use Debian over HTTPS with backports", sources.write)
 	context.Run.Step("Prepare vendor repositories", extrepoSetup)
 	context.Run.Step("Install base packages", packages("base"))
 	context.Run.Step("Install firmware for this machine", context.firmwareInstall)

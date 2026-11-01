@@ -58,6 +58,7 @@ type themeRun struct {
 	*Context
 	lookChanged bool
 	bootChanged bool
+	grubUpdate  followUp
 }
 
 func oldThemeRoot() string {
@@ -514,10 +515,16 @@ func (theme *themeRun) grubSetup(log *runlog.Log) error {
 		return err
 	}
 	changed, err := theme.Deploy.Content(text, grubSettings())
-	if err != nil || !changed || apt.Commands("update-grub") != nil {
+	if err != nil {
 		return err
 	}
-	return run.Logged(log, "update-grub")
+	theme.grubUpdate.need(changed)
+	return theme.grubUpdate.do(func() error {
+		if apt.Commands("update-grub") != nil {
+			return nil
+		}
+		return run.Logged(log, "update-grub")
+	})
 }
 
 func (theme *themeRun) consoleInstall(log *runlog.Log) error {

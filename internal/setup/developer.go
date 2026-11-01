@@ -43,23 +43,33 @@ func (context *Context) answers(args ...string) bool {
 	return run.Quiet(run.Minute, "runuser", context.Person.RunuserArgs(args...)...) == 0
 }
 
-func (context *Context) dockerInstall(log *runlog.Log) error {
+type dockerSetup struct {
+	*Context
+	restart followUp
+}
+
+func (docker *dockerSetup) install(log *runlog.Log) error {
 	if err := apt.ExtrepoTry(log, "docker-ce"); err != nil {
 		return err
 	}
 	if err := apt.InstallLists(log, "dev-docker"); err != nil {
 		return err
 	}
-	changed, err := context.Deploy.Changed("system/docker/daemon-"+context.Config.Get("DOCKER_PORTS")+".json", "/etc/docker/daemon.json")
+	changed, err := docker.Deploy.Changed("system/docker/daemon-"+docker.Config.Get("DOCKER_PORTS")+".json", "/etc/docker/daemon.json")
 	if err != nil {
 		return err
 	}
-	if changed && service.Active(dockerUnit) {
-		if err := service.Restart(log, dockerUnit); err != nil {
-			return err
+	docker.restart.need(changed)
+	err = docker.restart.do(func() error {
+		if !service.Active(dockerUnit) {
+			return nil
 		}
+		return service.Restart(log, dockerUnit)
+	})
+	if err != nil {
+		return err
 	}
-	return context.Person.AddGroups(log, "docker")
+	return docker.Person.AddGroups(log, "docker")
 }
 
 func (context *Context) dockerReady(*runlog.Log) error {
@@ -363,8 +373,9 @@ func (context *Context) toolboxInstall(log *runlog.Log) error {
 }
 
 func (context *Context) toolSteps() []toolStep {
+	docker := dockerSetup{Context: context}
 	return []toolStep{
-		{[]string{"docker"}, "Install Docker", context.dockerInstall},
+		{[]string{"docker"}, "Install Docker", docker.install},
 		{[]string{"podman"}, "Install Podman", context.podmanInstall},
 		{[]string{"docker", "podman"}, "Set up engine-switch", context.engineInstall},
 		{[]string{"mise"}, "Install mise with Node.js LTS", context.miseInstall},
