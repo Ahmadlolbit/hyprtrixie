@@ -42,7 +42,7 @@ func (person Account) human() bool {
 		!strings.HasSuffix(person.Shell, "nologin") && !strings.HasSuffix(person.Shell, "false")
 }
 
-func humans() []Account {
+func Humans() []Account {
 	output, err := run.Capture(run.Quick, "getent", "passwd")
 	if err != nil {
 		return nil
@@ -70,7 +70,7 @@ func Target() (Account, bool) {
 	if name != "" && name != "root" {
 		return Lookup(name)
 	}
-	if people := humans(); len(people) == 1 {
+	if people := Humans(); len(people) == 1 {
 		return people[0], true
 	}
 	return Account{}, false
