@@ -25,12 +25,13 @@ swap_active() {
   swapon --noheadings --show=NAME 2>/dev/null | grep -qx "$1"
 }
 
-swapfile_size_ok() {
-  [[ -f $SWAPFILE ]] && (($(stat -c %s "$SWAPFILE") == SWAPFILE_GB * 1024 * 1024 * 1024))
+swapfile_ready() {
+  [[ -f $SWAPFILE ]] && (($(stat -c %s "$SWAPFILE") == SWAPFILE_GB * 1024 * 1024 * 1024)) &&
+    swaplabel "$SWAPFILE" >/dev/null 2>&1
 }
 
 swapfile_create() {
-  swapfile_size_ok && return 0
+  swapfile_ready && return 0
   if swap_active "$SWAPFILE"; then
     swapoff "$SWAPFILE" || return 1
   fi
