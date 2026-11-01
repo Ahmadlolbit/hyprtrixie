@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	width   = 64
-	minFill = 3
+	width      = 64
+	titleWidth = width - 16
+	minFill    = 3
 
 	reset  = "\x1b[0m"
 	bold   = "\x1b[1m"
@@ -89,6 +90,17 @@ func Done() {
 	}
 }
 
+func ModuleResult(id, title, result string) {
+	colour := yellow
+	switch result {
+	case "PASS":
+		colour = green
+	case "FAIL":
+		colour = red
+	}
+	Print(fmt.Sprintf("  %s  %-*s %s\n", id, titleWidth, title, paint(colour, result)))
+}
+
 func Page(text string) {
 	if text == "" {
 		return
@@ -116,6 +128,21 @@ func Confirm(prompt string) bool {
 	return err == nil && clearYes(answer)
 }
 
+func Proceed(prompt string) bool {
+	answer, err := term.ReadAnswer(prompt + " [Y/n] ")
+	return err == nil && !clearNo(answer)
+}
+
+func Input(header string) (string, bool) {
+	answer, err := term.ReadAnswer(header + " ")
+	return strings.TrimSpace(answer), err == nil
+}
+
+func Password(header string) (string, bool) {
+	answer, err := term.ReadSecret(header + " ")
+	return answer, err == nil
+}
+
 func Choose(header string, items []string) (string, bool) {
 	for {
 		Print(header + "\n")
@@ -136,6 +163,14 @@ func Choose(header string, items []string) (string, bool) {
 func clearYes(answer string) bool {
 	switch strings.ToLower(strings.Trim(answer, " \t")) {
 	case "y", "yes":
+		return true
+	}
+	return false
+}
+
+func clearNo(answer string) bool {
+	switch strings.ToLower(strings.Trim(answer, " \t")) {
+	case "n", "no":
 		return true
 	}
 	return false

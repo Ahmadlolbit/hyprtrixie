@@ -2,9 +2,9 @@ package step
 
 import (
 	"os"
-	"os/signal"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
@@ -25,6 +25,7 @@ const (
 
 	haltedCode      = 1
 	interruptedCode = 130
+	hangupWait      = 200 * time.Millisecond
 )
 
 var choices = []string{"Retry", "Skip", "Continue", "Halt", showLog}
@@ -32,8 +33,14 @@ var choices = []string{"Retry", "Skip", "Continue", "Halt", showLog}
 type Work func(log *runlog.Log) error
 
 type Mark struct {
-	Kind  string
-	Title string
+	Module string
+	Kind   string
+	Title  string
+}
+
+type answer struct {
+	text string
+	ok   bool
 }
 
 type Runner struct {
@@ -50,6 +57,8 @@ type Runner struct {
 	Interrupted bool
 	stop        chan struct{}
 	signals     chan os.Signal
+	failedAt    int
+	skippedAt   int
 }
 
 func New(log *runlog.Log, module, mode string) *Runner {
@@ -63,8 +72,27 @@ func New(log *runlog.Log, module, mode string) *Runner {
 	return runner
 }
 
+func (runner *Runner) Begin(module string) {
+	runner.Module = module
+	runner.Skipped = false
+	runner.failedAt = len(runner.Failures)
+	runner.skippedAt = len(runner.Skips)
+}
+
+func (runner *Runner) Result() string {
+	switch {
+	case len(runner.Failures) > runner.failedAt:
+		return "FAIL"
+	case runner.Skipped:
+		return "SKIP"
+	case len(runner.Skips) > runner.skippedAt:
+		return "PARTIAL"
+	}
+	return "PASS"
+}
+
 func (runner *Runner) ExitCode() int {
-	runner.ended()
+	runner.Ended()
 	switch {
 	case runner.Interrupted:
 		return interruptedCode
@@ -83,15 +111,51 @@ func (runner *Runner) Check(title string, work Work) bool {
 }
 
 func (runner *Runner) Interactive(title string, work func() error) bool {
-	return runner.attempt(kindStep, title, func() error {
-		signal.Stop(runner.signals)
-		defer cleanup.Notify(runner.signals)
-		return work()
-	})
+	return runner.attempt(kindStep, title, work)
 }
 
 func (runner *Runner) Note(text string) {
 	ui.Note(text)
+}
+
+func (runner *Runner) Warn(text string) {
+	ui.Warn(text)
+}
+
+func (runner *Runner) Answer(ask func() (string, bool)) (string, bool) {
+	if runner.Ended() {
+		return "", false
+	}
+	answered := make(chan answer, 1)
+	go func() {
+		text, ok := ask()
+		answered <- answer{text, ok}
+	}()
+	select {
+	case got := <-answered:
+		if !got.ok {
+			runner.noticeHangup()
+		}
+		return got.text, got.ok
+	case <-runner.stop:
+		runner.Interrupted = true
+		return "", false
+	}
+}
+
+func (runner *Runner) noticeHangup() {
+	select {
+	case <-runner.stop:
+		runner.Interrupted = true
+	case <-time.After(hangupWait):
+	}
+}
+
+func (runner *Runner) Broke(kind, text string) {
+	runner.Log.Line("error", text)
+	ui.Fail(text)
+	runner.Failures = append(runner.Failures, Mark{runner.Module, kind, text})
+	runner.Halted = true
 }
 
 func (runner *Runner) SkipModule(reason string) {
@@ -108,7 +172,7 @@ func (runner *Runner) logged(title string, work Work) func() error {
 	}
 }
 
-func (runner *Runner) ended() bool {
+func (runner *Runner) Ended() bool {
 	select {
 	case <-runner.stop:
 		runner.Interrupted = true
@@ -118,11 +182,11 @@ func (runner *Runner) ended() bool {
 }
 
 func (runner *Runner) attempt(kind, title string, perform func() error) bool {
-	for !runner.ended() {
+	for !runner.Ended() {
 		runner.Log.Line("info", kind+": "+title)
 		offset := runner.Log.Size()
 		err := perform()
-		if runner.ended() {
+		if runner.Ended() {
 			return false
 		}
 		if err == nil {
@@ -132,7 +196,7 @@ func (runner *Runner) attempt(kind, title string, perform func() error) bool {
 		}
 		choice := runner.failed(kind, title, offset, err)
 		if choice != retry {
-			runner.giveUp(choice, Mark{kind, title})
+			runner.giveUp(choice, Mark{runner.Module, kind, title})
 			return false
 		}
 		runner.Log.Line("info", "retrying: "+title)
@@ -170,21 +234,11 @@ func (runner *Runner) choice(title string, offset int64) string {
 }
 
 func (runner *Runner) question(header string) string {
-	picked := make(chan string, 1)
-	go func() {
-		pick, ok := runner.Choose(header, choices)
-		if !ok {
-			pick = halt
-		}
-		picked <- pick
-	}()
-	select {
-	case pick := <-picked:
-		return pick
-	case <-runner.stop:
-		runner.Interrupted = true
+	pick, ok := runner.Answer(func() (string, bool) { return runner.Choose(header, choices) })
+	if !ok {
 		return halt
 	}
+	return pick
 }
 
 func (runner *Runner) giveUp(choice string, mark Mark) {
