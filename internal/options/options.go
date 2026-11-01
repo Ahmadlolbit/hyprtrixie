@@ -39,6 +39,8 @@ type Option struct {
 
 var profiles = []string{"minimal", "everyday", "developer"}
 
+var sources = map[string]string{"teams": "TEAMS_SOURCE"}
+
 var table = []Option{
 	{"PROFILE", "Profile", Choice, "developer", "developer everyday minimal", "profile", "Presets for apps and tools: minimal, everyday, or developer (everything)", nil},
 	{"FAILURE_MODE", "When a step fails", Choice, "ask", "ask halt continue", "run", "Ask what to do, stop the run, or note the failure and carry on", nil},
@@ -141,6 +143,11 @@ func weatherOn(facts Facts) bool {
 
 func quietOn(facts Facts) bool {
 	return facts.Value("QUIET_HOURS") == "yes"
+}
+
+func SourceOf(app string) (string, bool) {
+	key, found := sources[app]
+	return key, found
 }
 
 func Themes() []string {

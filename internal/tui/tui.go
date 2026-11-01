@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/apps"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
@@ -16,8 +17,8 @@ func canShow() bool {
 	return term.IsTerminal(os.Stdin) && term.IsTerminal(os.Stdout)
 }
 
-func (flow *wizard) allStages(machine []string) []stage {
-	stages := []stage{flow.startStage(machine)}
+func (flow *wizard) allStages(machine []string, catalogue []apps.App) []stage {
+	stages := []stage{flow.startStage(machine), flow.profileStage(), flow.appsStage(catalogue)}
 	for _, section := range settingsSections {
 		stages = append(stages, flow.settingsStage(section.title, section.key))
 	}
@@ -31,7 +32,7 @@ func Run() int {
 	}
 	flow := newWizard(config.Read(config.Path()))
 	flow.nvidia = detect.ReadHardware().HasGPU("nvidia")
-	flow.stages = flow.allStages(run.Lines(detect.Summary()))
+	flow.stages = flow.allStages(run.Lines(detect.Summary()), apps.All())
 	if _, err := tea.NewProgram(flow, tea.WithAltScreen()).Run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
