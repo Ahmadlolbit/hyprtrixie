@@ -393,6 +393,21 @@ func ConfSet(path, key, value string) error {
 	return writeLines(path, list)
 }
 
+func EnsureUserLine(log *runlog.Log, person account.Account, path, line string) error {
+	list, err := fsutil.Lines(path)
+	if err != nil || slices.Contains(list, line) {
+		return err
+	}
+	data, err := os.ReadFile(path)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	if len(data) > 0 && data[len(data)-1] != '\n' {
+		line = "\n" + line
+	}
+	return person.Append(log, path, line+"\n")
+}
+
 func EnsureLine(path, line string) error {
 	list, err := fsutil.Lines(path)
 	if err != nil || slices.Contains(list, line) {

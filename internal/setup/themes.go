@@ -342,11 +342,7 @@ func (theme *themeRun) btopFirstConfig(log *runlog.Log, conf string) error {
 	if err := theme.userFolder(log, ".config/btop"); err != nil {
 		return err
 	}
-	uid, gid, err := theme.Person.IDs()
-	if err != nil {
-		return err
-	}
-	return atomic.InstallAs(conf, []byte(btopTheme+"\n"), plainMode, uid, gid)
+	return theme.Person.Write(log, conf, btopTheme+"\n")
 }
 
 func (theme *themeRun) btopSetup(log *runlog.Log) error {
@@ -354,21 +350,10 @@ func (theme *themeRun) btopSetup(log *runlog.Log) error {
 	if !fsutil.IsFile(conf) {
 		return theme.btopFirstConfig(log, conf)
 	}
-	lines, err := fsutil.Lines(conf)
-	if err != nil {
-		return err
+	if !fileLineHasPrefix(conf, btopSetting) {
+		return files.EnsureUserLine(log, theme.Person, conf, btopTheme)
 	}
-	found := false
-	for index, line := range lines {
-		if strings.HasPrefix(line, btopSetting) {
-			lines[index] = btopTheme
-			found = true
-		}
-	}
-	if !found {
-		lines = append(lines, btopTheme)
-	}
-	return atomic.Write(conf, []byte(strings.Join(lines, "\n")+"\n"), plainMode)
+	return theme.Person.Run(log, "sed", "-i", "--follow-symlinks", "s|^"+btopSetting+".*|"+btopTheme+"|", conf)
 }
 
 func (theme *themeRun) lookInstall(*runlog.Log) error {
@@ -428,7 +413,7 @@ func (theme *themeRun) apply(log *runlog.Log) error {
 	if !fsutil.IsFile(mako) {
 		return nil
 	}
-	return files.EnsureLine(mako, "include=~/"+themeState+"/theme/mako.ini")
+	return files.EnsureUserLine(log, theme.Person, mako, "include=~/"+themeState+"/theme/mako.ini")
 }
 
 func (theme *themeRun) followInstall(*runlog.Log) error {

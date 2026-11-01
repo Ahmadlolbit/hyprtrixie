@@ -137,6 +137,14 @@ func LoggedWithin(limit time.Duration, output io.Writer, name string, args ...st
 	return finish(command.Run())
 }
 
+func Supply(limit time.Duration, output io.Writer, input, name string, args ...string) error {
+	shared := &serial{output: output}
+	command, finish := bounded(limit, shared, name, args)
+	command.Stdin = strings.NewReader(input)
+	command.Stderr = shared
+	return finish(command.Run())
+}
+
 func Page(text string) {
 	command := exec.Command("less")
 	command.Stdin = strings.NewReader(text)

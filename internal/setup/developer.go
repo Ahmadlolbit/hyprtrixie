@@ -303,17 +303,13 @@ func (context *Context) zedEntry(log *runlog.Log, app string) error {
 	if err := context.userFolder(log, ".local/share/applications"); err != nil {
 		return err
 	}
-	data, err := os.ReadFile(filepath.Join(app, zedDesktop))
+	text, err := context.Person.Read(log, filepath.Join(app, zedDesktop))
 	if err != nil {
 		return err
 	}
-	text := strings.ReplaceAll(string(data), "Exec=zed", "Exec="+app+"/bin/zed")
+	text = strings.ReplaceAll(text, "Exec=zed", "Exec="+app+"/bin/zed")
 	text = strings.ReplaceAll(text, "Icon=zed", "Icon="+app+"/share/icons/hicolor/512x512/apps/zed.png")
-	uid, gid, err := context.Person.IDs()
-	if err != nil {
-		return err
-	}
-	return atomic.InstallAs(context.Person.Path(".local/share/applications/dev.zed.Zed.desktop"), []byte(text), plainMode, uid, gid)
+	return context.Person.Write(log, context.Person.Path(".local/share/applications/dev.zed.Zed.desktop"), text+"\n")
 }
 
 func (context *Context) zedInstall(log *runlog.Log) error {
