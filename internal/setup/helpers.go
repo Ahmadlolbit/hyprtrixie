@@ -2,6 +2,7 @@ package setup
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"slices"
 	"strings"
@@ -92,6 +93,15 @@ func unpackedRelease(log *runlog.Log, name string) (string, error) {
 		return "", err
 	}
 	return dir, nil
+}
+
+func removeFiles(paths ...string) error {
+	for _, path := range paths {
+		if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+	}
+	return nil
 }
 
 func give(log *runlog.Log, person, path string) error {
