@@ -5,15 +5,23 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
-const fileMode = 0o644
+const (
+	fileMode = 0o644
+	dirMode  = 0o755
+	runStamp = "20060102-150405"
+	canWrite = 2
+)
 
 type Log struct {
 	file        string
@@ -24,6 +32,63 @@ type Log struct {
 
 func Joined() *Log {
 	return &Log{file: os.Getenv("HYPRTRIXIE_LOG_FILE"), copy: os.Getenv("HYPRTRIXIE_USER_LOG")}
+}
+
+func Start(what string) (*Log, error) {
+	dir := env.LogDir()
+	if err := os.MkdirAll(dir, dirMode); err != nil {
+		return nil, err
+	}
+	if err := os.Chmod(dir, dirMode); err != nil {
+		return nil, err
+	}
+	name := "run-" + time.Now().Format(runStamp) + ".log"
+	log := &Log{file: filepath.Join(dir, name)}
+	if err := add(log.file, os.O_CREATE, nil); err != nil {
+		return nil, err
+	}
+	if err := atomic.Symlink(name, filepath.Join(dir, "latest.log")); err != nil {
+		log.Line("warn", "cannot point latest.log at this run: "+err.Error())
+	}
+	log.Line("info", "hyprtrixie "+env.Version+" started ("+what+")")
+	return log, nil
+}
+
+func (log *Log) Attach(home, owner string) error {
+	dir := filepath.Join(home, "runbook-logs")
+	if err := os.MkdirAll(dir, dirMode); err != nil {
+		return err
+	}
+	if info, err := os.Lstat(dir); err != nil || !info.IsDir() {
+		return fmt.Errorf("%s is not a folder", dir)
+	}
+	earlier, err := os.ReadFile(log.file)
+	if err != nil {
+		return err
+	}
+	target := filepath.Join(dir, "runbook.log")
+	if err := add(target, os.O_CREATE|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, append([]byte("\n"), earlier...)); err != nil {
+		return err
+	}
+	log.copy = target
+	run.Quiet(run.Quick, "chown", "-R", owner+":", dir)
+	return nil
+}
+
+func (log *Log) Path() string {
+	return log.file
+}
+
+func (log *Log) Copy() string {
+	return log.copy
+}
+
+func writable(path string) bool {
+	return syscall.Access(path, canWrite) == nil
+}
+
+func (log *Log) Writable() bool {
+	return log.file != "" && writable(log.file) && (log.copy == "" || writable(log.copy))
 }
 
 func add(path string, how int, data []byte) error {

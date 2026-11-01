@@ -175,7 +175,7 @@ func (out *report) summary() {
 	}
 	out.section("Summary")
 	out.write("Date          %s\n", time.Now().Format("2006-01-02 15:04:05 -0700"))
-	out.write("hyprtrixie    %s from %s\n", version, root())
+	out.write("hyprtrixie    %s from %s\n", env.Version, root())
 	out.write("Repo          %s\n", out.answer("not a git checkout", "git", "-C", root(), "log", "-1", "--no-show-signature", "--format=%h %s (%D)"))
 	out.write("Last install  from %s\n", deployed.LastCommit())
 	out.write("Verbose       %s\n\n", state)

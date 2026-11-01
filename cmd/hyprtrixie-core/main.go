@@ -13,8 +13,6 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
-const version = "0.1.0"
-
 const usage = `hyprtrixie %s - Debian 13 with Hyprland, set up properly
 
 USAGE
@@ -99,11 +97,11 @@ func remove(path string) int {
 }
 
 func showVersion() int {
-	return say("hyprtrixie " + version + "\n")
+	return say("hyprtrixie " + env.Version + "\n")
 }
 
 func showHelp() int {
-	return say(fmt.Sprintf(usage, version, config.Path(), env.LogDir()))
+	return say(fmt.Sprintf(usage, env.Version, config.Path(), env.LogDir()))
 }
 
 func root() string {

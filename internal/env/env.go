@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 )
 
+const Version = "0.1.0"
+
 func Or(name, fallback string) string {
 	if value := os.Getenv(name); value != "" {
 		return value
