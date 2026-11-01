@@ -27,9 +27,10 @@ var (
 )
 
 type Hardware struct {
-	CPU  string
-	GPUs []string
-	Wifi []string
+	CPU        string
+	GPUs       []string
+	Wifi       []string
+	NvidiaOpen bool
 }
 
 type machine struct {
@@ -277,11 +278,15 @@ func (found *machine) readChips() {
 func ReadHardware() Hardware {
 	var found machine
 	found.readChips()
-	return Hardware{found.cpuVendor, found.gpuVendors, found.wifiVendors}
+	return Hardware{found.cpuVendor, found.gpuVendors, found.wifiVendors, found.nvidiaOpen}
 }
 
 func (hardware Hardware) HasGPU(vendor string) bool {
 	return slices.Contains(hardware.GPUs, vendor)
+}
+
+func (hardware Hardware) Hybrid() bool {
+	return len(hardware.GPUs) > 1
 }
 
 func (hardware Hardware) HasWifi(vendor string) bool {
