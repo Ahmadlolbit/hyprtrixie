@@ -22,6 +22,13 @@ func commands(names ...string) step.Work {
 	return func(*runlog.Log) error { return apt.Commands(names...) }
 }
 
+func quietly(what string, name string, args ...string) error {
+	if run.Quiet(run.Minute, name, args...) != 0 {
+		return errors.New(what)
+	}
+	return nil
+}
+
 func expect(ok bool, what string) error {
 	if !ok {
 		return errors.New(what)
