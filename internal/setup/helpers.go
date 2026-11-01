@@ -21,6 +21,25 @@ const (
 	blanks      = " \t\v\f\r"
 )
 
+type followUp struct {
+	owed bool
+}
+
+func (follow *followUp) need(changed bool) {
+	follow.owed = follow.owed || changed
+}
+
+func (follow *followUp) do(work func() error) error {
+	if !follow.owed {
+		return nil
+	}
+	if err := work(); err != nil {
+		return err
+	}
+	follow.owed = false
+	return nil
+}
+
 func packages(lists ...string) step.Work {
 	return func(log *runlog.Log) error { return apt.InstallLists(log, lists...) }
 }
