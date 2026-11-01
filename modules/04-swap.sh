@@ -54,22 +54,29 @@ swapfile_disable() {
   fstab_drop "$SWAPFILE" none
 }
 
+zram_settings() {
+  conf_set "$ZRAM_CONFIG" ALGO zstd &&
+    conf_set "$ZRAM_CONFIG" PERCENT "$ZRAM_PERCENT" &&
+    conf_set "$ZRAM_CONFIG" PRIORITY 100
+}
+
 zram_configure() {
-  local before after
+  local before rc
   if ((ZRAM_PERCENT == 0)); then
     service_disable zramswap.service
     return
   fi
   apt_install zram-tools || return 1
   before="$(file_hash "$ZRAM_CONFIG" || true)"
-  conf_set "$ZRAM_CONFIG" ALGO zstd || return 1
-  conf_set "$ZRAM_CONFIG" PERCENT "$ZRAM_PERCENT" || return 1
-  conf_set "$ZRAM_CONFIG" PRIORITY 100 || return 1
-  after="$(file_hash "$ZRAM_CONFIG")"
+  zram_settings
+  rc=$?
+  [[ $before == "$(file_hash "$ZRAM_CONFIG" || true)" ]] || follow_up_owe zram-restart
+  ((rc == 0)) || return 1
   service_enable zramswap.service || return 1
-  if [[ $before != "$after" ]] || ! service_active zramswap.service; then
-    systemctl restart zramswap.service
+  if follow_up_owed zram-restart || ! service_active zramswap.service; then
+    systemctl restart zramswap.service || return 1
   fi
+  follow_up_paid zram-restart
 }
 
 zram_active() {

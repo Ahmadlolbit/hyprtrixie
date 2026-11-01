@@ -1,8 +1,21 @@
 FILES_STATE_DIR="${HYPRTRIXIE_STATE_DIR:-/var/lib/hyprtrixie}"
 FILES_DB="$FILES_STATE_DIR/files.db"
 DEPLOY_CHANGED=0
+FOLLOW_UPS_DIR="$FILES_STATE_DIR/owed"
 SHARE_DIR="${HYPRTRIXIE_SHARE_DIR:-/usr/share/hyprtrixie}"
 BIN_DIR="${HYPRTRIXIE_BIN_DIR:-/usr/local/bin}"
+
+follow_up_owe() {
+  mkdir -p "$FOLLOW_UPS_DIR" && : >"$FOLLOW_UPS_DIR/$1"
+}
+
+follow_up_owed() {
+  [[ -e $FOLLOW_UPS_DIR/$1 ]]
+}
+
+follow_up_paid() {
+  rm -f "$FOLLOW_UPS_DIR/$1"
+}
 
 file_hash() {
   [[ -f $1 ]] || return 1
