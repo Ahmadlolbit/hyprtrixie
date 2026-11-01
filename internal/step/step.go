@@ -90,6 +90,10 @@ func (runner *Runner) Interactive(title string, work func() error) bool {
 	})
 }
 
+func (runner *Runner) Note(text string) {
+	ui.Note(text)
+}
+
 func (runner *Runner) SkipModule(reason string) {
 	runner.Skipped = true
 	ui.Skip(reason)
