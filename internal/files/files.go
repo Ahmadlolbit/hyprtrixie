@@ -208,7 +208,7 @@ func (deployer *Deployer) deploy(data []byte, target string, mode os.FileMode, o
 		return false, err
 	}
 	if err := deployer.record(target, fingerprint(data)); err != nil {
-		return false, err
+		return true, err
 	}
 	deployer.Log.Line("info", "deployed "+target)
 	return true, nil

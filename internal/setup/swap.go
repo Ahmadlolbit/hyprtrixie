@@ -119,35 +119,40 @@ func swapFileDisable(log *runlog.Log) error {
 	return btrfs.FstabDrop(swapFile(), "none")
 }
 
-func (context *Context) zramSettings(log *runlog.Log) (bool, error) {
-	if err := apt.Install(log, "zram-tools"); err != nil {
-		return false, err
-	}
-	before, _ := files.Hash(zramConfig())
-	for _, setting := range [][2]string{{"ALGO", "zstd"}, {"PERCENT", context.Config.Get("ZRAM_PERCENT")}, {"PRIORITY", zramPriority}} {
-		if err := files.ConfSet(zramConfig(), setting[0], setting[1]); err != nil {
-			return false, err
-		}
-	}
-	after, err := files.Hash(zramConfig())
-	return before != after, err
+type zramSetup struct {
+	*Context
+	restart followUp
 }
 
-func (context *Context) zramConfigure(log *runlog.Log) error {
-	if context.number("ZRAM_PERCENT") == 0 {
+func (zram *zramSetup) settings(log *runlog.Log) error {
+	if err := apt.Install(log, "zram-tools"); err != nil {
+		return err
+	}
+	before, _ := files.Hash(zramConfig())
+	defer func() {
+		after, _ := files.Hash(zramConfig())
+		zram.restart.need(before != after)
+	}()
+	for _, setting := range [][2]string{{"ALGO", "zstd"}, {"PERCENT", zram.Config.Get("ZRAM_PERCENT")}, {"PRIORITY", zramPriority}} {
+		if err := files.ConfSet(zramConfig(), setting[0], setting[1]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (zram *zramSetup) configure(log *runlog.Log) error {
+	if zram.number("ZRAM_PERCENT") == 0 {
 		return service.Disable(log, zramUnit)
 	}
-	changed, err := context.zramSettings(log)
-	if err != nil {
+	if err := zram.settings(log); err != nil {
 		return err
 	}
 	if err := service.Enable(log, zramUnit); err != nil {
 		return err
 	}
-	if !changed && service.Active(zramUnit) {
-		return nil
-	}
-	return service.Restart(log, zramUnit)
+	zram.restart.owed = zram.restart.owed || !service.Active(zramUnit)
+	return zram.restart.do(func() error { return service.Restart(log, zramUnit) })
 }
 
 func (context *Context) swappinessApply(log *runlog.Log) error {
@@ -195,7 +200,8 @@ func swapSteps(context *Context) {
 	} else {
 		context.Run.Step("Turn the swapfile off", swapFileDisable)
 	}
-	context.Run.Step("Compress memory with zram", context.zramConfigure)
+	zram := zramSetup{Context: context, restart: followUp{name: "zram-restart"}}
+	context.Run.Step("Compress memory with zram", zram.configure)
 	context.Run.Step("Tune swappiness", context.swappinessApply)
 }
 

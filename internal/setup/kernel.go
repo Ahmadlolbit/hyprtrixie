@@ -119,10 +119,10 @@ func (driver *nvidiaDriver) configure(log *runlog.Log) error {
 		power = hybridPower
 	}
 	changed, err := driver.Deploy.Changed("system/modprobe/nvidia.conf", nvidiaSettings, "POWER="+power)
+	driver.initramfs.need(changed)
 	if err != nil {
 		return err
 	}
-	driver.initramfs.need(changed)
 	if err := service.Enable(log, nvidiaUnits...); err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func (driver *nvidiaDriver) configure(log *runlog.Log) error {
 }
 
 func kernelSteps(context *Context) {
-	driver := nvidiaDriver{Context: context, hardware: detect.ReadHardware()}
+	driver := nvidiaDriver{Context: context, hardware: detect.ReadHardware(), initramfs: followUp{name: "nvidia-initramfs"}}
 	context.Run.Step("Install the "+context.Config.Get("KERNEL")+" kernel", context.kernelInstall)
 	if driver.wanted() {
 		context.Run.Step("Install the NVIDIA driver", driver.install)

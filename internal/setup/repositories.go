@@ -70,16 +70,16 @@ func (sources *sourcesSetup) write(log *runlog.Log) error {
 	}
 	mirror := "MIRROR=" + sources.Config.Get("DEBIAN_MIRROR")
 	debian, err := sources.Deploy.Changed("system/apt/debian.sources", filepath.Join(apt.SourcesDir(), "debian.sources"), mirror, "SECURITY="+securityMirror)
-	if err != nil {
-		return err
-	}
 	sources.update.need(debian)
-	backports, err := sources.Deploy.Changed("system/apt/debian-backports.sources", filepath.Join(apt.SourcesDir(), "debian-backports.sources"), mirror)
 	if err != nil {
 		return err
 	}
+	backports, err := sources.Deploy.Changed("system/apt/debian-backports.sources", filepath.Join(apt.SourcesDir(), "debian-backports.sources"), mirror)
 	sources.update.need(backports)
-	if !sources.update.owed {
+	if err != nil {
+		return err
+	}
+	if !sources.update.due() {
 		return apt.Update(log)
 	}
 	return sources.update.do(func() error { return apt.ForceUpdate(log) })
@@ -180,7 +180,7 @@ func firmwareComponent(*runlog.Log) error {
 }
 
 func repositorySteps(context *Context) {
-	sources := sourcesSetup{Context: context}
+	sources := sourcesSetup{Context: context, update: followUp{name: "apt-update"}}
 	context.Run.Step("Use Debian over HTTPS with backports", sources.write)
 	context.Run.Step("Prepare vendor repositories", extrepoSetup)
 	context.Run.Step("Install base packages", packages("base"))

@@ -56,10 +56,10 @@ func (docker *dockerSetup) install(log *runlog.Log) error {
 		return err
 	}
 	changed, err := docker.Deploy.Changed("system/docker/daemon-"+docker.Config.Get("DOCKER_PORTS")+".json", "/etc/docker/daemon.json")
+	docker.restart.need(changed)
 	if err != nil {
 		return err
 	}
-	docker.restart.need(changed)
 	err = docker.restart.do(func() error {
 		if !service.Active(dockerUnit) {
 			return nil
@@ -373,7 +373,7 @@ func (context *Context) toolboxInstall(log *runlog.Log) error {
 }
 
 func (context *Context) toolSteps() []toolStep {
-	docker := dockerSetup{Context: context}
+	docker := dockerSetup{Context: context, restart: followUp{name: "docker-restart"}}
 	return []toolStep{
 		{[]string{"docker"}, "Install Docker", docker.install},
 		{[]string{"podman"}, "Install Podman", context.podmanInstall},

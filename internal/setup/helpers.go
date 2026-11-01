@@ -4,10 +4,13 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
@@ -22,22 +25,40 @@ const (
 )
 
 type followUp struct {
+	name string
 	owed bool
 }
 
+func (follow *followUp) marker() string {
+	return filepath.Join(env.StateDir(), "owed", follow.name)
+}
+
 func (follow *followUp) need(changed bool) {
-	follow.owed = follow.owed || changed
+	if !changed {
+		return
+	}
+	follow.owed = true
+	if os.MkdirAll(filepath.Dir(follow.marker()), programMode) == nil {
+		atomic.Install(follow.marker(), nil, plainMode)
+	}
+}
+
+func (follow *followUp) due() bool {
+	return follow.owed || fsutil.Exists(follow.marker())
 }
 
 func (follow *followUp) do(work func() error) error {
-	if !follow.owed {
+	if !follow.due() {
 		return nil
 	}
 	if err := work(); err != nil {
 		return err
 	}
 	follow.owed = false
-	return nil
+	if !fsutil.Exists(follow.marker()) {
+		return nil
+	}
+	return removeFiles(follow.marker())
 }
 
 func packages(lists ...string) step.Work {
