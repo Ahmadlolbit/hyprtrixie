@@ -56,12 +56,18 @@ func Defaults() *Config {
 func Read(paths ...string) *Config {
 	current := Defaults()
 	for _, path := range paths {
-		if fsutil.IsFile(path) {
-			current.migrate(current.apply(path, fsutil.Optional(path)))
-			current.validate()
-		}
+		current.Load(path)
 	}
 	return current
+}
+
+func (current *Config) Load(path string) bool {
+	if !fsutil.IsFile(path) {
+		return false
+	}
+	current.migrate(current.apply(path, fsutil.Optional(path)))
+	current.validate()
+	return true
 }
 
 func (current *Config) Get(key string) string {
@@ -70,6 +76,26 @@ func (current *Config) Get(key string) string {
 
 func (current *Config) Set(key, value string) {
 	current.values[key] = value
+}
+
+func (current *Config) Options() []options.Option {
+	return current.options
+}
+
+func (current *Config) Facts(nvidia bool) options.Facts {
+	return options.Facts{Value: current.Get, Nvidia: nvidia}
+}
+
+func (current *Config) ResetProfile() {
+	for _, option := range current.options {
+		if option.Preset() {
+			current.values[option.Key] = option.DefaultFor(current.values["PROFILE"])
+		}
+	}
+}
+
+func SafeText(character rune) bool {
+	return strings.ContainsRune(safeCharacters, character)
 }
 
 func (current *Config) Enabled(key, item string) bool {
