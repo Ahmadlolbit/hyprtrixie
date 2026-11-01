@@ -15,6 +15,7 @@ import (
 const (
 	programMode = 0o755
 	plainMode   = 0o644
+	blanks      = " \t\v\f\r"
 )
 
 func packages(lists ...string) step.Work {
@@ -66,6 +67,13 @@ func fileThere(path string) error {
 
 func filesCheck(path string) step.Work {
 	return func(*runlog.Log) error { return fileThere(path) }
+}
+
+func keepOld(log *runlog.Log, path string) error {
+	if fsutil.Exists(path + ".hyprtrixie-old") {
+		return nil
+	}
+	return run.Logged(log, "cp", "-a", path, path+".hyprtrixie-old")
 }
 
 func give(log *runlog.Log, person, path string) error {

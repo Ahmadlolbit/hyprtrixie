@@ -26,5 +26,6 @@ var Modules = map[string]Module{
 	"09": {cliSteps, cliChecks},
 	"10": {appSteps, appChecks},
 	"13": {barSteps, barChecks},
+	"15": {securitySteps, securityChecks},
 	"16": {backupSteps, backupChecks},
 }
