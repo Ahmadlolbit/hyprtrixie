@@ -6,6 +6,11 @@ func (flow *wizard) startStage(machine []string) stage {
 		for _, line := range machine {
 			rows = append(rows, row{label: line, info: true})
 		}
+		for _, note := range flow.settings.Notes {
+			if note.Level == "warn" {
+				rows = append(rows, row{label: note.Text, info: true})
+			}
+		}
 		return rows
 	}}
 }
