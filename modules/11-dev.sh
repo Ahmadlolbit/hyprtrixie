@@ -10,8 +10,6 @@ option DOCKER_PORTS --section dev --label "Docker publishes ports on" --type cho
   --default localhost --values "localhost all" --when docker_wanted \
   --help "Container ports reach only this computer, or every network"
 
-DOCKER_RESTART=0
-
 tool_wanted() {
   option_enabled DEV_TOOLS "$1"
 }
@@ -28,11 +26,11 @@ docker_install() {
   extrepo_try docker-ce || return 1
   apt_install_list dev-docker || return 1
   deploy_file "$HYPRTRIXIE_ROOT/system/docker/daemon-$DOCKER_PORTS.json" /etc/docker/daemon.json || return 1
-  ((DEPLOY_CHANGED)) && DOCKER_RESTART=1
-  if ((DOCKER_RESTART)) && service_active docker.service; then
+  ((DEPLOY_CHANGED)) && follow_up_owe docker-restart
+  if follow_up_owed docker-restart && service_active docker.service; then
     systemctl restart docker.service || return 1
   fi
-  DOCKER_RESTART=0
+  follow_up_paid docker-restart
   user_add_groups docker
 }
 
@@ -107,8 +105,9 @@ neovim_install() {
     fetch_release neovim || return 1
     tmp="$(mktemp -d)" || return 1
     tar -xzf "$FETCHED_PATH" -C "$tmp" || return 1
-    rm -rf "$dir"
-    mv "$tmp/nvim-linux-x86_64" "$dir" || return 1
+    rm -rf "$dir" "$dir.part"
+    mv "$tmp/nvim-linux-x86_64" "$dir.part" || return 1
+    mv "$dir.part" "$dir" || return 1
     rm -rf "$tmp"
   fi
   ln -sfn "$dir/bin/nvim" "$BIN_DIR/nvim" || return 1
@@ -117,14 +116,17 @@ neovim_install() {
 }
 
 lazyvim_setup() {
-  local config
+  local config part
   config="$(user_path .config/nvim)"
+  part="$config.part"
   [[ -e $config ]] && return 0
   fetch_git_cached lazyvim-starter || return 1
   user_mkdir .config || return 1
-  cp -a "$FETCHED_PATH" "$config" || return 1
-  rm -rf "$config/.git"
-  chown -R "$TARGET_USER:" "$config"
+  rm -rf "$part"
+  cp -a "$FETCHED_PATH" "$part" || return 1
+  rm -rf "$part/.git"
+  chown -R "$TARGET_USER:" "$part" || return 1
+  mv "$part" "$config"
 }
 
 lazyvim_plugins() {
@@ -146,7 +148,7 @@ vscodium_install() {
 }
 
 zed_install() {
-  local app tmp desktop
+  local app tmp desktop entry
   app="$(user_path .local/zed.app)"
   if ! release_current zed || [[ ! -x $app/bin/zed ]]; then
     fetch_release zed || return 1
@@ -163,9 +165,9 @@ zed_install() {
   as_user ln -sfn "$app/bin/zed" "$(user_path .local/bin/zed)" || return 1
   user_mkdir .local/share/applications || return 1
   desktop="$(user_path .local/share/applications/dev.zed.Zed.desktop)"
-  sed -e "s|Exec=zed|Exec=$app/bin/zed|g" -e "s|Icon=zed|Icon=$app/share/icons/hicolor/512x512/apps/zed.png|g" \
-    "$app/share/applications/dev.zed.Zed.desktop" >"$desktop" || return 1
-  chown "$TARGET_USER:" "$desktop"
+  entry="$(as_user sed -e "s|Exec=zed|Exec=$app/bin/zed|g" -e "s|Icon=zed|Icon=$app/share/icons/hicolor/512x512/apps/zed.png|g" \
+    "$app/share/applications/dev.zed.Zed.desktop")" || return 1
+  printf '%s\n' "$entry" | as_user tee "$desktop" >/dev/null
 }
 
 editors_ready() {

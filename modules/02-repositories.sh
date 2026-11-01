@@ -20,20 +20,18 @@ sources_legacy_cleanup() {
   log info "moved the Debian entries out of $list (backup in $list.hyprtrixie-old)"
 }
 
-SOURCES_CHANGED=0
-
 sources_write() {
   apt_install ca-certificates || return 1
   sources_legacy_cleanup || return 1
   deploy_rendered "$HYPRTRIXIE_ROOT/system/apt/debian.sources" "$APT_SOURCES_DIR/debian.sources" 0644 root \
     "MIRROR=$DEBIAN_MIRROR" "SECURITY=$DEBIAN_SECURITY_MIRROR" || return 1
-  ((DEPLOY_CHANGED)) && SOURCES_CHANGED=1
+  ((DEPLOY_CHANGED)) && follow_up_owe apt-update
   deploy_rendered "$HYPRTRIXIE_ROOT/system/apt/debian-backports.sources" "$APT_SOURCES_DIR/debian-backports.sources" 0644 root \
     "MIRROR=$DEBIAN_MIRROR" || return 1
-  ((DEPLOY_CHANGED)) && SOURCES_CHANGED=1
-  if ((SOURCES_CHANGED)); then
+  ((DEPLOY_CHANGED)) && follow_up_owe apt-update
+  if follow_up_owed apt-update; then
     apt_update --force || return 1
-    SOURCES_CHANGED=0
+    follow_up_paid apt-update
   else
     apt_update
   fi

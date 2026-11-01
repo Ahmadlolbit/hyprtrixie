@@ -57,8 +57,6 @@ declare -gA RENAMED_THEMES=([lumon]=northern-sea [vantablack]=pitch-black)
 FOLLOW_SHARE="$SHARE_DIR/follow"
 GRUB_SETTINGS=/etc/default/grub.d/hyprtrixie.cfg
 GRUB_THEME_DIR="${HYPRTRIXIE_GRUB_THEME_DIR:-/boot/grub/themes/hyprtrixie}"
-FOLLOW_INITRAMFS=0
-GRUB_UPDATE=0
 LOOK_CONF="${HYPRTRIXIE_LOOK_CONF:-/etc/hyprtrixie/look.conf}"
 LOOK_CHANGED=0
 
@@ -220,9 +218,9 @@ btop_theme_setup() {
     return
   fi
   if grep -q '^color_theme = ' "$conf"; then
-    sed -i 's|^color_theme = .*|color_theme = "hyprtrixie"|' "$conf"
+    as_user sed -i --follow-symlinks 's|^color_theme = .*|color_theme = "hyprtrixie"|' "$conf"
   else
-    printf 'color_theme = "hyprtrixie"\n' >>"$conf"
+    user_ensure_line "$conf" 'color_theme = "hyprtrixie"'
   fi
 }
 
@@ -271,7 +269,7 @@ theme_apply() {
     mkdir -p "${THEME_APPLIED%/*}" && printf '%s\n' "$THEME" >"$THEME_APPLIED"
   fi
   if [[ -f "$(user_path .config/mako/config)" ]]; then
-    ensure_line "$(user_path .config/mako/config)" "include=~/$THEME_STATE/theme/mako.ini"
+    user_ensure_line "$(user_path .config/mako/config)" "include=~/$THEME_STATE/theme/mako.ini"
   fi
 }
 
@@ -289,7 +287,7 @@ follow_install() {
 
 splash_file() {
   deploy_file "$HYPRTRIXIE_ROOT/system/$1" "$2" || return 1
-  ((DEPLOY_CHANGED)) && FOLLOW_INITRAMFS=1
+  ((DEPLOY_CHANGED)) && follow_up_owe boot-image
   return 0
 }
 
@@ -322,11 +320,11 @@ grub_settings() {
   rc=$?
   rm -f "$tmp"
   ((rc == 0)) || return 1
-  ((DEPLOY_CHANGED)) && GRUB_UPDATE=1
-  if ((GRUB_UPDATE)) && command -v update-grub >/dev/null 2>&1; then
+  ((DEPLOY_CHANGED)) && follow_up_owe update-grub
+  if follow_up_owed update-grub && command -v update-grub >/dev/null 2>&1; then
     update-grub || return 1
   fi
-  GRUB_UPDATE=0
+  follow_up_paid update-grub
 }
 
 console_theme_install() {
@@ -344,8 +342,9 @@ console_theme_install() {
 }
 
 follow_run() {
-  if ((FOLLOW_INITRAMFS)); then
-    "$BIN_DIR/hyprtrixie-follow-theme" --initramfs
+  if follow_up_owed boot-image; then
+    "$BIN_DIR/hyprtrixie-follow-theme" --initramfs || return 1
+    follow_up_paid boot-image
   else
     "$BIN_DIR/hyprtrixie-follow-theme"
   fi

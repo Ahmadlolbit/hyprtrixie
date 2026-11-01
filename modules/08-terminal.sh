@@ -30,7 +30,7 @@ zsh_setup() {
   deploy_file "$HYPRTRIXIE_ROOT/config/zsh/hyprtrixie.zsh" "$ZSH_SHARE/hyprtrixie.zsh" || return 1
   zshrc="$(user_path .zshrc)"
   if [[ -e $zshrc ]]; then
-    ensure_line "$zshrc" "source $ZSH_SHARE/hyprtrixie.zsh" || return 1
+    user_ensure_line "$zshrc" "source $ZSH_SHARE/hyprtrixie.zsh" || return 1
   else
     deploy_user_once "$HYPRTRIXIE_ROOT/config/zsh/zshrc" .zshrc || return 1
   fi

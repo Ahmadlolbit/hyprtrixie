@@ -7,8 +7,6 @@ option GRAPHICS --section system --label "NVIDIA driver" --type choice \
   --default proprietary --values "proprietary nouveau" --when nvidia_present \
   --help "NVIDIA's own driver is faster; nouveau is open source and slower"
 
-NVIDIA_INITRAMFS=0
-
 nvidia_present() {
   has_gpu nvidia
 }
@@ -81,11 +79,11 @@ nvidia_configure() {
   ((GPU_HYBRID)) && power=" NVreg_DynamicPowerManagement=0x02"
   deploy_rendered "$HYPRTRIXIE_ROOT/system/modprobe/nvidia.conf" /etc/modprobe.d/hyprtrixie-nvidia.conf 0644 root \
     "POWER=$power" || return 1
-  ((DEPLOY_CHANGED)) && NVIDIA_INITRAMFS=1
+  ((DEPLOY_CHANGED)) && follow_up_owe nvidia-initramfs
   service_enable nvidia-suspend.service nvidia-resume.service nvidia-hibernate.service || return 1
-  ((NVIDIA_INITRAMFS)) || return 0
+  follow_up_owed nvidia-initramfs || return 0
   update-initramfs -u -k all || return 1
-  NVIDIA_INITRAMFS=0
+  follow_up_paid nvidia-initramfs
 }
 
 nvidia_built() {
