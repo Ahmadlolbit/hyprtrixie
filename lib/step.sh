@@ -170,12 +170,13 @@ module_skip() {
 }
 
 tools_ready() {
-  local title="Build the hyprtrixie tools" rc
+  local title="Build the hyprtrixie tools" rc offset
   ((TOOLS_BUILT)) && return 0
   ((TOOLS_FAILED)) && return 1
   [[ ${RUN_MODE:-} != verify ]] || command -v go >/dev/null || return 1
   log info "step: $title"
-  ui_spin_start "$title" "$(log_size)"
+  offset="$(log_size)"
+  ui_spin_start "$title" "$offset"
   step_exec tools_build
   rc=$?
   ui_spin_stop
@@ -185,6 +186,7 @@ tools_ready() {
   fi
   log warn "the tools could not be built, so this module runs in Bash"
   ui_status warn "The tools could not be built, so this module runs in Bash"
+  step_show_output "$offset"
   TOOLS_FAILED=1
   return 1
 }

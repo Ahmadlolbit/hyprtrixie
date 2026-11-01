@@ -25,6 +25,14 @@ func IsTerminal(file *os.File) bool {
 	return attributes(file, syscall.TCGETS, &state) == nil
 }
 
+func Keep() func() {
+	var saved syscall.Termios
+	if attributes(os.Stdin, syscall.TCGETS, &saved) != nil {
+		return func() {}
+	}
+	return func() { attributes(os.Stdin, syscall.TCSETS, &saved) }
+}
+
 func Raw() func() {
 	restore, ok := adjust(func(state *syscall.Termios) {
 		state.Lflag &^= syscall.ICANON | syscall.ECHO

@@ -253,8 +253,19 @@ show_machine() {
   ui_box "${lines[@]}"
 }
 
+engine_take_over() {
+  RUN_MODE="$1"
+  require_root
+  ui_init
+  ((TOOLS_BUILT)) || log_init "$RUN_MODE: building the tools" || true
+  tools_ready || return 0
+  [[ -x $TOOLS_DIR/hyprtrixie-core ]] || return 0
+  HYPRTRIXIE_ROOT="$HYPRTRIXIE_ROOT" HYPRTRIXIE_ENGINE=1 exec "$TOOLS_DIR/hyprtrixie-core" "$@"
+}
+
 cmd_install() {
   parse_run_options "$@"
+  engine_take_over install "$@"
   start_run install "$@"
   apply_run_config
   ui_logo
@@ -286,6 +297,7 @@ cmd_menu() {
 cmd_verify() {
   local id ids=()
   parse_run_options "$@"
+  engine_take_over verify "$@"
   start_run verify "$@"
   apply_run_config
   apply_run_overrides

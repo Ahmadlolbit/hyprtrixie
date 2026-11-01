@@ -18,6 +18,10 @@ func Notify(channel chan<- os.Signal) {
 	catch(channel, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 }
 
+func SurviveBrokenPipes() {
+	signal.Notify(make(chan os.Signal, 1), syscall.SIGPIPE)
+}
+
 func NotifyInterrupt(channel chan<- os.Signal) {
 	catch(channel, syscall.SIGINT)
 }
