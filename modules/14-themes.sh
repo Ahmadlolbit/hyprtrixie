@@ -127,9 +127,9 @@ btop_theme_setup() {
     return
   fi
   if grep -q '^color_theme = ' "$conf"; then
-    sed -i 's|^color_theme = .*|color_theme = "hyprtrixie"|' "$conf"
+    as_user sed -i --follow-symlinks 's|^color_theme = .*|color_theme = "hyprtrixie"|' "$conf"
   else
-    printf 'color_theme = "hyprtrixie"\n' >>"$conf"
+    user_ensure_line "$conf" 'color_theme = "hyprtrixie"'
   fi
 }
 
@@ -177,7 +177,7 @@ theme_apply() {
     mkdir -p "${THEME_APPLIED%/*}" && printf '%s\n' "$THEME" >"$THEME_APPLIED"
   fi
   if [[ -f "$(user_path .config/mako/config)" ]]; then
-    ensure_line "$(user_path .config/mako/config)" "include=~/$THEME_STATE/theme/mako.ini"
+    user_ensure_line "$(user_path .config/mako/config)" "include=~/$THEME_STATE/theme/mako.ini"
   fi
 }
 

@@ -142,6 +142,15 @@ ensure_line() {
   printf '%s\n' "$line" >>"$file"
 }
 
+user_ensure_line() {
+  local file="$1" line="$2"
+  [[ -f $file ]] && grep -qxF -- "$line" "$file" && return 0
+  {
+    [[ -s $file && -n $(tail -c 1 "$file") ]] && printf '\n'
+    printf '%s\n' "$line"
+  } | as_user tee -a "$file" >/dev/null
+}
+
 remove_line() {
   local file="$1" line="$2" tmp
   [[ -f $file ]] && grep -qxF -- "$line" "$file" || return 0
