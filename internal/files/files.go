@@ -59,6 +59,17 @@ func readDatabase() (map[string]string, error) {
 	return hashes, err
 }
 
+func (deployer *Deployer) Forget(prefixes ...string) error {
+	before := len(deployer.hashes)
+	maps.DeleteFunc(deployer.hashes, func(path, _ string) bool {
+		return slices.ContainsFunc(prefixes, func(prefix string) bool { return strings.HasPrefix(path, prefix) })
+	})
+	if len(deployer.hashes) == before {
+		return nil
+	}
+	return deployer.writeDatabase()
+}
+
 func (deployer *Deployer) writeDatabase() error {
 	var text strings.Builder
 	for _, known := range slices.Sorted(maps.Keys(deployer.hashes)) {
@@ -218,7 +229,7 @@ func (deployer *Deployer) Content(data []byte, target string) (bool, error) {
 	return deployer.deploy(data, target, plainMode, systemOwner)
 }
 
-func (deployer *Deployer) File(source, target string, pairs ...string) (bool, error) {
+func (deployer *Deployer) Changed(source, target string, pairs ...string) (bool, error) {
 	data, err := deployer.read(source)
 	if err != nil {
 		return false, err
@@ -226,12 +237,18 @@ func (deployer *Deployer) File(source, target string, pairs ...string) (bool, er
 	return deployer.Content([]byte(Render(string(data), pairs...)), target)
 }
 
-func (deployer *Deployer) Program(source, target string) (bool, error) {
+func (deployer *Deployer) File(source, target string, pairs ...string) error {
+	_, err := deployer.Changed(source, target, pairs...)
+	return err
+}
+
+func (deployer *Deployer) Program(source, target string) error {
 	data, err := deployer.read(source)
 	if err != nil {
-		return false, err
+		return err
 	}
-	return deployer.deploy(data, target, programMode, systemOwner)
+	_, err = deployer.deploy(data, target, programMode, systemOwner)
+	return err
 }
 
 func regularFiles(root string) ([]string, error) {
@@ -346,8 +363,7 @@ func (deployer *Deployer) Tool(name string) error {
 	if err := os.Remove(target); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
-	_, err := deployer.Program(filepath.Join(env.ToolsDir(), name), target)
-	return err
+	return deployer.Program(filepath.Join(env.ToolsDir(), name), target)
 }
 
 func writeLines(path string, list []string) error {

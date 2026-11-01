@@ -22,9 +22,15 @@ const (
 )
 
 var (
-	sysroot   string
+	sysroot   = os.Getenv("HYPRTRIXIE_SYSROOT")
 	laptopish = []string{"8", "9", "10", "11", "12", "14", "18", "21", "30", "31", "32"}
 )
+
+type Hardware struct {
+	CPU  string
+	GPUs []string
+	Wifi []string
+}
 
 type machine struct {
 	cpuVendor     string
@@ -261,6 +267,27 @@ func product() string {
 	return dmi("product_name")
 }
 
+func (found *machine) readChips() {
+	found.readCPU()
+	lspci, _ := run.CaptureQuiet(run.Quick, "lspci", "-nn")
+	found.readGPUs(lspci)
+	found.readWifi(lspci)
+}
+
+func ReadHardware() Hardware {
+	var found machine
+	found.readChips()
+	return Hardware{found.cpuVendor, found.gpuVendors, found.wifiVendors}
+}
+
+func (hardware Hardware) HasGPU(vendor string) bool {
+	return slices.Contains(hardware.GPUs, vendor)
+}
+
+func (hardware Hardware) HasWifi(vendor string) bool {
+	return slices.Contains(hardware.Wifi, vendor)
+}
+
 func all() machine {
 	found := machine{
 		laptop:     laptop(),
@@ -269,10 +296,7 @@ func all() machine {
 		vendor:     dmi("sys_vendor"),
 		product:    product(),
 	}
-	found.readCPU()
-	lspci, _ := run.CaptureQuiet(run.Quick, "lspci", "-nn")
-	found.readGPUs(lspci)
-	found.readWifi(lspci)
+	found.readChips()
 	virt, _ := run.CaptureQuiet(run.Quick, "systemd-detect-virt")
 	found.virt = cmp.Or(virt, "none")
 	found.readRoot()
