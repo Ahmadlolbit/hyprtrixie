@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/apps"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
@@ -35,6 +36,8 @@ const (
 	continueMode = "continue"
 	installMode  = "install"
 	accountMode  = "account"
+	appMode      = "app-"
+	noModule     = "none"
 )
 
 var (
@@ -209,10 +212,14 @@ func (work *session) refreshPerson() {
 	}
 }
 
+func (work *session) changesFiles() bool {
+	return work.mode == installMode || strings.HasPrefix(work.mode, appMode)
+}
+
 func (work *session) context() (*setup.Context, error) {
 	work.refreshPerson()
 	context := &setup.Context{Run: work.runner, Person: work.person, Config: work.settings, CanAsk: work.canAsk}
-	if work.mode != installMode {
+	if !work.changesFiles() {
 		return context, nil
 	}
 	deployer, err := files.New(work.log, work.person)
@@ -362,11 +369,7 @@ func (work *session) finish(code int) int {
 	return code
 }
 
-func entered(mode string, args []string, body func(*session) int) int {
-	options, err := Parse(args)
-	if err != nil {
-		return run.Report(err)
-	}
+func entered(mode string, options Options, args []string, body func(*session) int) int {
 	held, err := takeLock()
 	if err != nil {
 		return run.Report(err)
@@ -389,14 +392,52 @@ func entered(mode string, args []string, body func(*session) int) int {
 	return code
 }
 
+func parsed(mode string, args []string, body func(*session) int) int {
+	options, err := Parse(args)
+	if err != nil {
+		return run.Report(err)
+	}
+	return entered(mode, options, args, body)
+}
+
 func Install(args []string) int {
-	return entered(installMode, args, (*session).install)
+	return parsed(installMode, args, (*session).install)
 }
 
 func Account(args []string) int {
-	return entered(accountMode, args, (*session).setUpAccount)
+	return parsed(accountMode, args, (*session).setUpAccount)
 }
 
 func Verify(args []string) int {
-	return entered("verify", args, (*session).verify)
+	return parsed("verify", args, (*session).verify)
+}
+
+func (work *session) changeApp(app apps.App, change func(*config.Config), steps func(*setup.Context, apps.App)) int {
+	work.runner.Begin(noModule)
+	change(work.settings)
+	if err := work.settings.Save(config.Path()); err != nil {
+		work.log.Line("warn", "cannot save the configuration: "+err.Error())
+	}
+	work.applyOverrides()
+	context, err := work.context()
+	if err != nil {
+		work.runner.Broke("step", "cannot read what's installed: "+err.Error())
+		return work.outcome()
+	}
+	steps(context, app)
+	return work.outcome()
+}
+
+func AddApp(app apps.App) int {
+	tick := func(settings *config.Config) { settings.Tick("APPS", app.ID) }
+	return entered(appMode+"install", Options{}, []string{app.ID}, func(work *session) int {
+		return work.changeApp(app, tick, setup.AddApp)
+	})
+}
+
+func RemoveApp(app apps.App) int {
+	untick := func(settings *config.Config) { settings.Untick("APPS", app.ID) }
+	return entered(appMode+"remove", Options{}, []string{app.ID}, func(work *session) int {
+		return work.changeApp(app, untick, setup.RemoveApp)
+	})
 }

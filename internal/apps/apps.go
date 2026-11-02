@@ -52,6 +52,15 @@ func All() []App {
 	return found
 }
 
+func Find(id string) (App, bool) {
+	for _, app := range All() {
+		if app.ID == id {
+			return app, true
+		}
+	}
+	return App{}, false
+}
+
 func InCategory(catalogue []App, category string) []App {
 	var found []App
 	for _, app := range catalogue {
