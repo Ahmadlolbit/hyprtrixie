@@ -17,10 +17,6 @@ func (end *ending) press(key tea.KeyMsg) tea.Cmd {
 	return cmd
 }
 
-func (end *ending) draw(_, height int) string {
-	return end.viewer.draw(height)
-}
-
 func (end *ending) help() string {
 	return ""
 }

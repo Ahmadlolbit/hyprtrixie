@@ -19,6 +19,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/events"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/files"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/lock"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/modules"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
@@ -36,7 +37,8 @@ const (
 )
 
 var (
-	ErrHelp = errors.New("help")
+	ErrHelp      = errors.New("help")
+	AfterTesting = func() {}
 
 	failureModes = []string{askMode, "halt", continueMode}
 )
@@ -143,12 +145,8 @@ func (options Options) wants(id string) bool {
 	return (options.Only == "" || listed(options.Only, id)) && (options.Skip == "" || !listed(options.Skip, id))
 }
 
-func lockPath() string {
-	return env.Or("HYPRTRIXIE_LOCK", "/run/hyprtrixie.lock")
-}
-
 func takeLock() (*os.File, error) {
-	path := lockPath()
+	path := lock.Path()
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, lockMode)
 	if err != nil {
 		return nil, errors.New("cannot create " + path)
@@ -183,7 +181,7 @@ func start(mode string, options Options, args []string) (*session, error) {
 		log.Mirror(ui.Mirror)
 	}
 	if options.Testing {
-		run.Trace()
+		run.Trace(log)
 	}
 	if person, found := account.Target(); found {
 		work.person = person
@@ -353,11 +351,11 @@ func entered(mode string, args []string, body func(*session) int) int {
 	if err != nil {
 		return run.Report(err)
 	}
-	lock, err := takeLock()
+	held, err := takeLock()
 	if err != nil {
 		return run.Report(err)
 	}
-	defer lock.Close()
+	defer held.Close()
 	defer term.Keep()()
 	cleanup.SurviveBrokenPipes()
 	if options.Events {
@@ -368,7 +366,11 @@ func entered(mode string, args []string, body func(*session) int) int {
 	if err != nil {
 		return run.Report(err)
 	}
-	return work.finish(body(work))
+	code := work.finish(body(work))
+	if options.Testing {
+		AfterTesting()
+	}
+	return code
 }
 
 func Install(args []string) int {

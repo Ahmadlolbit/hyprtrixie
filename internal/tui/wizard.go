@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -17,6 +18,7 @@ const (
 	defaultHeight = 24
 	frameLines    = 5
 	summaryParts  = 3
+	terminalCheck = 5 * time.Second
 
 	profileAt  = 1
 	appsAt     = 2
@@ -41,6 +43,8 @@ var keyGuide = []string{
 	"Any key closes this.",
 }
 
+type checked struct{}
+
 type stage interface {
 	name() string
 	arrive()
@@ -54,7 +58,7 @@ type stage interface {
 
 type overlay interface {
 	press(tea.KeyMsg) (bool, tea.Cmd)
-	draw(height int) string
+	draw(width, height int) string
 	keys() string
 }
 
@@ -73,17 +77,31 @@ type wizard struct {
 	exit      int
 	reviewing bool
 	install   *installer
+	show      func() bool
 	end       *ending
-	closing   []string
 }
 
 func newWizard(settings *config.Config) *wizard {
 	return &wizard{settings: settings, width: defaultWidth, height: defaultHeight}
 }
 
+func (flow *wizard) watchTerminal() tea.Cmd {
+	if flow.show == nil {
+		return nil
+	}
+	return tea.Tick(terminalCheck, func(time.Time) tea.Msg { return checked{} })
+}
+
 func (flow *wizard) Init() tea.Cmd {
 	flow.stages[flow.at].arrive()
-	return nil
+	return flow.watchTerminal()
+}
+
+func (flow *wizard) checkTerminal() tea.Cmd {
+	if !flow.show() {
+		return tea.Quit
+	}
+	return flow.watchTerminal()
 }
 
 func (flow *wizard) Update(message tea.Msg) (tea.Model, tea.Cmd) {
@@ -99,13 +117,26 @@ func (flow *wizard) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return flow, flow.install.take(message)
 	case ended:
 		return flow, flow.install.finish(message)
+	case checked:
+		return flow, flow.checkTerminal()
 	}
 	return flow, nil
 }
 
 func (flow *wizard) press(key tea.KeyMsg) tea.Cmd {
+	if key.Type != tea.KeyRunes || key.Paste || len(key.Runes) < 2 {
+		return flow.pressOne(key)
+	}
+	commands := make([]tea.Cmd, 0, len(key.Runes))
+	for _, character := range key.Runes {
+		commands = append(commands, flow.pressOne(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{character}}))
+	}
+	return tea.Batch(commands...)
+}
+
+func (flow *wizard) pressOne(key tea.KeyMsg) tea.Cmd {
 	flow.notice = ""
-	if key.String() == "ctrl+c" {
+	if key.Type == tea.KeyCtrlC {
 		return flow.interrupt()
 	}
 	if flow.guide {
@@ -155,6 +186,7 @@ func (flow *wizard) close(box overlay) {
 }
 
 func (flow *wizard) interrupt() tea.Cmd {
+	flow.guide = false
 	title, leave := flow.stages[flow.at].leaving()
 	if title == "" {
 		return leave()
@@ -164,6 +196,9 @@ func (flow *wizard) interrupt() tea.Cmd {
 		return leave()
 	}
 	flow.asking = confirmation(title, leave)
+	if title == stopTitle {
+		flow.asking.cursor = 1
+	}
 	return flow.open(flow.asking)
 }
 
@@ -177,7 +212,7 @@ func (flow *wizard) backToReview() bool {
 }
 
 func (flow *wizard) forward() tea.Cmd {
-	if !flow.backToReview() && flow.at < len(flow.stages)-1 {
+	if !flow.backToReview() && flow.at+1 < min(len(flow.stages), reviewAt+1) {
 		flow.jump(flow.at + 1)
 	}
 	return nil
@@ -200,7 +235,7 @@ func (flow *wizard) body(width, height int) string {
 	case flow.guide:
 		return strings.Join(keyGuide, "\n")
 	case len(flow.dialogs) > 0:
-		return flow.dialogs[len(flow.dialogs)-1].draw(height)
+		return flow.dialogs[len(flow.dialogs)-1].draw(width, height)
 	}
 	return flow.stages[flow.at].draw(width, height)
 }

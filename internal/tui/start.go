@@ -1,6 +1,28 @@
 package tui
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	"fmt"
+
+	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
+)
+
+const notesShown = 6
+
+func warnings(notes []config.Note) []string {
+	var found []string
+	for _, note := range notes {
+		if note.Level == "warn" {
+			found = append(found, clean(note.Text))
+		}
+	}
+	if len(found) > notesShown {
+		more := len(found) - notesShown
+		found = append(found[:notesShown:notesShown], fmt.Sprintf("... and %d more", more))
+	}
+	return found
+}
 
 func (flow *wizard) testingRow() row {
 	value := "off"
@@ -19,10 +41,8 @@ func (flow *wizard) startStage(machine []string) stage {
 		for _, line := range machine {
 			rows = append(rows, row{label: line, info: true})
 		}
-		for _, note := range flow.settings.Notes {
-			if note.Level == "warn" {
-				rows = append(rows, row{label: note.Text, info: true})
-			}
+		for _, text := range warnings(flow.settings.Notes) {
+			rows = append(rows, row{label: text, info: true})
 		}
 		return append(rows, row{info: true}, flow.testingRow())
 	}}

@@ -91,7 +91,7 @@ func (flow *wizard) fieldRow(option options.Option) row {
 	line := flow.valueRow(option, nil)
 	line.input = &field{
 		allow: config.SafeText,
-		valid: option.Valid,
+		valid: func(text string) bool { return text != "" && option.Valid(text) },
 		set:   func(text string) { flow.settings.Set(option.Key, text) },
 	}
 	if option.Kind == options.Number {

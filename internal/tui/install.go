@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
+	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -21,10 +23,11 @@ const (
 	batchSize  = 256
 	logLines   = 2000
 	titleWidth = 48
+	context    = 14
 )
 
 var (
-	sequences = regexp.MustCompile(`\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b.`)
+	sequences = regexp.MustCompile(`\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[()*+].|\x1b.`)
 
 	okStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
 	failStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
@@ -56,7 +59,11 @@ type installer struct {
 	log     []string
 	partial string
 	closing []string
+	failed  []string
 	summing bool
+	stopped bool
+	over    bool
+	heard   bool
 }
 
 var handlers = map[string]func(*installer, events.Event){
@@ -86,7 +93,7 @@ func clean(line string) string {
 		switch {
 		case character == '\t':
 			return ' '
-		case character < ' ' || character == 0x7f:
+		case unicode.IsControl(character):
 			return -1
 		}
 		return character
@@ -108,6 +115,9 @@ func (work *installer) help() string {
 }
 
 func (work *installer) keys() string {
+	if work.stopped {
+		return "Stopping: what's running has to end first"
+	}
 	return "The setup is running · Ctrl+C stops it"
 }
 
@@ -116,13 +126,22 @@ func (work *installer) typing() bool {
 }
 
 func (work *installer) leaving() (string, func() tea.Cmd) {
-	return "Stop the setup?", work.stop
+	if work.stopped {
+		return "", func() tea.Cmd { return nil }
+	}
+	return stopTitle, work.stop
 }
 
 func (work *installer) stop() tea.Cmd {
 	events.Stop(work.child.Input)
+	work.stopped = true
 	work.flow.dialogs = nil
+	work.flow.asking = nil
 	return nil
+}
+
+func (work *installer) running() bool {
+	return work.child != nil && !work.over
 }
 
 func (work *installer) environment() []string {
@@ -138,6 +157,9 @@ func (work *installer) arguments() []string {
 }
 
 func (work *installer) begin() tea.Cmd {
+	if work.running() {
+		return nil
+	}
 	work.path = filepath.Join(env.StateHome(), "hyprtrixie", "wizard.conf")
 	if err := work.flow.settings.Save(work.path); err != nil {
 		work.flow.notice = "Could not write the settings: " + err.Error()
@@ -177,6 +199,7 @@ func (work *installer) next() tea.Msg {
 }
 
 func (work *installer) take(batch arrived) tea.Cmd {
+	work.heard = true
 	for _, event := range batch {
 		if handle, known := handlers[event.Kind]; known {
 			handle(work, event)
@@ -185,18 +208,43 @@ func (work *installer) take(batch arrived) tea.Cmd {
 	return work.next
 }
 
+func (work *installer) closingLines(said string) []string {
+	lines := work.closing
+	if len(work.failed) > 0 {
+		lines = append(lines, "")
+		for _, title := range work.failed {
+			lines = append(lines, marks[events.Fail]+" "+title)
+		}
+	}
+	if said != "" {
+		lines = append(lines, "", cleanAll(said))
+	}
+	if len(lines) == 0 {
+		return []string{"The setup stopped before it could show a summary.", "Its log is " + filepath.Join(env.LogDir(), "latest.log")}
+	}
+	return strings.Split(strings.Join(lines, "\n"), "\n")
+}
+
+func (work *installer) refused(done ended) tea.Cmd {
+	work.child = nil
+	work.flow.dialogs = nil
+	work.flow.asking = nil
+	work.flow.jump(reviewAt)
+	lines := strings.Split(cleanAll(done.text), "\n")
+	work.flow.notice = fmt.Sprintf("The setup didn't start: %s (exit %d)", lines[len(lines)-1], done.code)
+	return nil
+}
+
 func (work *installer) finish(done ended) tea.Cmd {
 	os.Remove(work.path)
-	if done.text != "" {
-		work.closing = append(work.closing, clean(done.text))
+	if !work.heard && done.code != 0 {
+		return work.refused(done)
 	}
-	if len(work.closing) == 0 {
-		work.closing = []string{"The setup stopped before it finished a module."}
-	}
+	work.closing = work.closingLines(done.text)
+	work.over = true
 	work.flow.dialogs = nil
 	work.flow.asking = nil
 	work.flow.exit = done.code
-	work.flow.closing = work.closing
 	work.flow.end.lines = work.closing
 	work.flow.jump(installAt + 1)
 	return nil
@@ -210,6 +258,14 @@ func (work *installer) rule(event events.Event) {
 	work.steps = append(work.steps, "", headingStyle.Render(clean(event.Text)))
 }
 
+func (work *installer) remember(event events.Event) {
+	title := clean(event.Text)
+	work.failed = slices.DeleteFunc(work.failed, func(earlier string) bool { return earlier == title })
+	if event.Kind == events.Fail {
+		work.failed = append(work.failed, title)
+	}
+}
+
 func (work *installer) status(event events.Event) {
 	line := marks[event.Kind] + " " + clean(event.Text)
 	if work.summing {
@@ -217,6 +273,9 @@ func (work *installer) status(event events.Event) {
 		return
 	}
 	work.steps = append(work.steps, line)
+	if event.Kind != events.Warn {
+		work.remember(event)
+	}
 }
 
 func (work *installer) note(event events.Event) {
@@ -272,13 +331,14 @@ func (work *installer) page(event events.Event) {
 	work.flow.open(box)
 }
 
-func (work *installer) reply(text string, ok bool) tea.Cmd {
-	events.Answer(work.child.Input, text, ok)
+func (work *installer) reply(text string, _ bool) tea.Cmd {
+	events.Answer(work.child.Input, text)
 	return nil
 }
 
 func (work *installer) ask(event events.Event) {
 	box := &dialog{title: clean(event.Text), locked: true, answer: work.reply}
+	box.lines = work.steps[max(len(work.steps)-context, 0):]
 	switch event.Kind {
 	case events.Choose:
 		box.items = event.Items
