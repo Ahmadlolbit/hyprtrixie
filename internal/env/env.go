@@ -56,6 +56,10 @@ func CacheHome() string {
 	return Or("XDG_CACHE_HOME", filepath.Join(Home(), ".cache"))
 }
 
+func DataHome() string {
+	return Or("XDG_DATA_HOME", filepath.Join(Home(), ".local/share"))
+}
+
 func ShareDir() string {
 	return Or("HYPRTRIXIE_SHARE_DIR", "/usr/share/hyprtrixie")
 }
