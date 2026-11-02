@@ -6,7 +6,7 @@ CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 STATE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/current"
 USER_THEMES="$CONFIG_HOME/omarchy/themes"
 USER_TEMPLATES="$CONFIG_HOME/omarchy/themed"
-DENIED=" alacritty.toml foot.ini ghostty.conf kitty.conf vscode.json "
+DENIED=" alacritty.toml foot.ini ghostty.conf hyprlock.conf kitty.conf mako.ini vscode.json "
 HERE="$(dirname "$(readlink -f "$0")")"
 declare -A COLORS=()
 
