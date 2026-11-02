@@ -12,7 +12,7 @@ import (
 
 func handedOver(mode string, body func([]string) int) int {
 	if os.Getenv("HYPRTRIXIE_ENGINE") == "" {
-		return backToBash()
+		return throughScript()
 	}
 	args := os.Args[2:]
 	_, err := engine.Parse(args)

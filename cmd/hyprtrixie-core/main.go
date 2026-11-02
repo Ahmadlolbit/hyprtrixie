@@ -16,7 +16,7 @@ import (
 const usage = `hyprtrixie %s - Debian 13 with Hyprland, set up properly
 
 USAGE
-  hyprtrixie                       Open the setup menu
+  hyprtrixie                       Open the setup
   hyprtrixie install [options]     Run the setup with the saved configuration
                                      --config FILE      use this configuration file
                                      --only 04,05       run only these modules
@@ -62,13 +62,13 @@ var commands = map[string]func() int{
 	"collect":   collect,
 	"doctor":    doctor,
 	"app":       appCommand,
-	"module":    module,
 	"restore":   restore,
 	"cleanup":   cleanupCommand,
 	"install":   installCommand,
 	"verify":    verifyCommand,
 	"account":   accountCommand,
 	"guide":     guide,
+	"module":    module,
 }
 
 func fail(format string, args ...any) int {
@@ -116,8 +116,7 @@ func script() string {
 	return filepath.Join(root(), "hyprtrixie")
 }
 
-func backToBash() int {
-	os.Setenv("HYPRTRIXIE_FROM_CORE", "1")
+func throughScript() int {
 	return run.Report(run.Exec("bash", append([]string{script()}, os.Args[1:]...)...))
 }
 
@@ -128,5 +127,5 @@ func main() {
 	if command, ok := commands[env.Arg(1)]; ok {
 		os.Exit(command())
 	}
-	os.Exit(backToBash())
+	os.Exit(fail("unknown command: %s (see: hyprtrixie help)", env.Arg(1)))
 }

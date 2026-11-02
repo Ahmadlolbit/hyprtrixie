@@ -79,7 +79,7 @@ func runModule() int {
 
 func module() int {
 	if os.Getenv("HYPRTRIXIE_MODULE_RESULT") == "" {
-		return backToBash()
+		return fail("hyprtrixie-core module only runs as part of a setup")
 	}
 	return asRoot("install", runModule)
 }
