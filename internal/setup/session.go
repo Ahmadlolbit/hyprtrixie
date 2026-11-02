@@ -23,6 +23,7 @@ import (
 const (
 	hyprSystem   = "/etc/xdg/hypr/"
 	hyprUser     = ".config/hypr/hyprland.lua"
+	appsMenu     = "/etc/xdg/menus/hyprtrixie-applications.menu"
 	makoUser     = ".config/mako/config"
 	elephantLib  = "/usr/local/lib/elephant"
 	tipTimer     = "hyprtrixie-tip.timer"
@@ -63,7 +64,18 @@ func (context *Context) hyprlandDefaults(*runlog.Log) error {
 	if err := context.Deploy.Tree("config/hypr", hyprShare()); err != nil {
 		return err
 	}
-	return context.Deploy.File("system/hypr/hyprland.lua", hyprSystem+"hyprland.lua")
+	if err := context.Deploy.File("system/hypr/hyprland.lua", hyprSystem+"hyprland.lua"); err != nil {
+		return err
+	}
+	changed, err := context.Deploy.Changed("system/xdg-applications.menu", appsMenu)
+	if err != nil || !changed {
+		return err
+	}
+	stale, err := filepath.Glob(context.Person.Path(".cache/ksycoca6_*"))
+	if err != nil {
+		return err
+	}
+	return removeFiles(stale...)
 }
 
 func (context *Context) hyprlandOptions(*runlog.Log) error {
