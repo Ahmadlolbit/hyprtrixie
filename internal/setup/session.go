@@ -11,6 +11,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
@@ -78,11 +79,16 @@ func (context *Context) hyprlandDefaults(*runlog.Log) error {
 	return removeFiles(stale...)
 }
 
+func nvidiaDrivesDisplay(hardware detect.Hardware, graphics string) bool {
+	return graphics == "proprietary" && hardware.HasGPU("nvidia") && !hardware.Hybrid()
+}
+
 func (context *Context) hyprlandOptions(*runlog.Log) error {
 	settings := context.Config
 	return context.Deploy.File("system/hypr/options.lua", "/etc/hyprtrixie/hypr/options.lua",
 		"NATURAL_SCROLL="+luaBool(settings.Get("NATURAL_SCROLL")), "TAP_TO_CLICK="+luaBool(settings.Get("TAP_TO_CLICK")),
-		"ANIMATIONS="+luaBool(settings.Get("ANIMATIONS")), "SCALE="+luaScale(settings.Get("DISPLAY_SCALE")), "WINDOW_STYLE="+settings.Get("WINDOW_STYLE"))
+		"ANIMATIONS="+luaBool(settings.Get("ANIMATIONS")), "SCALE="+luaScale(settings.Get("DISPLAY_SCALE")), "WINDOW_STYLE="+settings.Get("WINDOW_STYLE"),
+		"NVIDIA="+strconv.FormatBool(nvidiaDrivesDisplay(detect.ReadHardware(), settings.Get("GRAPHICS"))))
 }
 
 func (context *Context) hyprlandUserConfig(*runlog.Log) error {
