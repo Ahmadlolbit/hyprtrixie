@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -306,6 +307,20 @@ func ExtrepoEnabled(name string) bool {
 		}
 	}
 	return true
+}
+
+func Remove(log *runlog.Log, names ...string) error {
+	return get(log, append([]string{"remove", "--autoremove"}, names...)...)
+}
+
+func ExtrepoDisable(log *runlog.Log, name string) error {
+	if err := run.Logged(log, "extrepo", "disable", name); err != nil {
+		return err
+	}
+	if err := os.Remove(stamp()); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	return nil
 }
 
 func extrepoEnable(log *runlog.Log, name string) error {

@@ -98,6 +98,17 @@ func SafeText(character rune) bool {
 	return strings.ContainsRune(safeCharacters, character)
 }
 
+func (current *Config) Tick(key, item string) {
+	if !current.Enabled(key, item) {
+		current.values[key] = strings.Join(append(strings.Fields(current.values[key]), item), " ")
+	}
+}
+
+func (current *Config) Untick(key, item string) {
+	words := strings.Fields(current.values[key])
+	current.values[key] = strings.Join(slices.DeleteFunc(words, func(word string) bool { return word == item }), " ")
+}
+
 func (current *Config) Enabled(key, item string) bool {
 	return slices.Contains(strings.Fields(current.Get(key)), item)
 }

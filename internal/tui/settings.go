@@ -37,13 +37,11 @@ func (flow *wizard) shown(option options.Option) bool {
 }
 
 func (flow *wizard) tick(key, item string) {
-	words := strings.Fields(flow.settings.Get(key))
-	if index := slices.Index(words, item); index >= 0 {
-		words = slices.Delete(words, index, index+1)
-	} else {
-		words = append(words, item)
+	if flow.settings.Enabled(key, item) {
+		flow.settings.Untick(key, item)
+		return
 	}
-	flow.settings.Set(key, strings.Join(words, " "))
+	flow.settings.Tick(key, item)
 }
 
 func (flow *wizard) tickRow(key, item, label string) row {

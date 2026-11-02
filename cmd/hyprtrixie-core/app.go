@@ -3,13 +3,17 @@ package main
 import (
 	"cmp"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apps"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/engine"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 )
+
+const appUsage = "usage: hyprtrixie app [list [installed|available] | install APP | remove APP]"
 
 func filteredApps(catalogue []apps.App, present func(apps.App) bool, filter string) string {
 	var list strings.Builder
@@ -40,10 +44,34 @@ func appsByCategory(catalogue []apps.App, present func(apps.App) bool) string {
 	return list.String() + "\n* installed\n"
 }
 
-func appCommand() int {
-	if cmp.Or(env.Arg(2), "list") != "list" {
+func appChange(action string, change func(apps.App) int) int {
+	id := env.Arg(3)
+	if id == "" {
+		return fail("usage: sudo hyprtrixie app %s APP (see: hyprtrixie app list)", action)
+	}
+	app, found := apps.Find(id)
+	if !found {
+		return fail("no app named %s (see: hyprtrixie app list)", id)
+	}
+	if os.Getenv("HYPRTRIXIE_ENGINE") == "" {
 		return backToBash()
 	}
+	return asRoot("app-"+action, func() int { return change(app) })
+}
+
+func appCommand() int {
+	switch action := cmp.Or(env.Arg(2), "list"); action {
+	case "install":
+		return appChange(action, engine.AddApp)
+	case "remove":
+		return appChange(action, engine.RemoveApp)
+	case "list":
+		return appList()
+	}
+	return fail(appUsage)
+}
+
+func appList() int {
 	packages := apt.Installed()
 	teamsSource := config.Read(config.Path()).Get("TEAMS_SOURCE")
 	present := func(app apps.App) bool { return app.Present(packages, teamsSource) }

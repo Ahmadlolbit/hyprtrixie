@@ -254,7 +254,7 @@ show_machine() {
 }
 
 engine_take_over() {
-  RUN_MODE="$1"
+  RUN_MODE="${ENGINE_MODE:-$1}"
   require_root
   ui_init
   ((TOOLS_BUILT)) || log_init "$RUN_MODE: building the tools" || true
@@ -977,6 +977,7 @@ cmd_app() {
     install | remove)
       [[ -n $id ]] || die "usage: sudo hyprtrixie app $action APP (see: hyprtrixie app list)"
       manifest_line apps "$id" >/dev/null || die "no app named $id (see: hyprtrixie app list)"
+      ENGINE_MODE="app-$action" engine_take_over app "$action" "$id"
       start_run "app-$action" "$id"
       if [[ $action == install ]]; then
         app_wanted "$id" || APPS="${APPS:+$APPS }$id"

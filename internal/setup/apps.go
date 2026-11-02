@@ -110,6 +110,69 @@ func (context *Context) appInstall(log *runlog.Log, app apps.App) error {
 	return log.Failed("unknown source " + app.Source + " for " + app.ID)
 }
 
+func (context *Context) repositoryInUse(repository, skip string) bool {
+	installed := apt.Installed()
+	for _, app := range apps.All() {
+		if app.ID != skip && app.Source == "extrepo:"+repository && app.Present(installed, context.Config.Get("TEAMS_SOURCE")) {
+			return true
+		}
+	}
+	return false
+}
+
+func repositoryOf(app apps.App) string {
+	kind, name, _ := strings.Cut(app.Source, ":")
+	switch kind {
+	case "teams":
+		return apps.TeamsApp
+	case "extrepo":
+		return name
+	}
+	return ""
+}
+
+func removeSnap(log *runlog.Log, name string) error {
+	if run.Quiet(run.Minute, "snap", "list", name) != 0 {
+		return nil
+	}
+	return run.Logged(log, "snap", "remove", name)
+}
+
+func (context *Context) appRemove(log *runlog.Log, app apps.App) error {
+	switch {
+	case app.Source == "webapp":
+		return removeFiles(filepath.Join(apps.WebFolder, app.ID+"-web.desktop"), filepath.Join(env.ShareDir(), "icons", app.ID+"-web.svg"))
+	case app.Source == "teams" && context.Config.Get("TEAMS_SOURCE") == "snap":
+		return removeSnap(log, apps.TeamsApp)
+	}
+	var present []string
+	installed := apt.Installed()
+	for _, spec := range app.Packages {
+		if name := apt.Bare(spec); installed[name] {
+			present = append(present, name)
+		}
+	}
+	if len(present) > 0 {
+		if err := apt.Remove(log, present...); err != nil {
+			return err
+		}
+	}
+	repository := repositoryOf(app)
+	if repository == "" || !apt.ExtrepoEnabled(repository) || context.repositoryInUse(repository, app.ID) {
+		return nil
+	}
+	return apt.ExtrepoDisable(log, repository)
+}
+
+func AddApp(context *Context, app apps.App) {
+	context.Run.Step("Install "+app.Name, func(log *runlog.Log) error { return context.appInstall(log, app) })
+	context.Run.Step("Choose the apps that open images, PDFs, videos and archives", context.defaultApps)
+}
+
+func RemoveApp(context *Context, app apps.App) {
+	context.Run.Step("Remove "+app.Name, func(log *runlog.Log) error { return context.appRemove(log, app) })
+}
+
 func (context *Context) defaultApp(log *runlog.Log, name, entry string, types []string) error {
 	stamp := filepath.Join(env.StateDir(), "defaults", name)
 	if fsutil.IsFile(stamp) || !fsutil.IsFile(filepath.Join(applicationsDir(), entry)) {
