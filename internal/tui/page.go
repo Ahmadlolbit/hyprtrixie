@@ -50,6 +50,7 @@ type page struct {
 	filter  string
 	draft   *input
 	replace bool
+	atEnd   bool
 }
 
 func (view *page) name() string {
@@ -63,6 +64,9 @@ func (view *page) arrive() {
 	view.filter = ""
 	view.draft = nil
 	view.settle()
+	if view.atEnd {
+		view.move(1, len(view.shown()))
+	}
 }
 
 func (view *page) shown() []row {

@@ -22,7 +22,7 @@ func (flow *wizard) allStages(machine []string, catalogue []apps.App) []stage {
 	for _, section := range settingsSections {
 		stages = append(stages, flow.settingsStage(section.title, section.key))
 	}
-	return stages
+	return append(stages, flow.reviewStage())
 }
 
 func Run() int {
