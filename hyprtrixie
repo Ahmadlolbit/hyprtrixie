@@ -280,7 +280,19 @@ cmd_install() {
   ((${#STEP_FAILURES[@]} == 0))
 }
 
+wizard_take_over() {
+  RUN_MODE=menu
+  require_root
+  ui_init
+  ui_can_ask || return 0
+  ((TOOLS_BUILT)) || log_init "menu: building the tools" || true
+  tools_ready || return 0
+  [[ -x $TOOLS_DIR/hyprtrixie ]] || return 0
+  HYPRTRIXIE_ROOT="$HYPRTRIXIE_ROOT" exec "$TOOLS_DIR/hyprtrixie"
+}
+
 cmd_menu() {
+  wizard_take_over
   start_run menu
   ui_logo
   ui_header "hyprtrixie $HYPRTRIXIE_VERSION" "Debian 13 with Hyprland, set up properly"
