@@ -11,6 +11,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/privilege"
 )
 
 const (
@@ -79,10 +80,13 @@ type wizard struct {
 	install   *installer
 	show      func() bool
 	end       *ending
+	waiting   bool
+	ready     func() bool
+	unlock    func(string) error
 }
 
 func newWizard(settings *config.Config) *wizard {
-	return &wizard{settings: settings, width: defaultWidth, height: defaultHeight}
+	return &wizard{settings: settings, width: defaultWidth, height: defaultHeight, ready: privilege.Ready, unlock: privilege.Unlock}
 }
 
 func (flow *wizard) watchTerminal() tea.Cmd {
@@ -119,6 +123,8 @@ func (flow *wizard) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return flow, flow.install.finish(message)
 	case checked:
 		return flow, flow.checkTerminal()
+	case unlocked:
+		return flow, flow.afterUnlock(message)
 	}
 	return flow, nil
 }
@@ -135,6 +141,9 @@ func (flow *wizard) press(key tea.KeyMsg) tea.Cmd {
 }
 
 func (flow *wizard) pressOne(key tea.KeyMsg) tea.Cmd {
+	if flow.waiting {
+		return nil
+	}
 	flow.notice = ""
 	if key.Type == tea.KeyCtrlC {
 		return flow.interrupt()
@@ -241,6 +250,9 @@ func (flow *wizard) body(width, height int) string {
 }
 
 func (flow *wizard) footer() (string, string) {
+	if flow.waiting {
+		return "", "Checking your password"
+	}
 	if flow.guide {
 		return "", "Any key closes this"
 	}

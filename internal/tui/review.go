@@ -1,9 +1,12 @@
 package tui
 
 import (
+	"os"
+
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/privilege"
 )
 
 const failureKey = "FAILURE_MODE"
@@ -16,13 +19,21 @@ func (flow *wizard) jumpRow(title, key string, index int) row {
 	}}
 }
 
+func (flow *wizard) writeConfiguration() error {
+	temporary := settingsFile()
+	if err := flow.settings.Save(temporary); err != nil {
+		return err
+	}
+	defer os.Remove(temporary)
+	return privilege.Copy(temporary, config.Path())
+}
+
 func (flow *wizard) saveConfiguration() tea.Cmd {
-	path := config.Path()
-	if err := flow.settings.Save(path); err != nil {
-		flow.notice = "Could not save " + path + ": " + err.Error()
+	if err := flow.writeConfiguration(); err != nil {
+		flow.notice = "Could not save: " + err.Error()
 		return nil
 	}
-	flow.notice = "Saved to " + path
+	flow.notice = "Saved to " + config.Path()
 	return nil
 }
 
@@ -65,12 +76,14 @@ func (flow *wizard) reviewRows() []row {
 	return append(rows,
 		row{info: true},
 		flow.failureRow(),
-		row{label: "Save configuration", help: "Keep these choices without installing", enter: flow.saveConfiguration},
+		row{label: "Save configuration", help: "Keep these choices without installing", enter: func() tea.Cmd {
+			return flow.withRoot(flow.saveConfiguration)
+		}},
 		row{label: "Load configuration", help: "Read the choices from a file", enter: func() tea.Cmd {
 			return flow.open(flow.loadPrompt())
 		}},
 		row{label: "Install", help: "Set this computer up with these choices", enter: func() tea.Cmd {
-			return flow.open(confirmation("Start the setup now?", flow.install.begin))
+			return flow.open(confirmation("Start the setup now?", func() tea.Cmd { return flow.withRoot(flow.install.begin) }))
 		}},
 	)
 }
