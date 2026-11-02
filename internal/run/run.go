@@ -35,6 +35,7 @@ const (
 var (
 	ErrStopped = errors.New("stopped before it started")
 	stopped    atomic.Bool
+	traced     atomic.Bool
 )
 
 func Exec(name string, args ...string) error {
@@ -103,10 +104,21 @@ func Stop() {
 	stopped.Store(true)
 }
 
+func Trace() {
+	traced.Store(true)
+}
+
+func trace(output io.Writer, name string, args []string) {
+	if traced.Load() {
+		fmt.Fprintln(output, "+", name, strings.Join(args, " "))
+	}
+}
+
 func Logged(output io.Writer, name string, args ...string) error {
 	if stopped.Load() {
 		return ErrStopped
 	}
+	trace(output, name, args)
 	command := exec.Command(name, args...)
 	command.Stdout = output
 	command.Stderr = output
@@ -130,6 +142,7 @@ func (writer *serial) Write(data []byte) (int, error) {
 }
 
 func LoggedWithin(limit time.Duration, output io.Writer, name string, args ...string) error {
+	trace(output, name, args)
 	shared := &serial{output: output}
 	command, finish := bounded(limit, shared, name, args)
 	command.Stdout = shared
@@ -138,6 +151,7 @@ func LoggedWithin(limit time.Duration, output io.Writer, name string, args ...st
 }
 
 func Supply(limit time.Duration, output io.Writer, input, name string, args ...string) error {
+	trace(output, name, args)
 	shared := &serial{output: output}
 	command, finish := bounded(limit, shared, name, args)
 	command.Stdin = strings.NewReader(input)

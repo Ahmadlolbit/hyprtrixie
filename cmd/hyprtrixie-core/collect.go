@@ -335,8 +335,8 @@ func saveFor(person account.Account, path, name string, args ...string) bool {
 	return true
 }
 
-func pack(person account.Account, work, stamp string, verbose bool) (string, bool) {
-	name := "hyprtrixie-collect-" + stamp
+func pack(person account.Account, work, stamp, target string, verbose bool) (string, bool) {
+	name := filepath.Base(target)
 	folder := filepath.Join(work, name)
 	if err := os.MkdirAll(folder, 0o777); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -363,11 +363,27 @@ func pack(person account.Account, work, stamp string, verbose bool) (string, boo
 		}
 		saved = "Log: " + logfile + "\n"
 	}
-	archive := filepath.Join(person.Home, name+".tar.gz")
+	archive := target + ".tar.gz"
 	if !saveFor(person, archive, "tar", "-czf", "-", "-C", work, name) {
 		return archive, false
 	}
 	return "Saved " + archive + "\n" + saved, true
+}
+
+func gather(person account.Account, folder, prefix string, verbose bool) (string, error) {
+	work, err := os.MkdirTemp("", "hyprtrixie-collect-")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return "", errors.New("cannot create a temporary folder")
+	}
+	defer cleanup.OnSignal(func() { os.RemoveAll(work) })()
+	stamp := time.Now().Format("20060102-150405")
+	saved, ok := pack(person, work, stamp, filepath.Join(folder, prefix+stamp), verbose)
+	if !ok {
+		return "", fmt.Errorf("cannot write %s; what was collected is in %s", saved, work)
+	}
+	os.RemoveAll(work)
+	return saved, nil
 }
 
 func collectAll(verbose bool) int {
@@ -375,17 +391,10 @@ func collectAll(verbose bool) int {
 	if !ok {
 		return fail("cannot tell whose desktop this is; run it with sudo from your own account")
 	}
-	work, err := os.MkdirTemp("", "hyprtrixie-collect-")
+	saved, err := gather(person, person.Home, "hyprtrixie-collect-", verbose)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return fail("cannot create a temporary folder")
+		return fail("%v", err)
 	}
-	defer cleanup.OnSignal(func() { os.RemoveAll(work) })()
-	saved, ok := pack(person, work, time.Now().Format("20060102-150405"), verbose)
-	if !ok {
-		return fail("cannot write %s; what was collected is in %s", saved, work)
-	}
-	os.RemoveAll(work)
 	return say(saved)
 }
 

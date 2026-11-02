@@ -129,6 +129,14 @@ func (work *installer) environment() []string {
 	return []string{"HYPRTRIXIE_ENGINE=1", "HYPRTRIXIE_ROOT=" + env.Root()}
 }
 
+func (work *installer) arguments() []string {
+	args := []string{"install", "--events", "--config", work.path}
+	if work.flow.testing {
+		args = append(args, "--testing")
+	}
+	return args
+}
+
 func (work *installer) begin() tea.Cmd {
 	work.path = filepath.Join(env.StateHome(), "hyprtrixie", "wizard.conf")
 	if err := work.flow.settings.Save(work.path); err != nil {
@@ -136,7 +144,7 @@ func (work *installer) begin() tea.Cmd {
 		return nil
 	}
 	core := filepath.Join(env.ToolsDir(), "hyprtrixie-core")
-	child, err := run.Spawn(work.environment(), core, "install", "--events", "--config", work.path)
+	child, err := run.Spawn(work.environment(), core, work.arguments()...)
 	if err != nil {
 		work.flow.notice = "Could not start the setup: " + err.Error()
 		return nil
@@ -203,7 +211,12 @@ func (work *installer) rule(event events.Event) {
 }
 
 func (work *installer) status(event events.Event) {
-	work.steps = append(work.steps, marks[event.Kind]+" "+clean(event.Text))
+	line := marks[event.Kind] + " " + clean(event.Text)
+	if work.summing {
+		work.closing = append(work.closing, line)
+		return
+	}
+	work.steps = append(work.steps, line)
 }
 
 func (work *installer) note(event events.Event) {
