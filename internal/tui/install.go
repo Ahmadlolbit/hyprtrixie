@@ -14,6 +14,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/events"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/privilege"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
@@ -148,6 +149,10 @@ func (work *installer) environment() []string {
 	return []string{"HYPRTRIXIE_ENGINE=1", "HYPRTRIXIE_ROOT=" + env.Root()}
 }
 
+func settingsFile() string {
+	return filepath.Join(env.StateHome(), "hyprtrixie", "wizard.conf")
+}
+
 func (work *installer) arguments() []string {
 	args := []string{"install", "--events", "--config", work.path}
 	if work.flow.testing {
@@ -160,13 +165,13 @@ func (work *installer) begin() tea.Cmd {
 	if work.running() {
 		return nil
 	}
-	work.path = filepath.Join(env.StateHome(), "hyprtrixie", "wizard.conf")
+	work.path = settingsFile()
 	if err := work.flow.settings.Save(work.path); err != nil {
 		work.flow.notice = "Could not write the settings: " + err.Error()
 		return nil
 	}
 	core := filepath.Join(env.ToolsDir(), "hyprtrixie-core")
-	child, err := run.Spawn(work.environment(), core, work.arguments()...)
+	child, err := privilege.Spawn(work.environment(), core, work.arguments()...)
 	if err != nil {
 		work.flow.notice = "Could not start the setup: " + err.Error()
 		return nil

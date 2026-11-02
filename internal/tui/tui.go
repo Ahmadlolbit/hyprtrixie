@@ -3,12 +3,14 @@ package tui
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apps"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/lock"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/term"
@@ -30,7 +32,19 @@ func (flow *wizard) allStages(machine []string, catalogue []apps.App) []stage {
 	return append(stages, flow.reviewStage(), flow.install, flow.end)
 }
 
+func accountHelper() int {
+	os.Setenv("HYPRTRIXIE_ENGINE", "1")
+	return run.Report(run.Exec(filepath.Join(env.ToolsDir(), "hyprtrixie-core"), "account"))
+}
+
 func Run() int {
+	if os.Geteuid() == 0 && os.Getenv("SUDO_USER") != "" {
+		fmt.Fprintln(os.Stderr, "run it as yourself, without sudo: ./hyprtrixie")
+		return 1
+	}
+	if os.Geteuid() == 0 {
+		return accountHelper()
+	}
 	if !canShow() {
 		fmt.Fprintln(os.Stderr, "the setup needs a terminal; use: hyprtrixie install --yes")
 		return 1
