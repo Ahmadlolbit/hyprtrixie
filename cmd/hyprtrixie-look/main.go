@@ -21,6 +21,7 @@ const usage = `Usage: hyprtrixie-look
        hyprtrixie-look ui-font [FAMILY|default]
        hyprtrixie-look glass [on|off|toggle]
        hyprtrixie-look corners [on|off|toggle]
+       hyprtrixie-look apps [follow|off|THEME]
        hyprtrixie-look auto [off|sun|times|toggle]
        hyprtrixie-look light|dark [THEME]
        hyprtrixie-look times [LIGHT_FROM DARK_FROM]
@@ -44,7 +45,9 @@ Shows and changes how the desktop looks. Your settings are kept in
 An accent named after a colour uses that colour of each theme. font is
 the terminal's, the bar's and the lock screen's; ui-font is the apps'.
 Glass makes terminals and panels see-through, with blur behind them.
-corners rounds the screen's corners.
+corners rounds the screen's corners. apps sets what GTK and KDE apps do:
+follow the theme, keep one theme whatever the others are, or stay as they
+are (off).
 auto switches to the light theme by day and the dark one at night, at
 sunrise and sunset (sun) or at set times like 07:00 and 19:00 (times).
 While it's on, a theme you pick becomes the light or the dark one.
@@ -281,6 +284,19 @@ func themeChoice(key, value string) int {
 	return putThen(key, name, retick)()
 }
 
+func appsTheme(args []string) int {
+	value := arg(args, 0)
+	if value == "" {
+		return show("apps")
+	}
+	name := theme.Slug(value)
+	if name != "follow" && name != "off" && (!theme.ValidName(name) || !themeExists(name)) {
+		fmt.Fprintf(os.Stderr, "apps takes follow, off or a theme; see hyprtrixie-theme-set --list\n")
+		return 2
+	}
+	return putThen("apps", name, reapply)()
+}
+
 func themeExists(name string) bool {
 	return fsutil.IsDir(filepath.Join(systemRoot, "themes", name)) || fsutil.IsDir(filepath.Join(env.AppConfig(), "themes", name))
 }
@@ -376,7 +392,7 @@ func all() int {
 
 func commands() map[string]func([]string) int {
 	return map[string]func([]string) int{
-		"get": getSetting, "accent": accent, "glass": glass, "corners": corners, "sun": sun, "auto": auto, "times": times,
+		"get": getSetting, "accent": accent, "glass": glass, "corners": corners, "apps": appsTheme, "sun": sun, "auto": auto, "times": times,
 		"tick": tick, "remember": remember, "rotate": rotate, "workspaces": workspaces, "bar": barLayout, "video": video,
 		"video-battery": videoBattery, "weather": weather, "weather-units": weatherUnits, "coordinates": showCoordinates,
 		"quiet": quiet, "quiet-hours": quietHours, "location": location,

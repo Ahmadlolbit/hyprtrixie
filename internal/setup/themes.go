@@ -50,7 +50,7 @@ var (
 	themeFiles  = []string{"colors.toml", "icons.theme", "preview.png"}
 	themeTools  = []string{"hyprtrixie-look", "hyprtrixie-theme-install", "hyprtrixie-weather", "hyprtrixie-background", themeSetter}
 	lookOptions = [][2]string{
-		{"ACCENT", "ACCENT_COLOR"}, {"GLASS", "GLASS"}, {"CORNERS", "ROUNDED_CORNERS"}, {"AUTO", "AUTO_THEME"}, {"LIGHT", "LIGHT_THEME"},
+		{"ACCENT", "ACCENT_COLOR"}, {"GLASS", "GLASS"}, {"CORNERS", "ROUNDED_CORNERS"}, {"APPS", "APPS_THEME"}, {"AUTO", "AUTO_THEME"}, {"LIGHT", "LIGHT_THEME"},
 		{"DARK", "DARK_THEME"}, {"LIGHT_AT", "LIGHT_AT"}, {"DARK_AT", "DARK_AT"}, {"ROTATE", "WALLPAPER_MINUTES"}, {"WORKSPACES", "WALLPAPER_PER_WORKSPACE"},
 		{"WEATHER", "WEATHER"}, {"WEATHER_UNITS", "WEATHER_UNITS"}, {"QUIET", "QUIET_HOURS"}, {"QUIET_FROM", "QUIET_FROM"}, {"QUIET_TO", "QUIET_TO"},
 	}

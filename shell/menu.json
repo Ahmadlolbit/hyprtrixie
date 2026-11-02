@@ -355,6 +355,35 @@
     "action": "hyprtrixie-look bar vertical",
     "state": "test \"$(hyprtrixie-look bar)\" = vertical"
   },
+  "style.apps": {
+    "glyph": "\uf2d0",
+    "label": "GTK and KDE apps",
+    "keywords": [
+      "gtk",
+      "kde",
+      "qt",
+      "apps",
+      "dolphin"
+    ]
+  },
+  "style.apps.follow": {
+    "glyph": "\uf1fc",
+    "label": "Follow the theme",
+    "action": "hyprtrixie-look apps follow",
+    "state": "test \"$(hyprtrixie-look apps)\" = follow"
+  },
+  "style.apps.catppuccin": {
+    "glyph": "\uf1fb",
+    "label": "Always Catppuccin",
+    "action": "hyprtrixie-look apps catppuccin",
+    "state": "test \"$(hyprtrixie-look apps)\" = catppuccin"
+  },
+  "style.apps.off": {
+    "glyph": "\uf05e",
+    "label": "Keep their own look",
+    "action": "hyprtrixie-look apps off",
+    "state": "test \"$(hyprtrixie-look apps)\" = off"
+  },
   "style.accent": {
     "glyph": "\udb80\udfd8",
     "label": "Accent",

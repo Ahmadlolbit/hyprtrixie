@@ -156,18 +156,25 @@ func chooseFont(colors theme.Colors) {
 	}
 }
 
-func readColors(next string) (theme.Colors, error) {
-	file := filepath.Join(next, "colors.toml")
-	data, err := os.ReadFile(file)
+func themeColors(dir string) (theme.Colors, error) {
+	data, err := os.ReadFile(filepath.Join(dir, "colors.toml"))
 	if err != nil {
 		return nil, err
 	}
 	colors := theme.Parse(string(data))
-	if colors["mode"]+colors["theme_type"] == "" && fsutil.IsFile(filepath.Join(next, "light.mode")) {
+	if colors["mode"]+colors["theme_type"] == "" && fsutil.IsFile(filepath.Join(dir, "light.mode")) {
 		colors["mode"] = "light"
 	}
 	colors.Resolve()
-	overrideAccent(colors, file)
+	return colors, nil
+}
+
+func readColors(next string) (theme.Colors, error) {
+	colors, err := themeColors(next)
+	if err != nil {
+		return nil, err
+	}
+	overrideAccent(colors, filepath.Join(next, "colors.toml"))
 	chooseFont(colors)
 	glassSettings(colors)
 	return colors, nil
@@ -198,13 +205,13 @@ func renderOne(template, target string, replacer *strings.Replacer) {
 	}
 }
 
-func render(dir string, colors theme.Colors) {
-	replacer := colors.Replacer()
+func render(dir string, colors, apps theme.Colors) {
+	replacers := map[bool]*strings.Replacer{false: colors.Replacer(), true: apps.Replacer()}
 	found := append(templates(filepath.Join(env.AppConfig(), "themed")), templates(filepath.Join(systemRoot, "themed"))...)
 	for _, template := range found {
-		target := filepath.Join(dir, strings.TrimSuffix(filepath.Base(template), ".tpl"))
-		if !fsutil.Exists(target) {
-			renderOne(template, target, replacer)
+		base := strings.TrimSuffix(filepath.Base(template), ".tpl")
+		if target := filepath.Join(dir, base); !fsutil.Exists(target) {
+			renderOne(template, target, replacers[slices.Contains(toolkitFiles, base)])
 		}
 	}
 }
@@ -276,11 +283,11 @@ func iconTheme(mode string) string {
 	return "Yaru"
 }
 
-func desktopSettings(colors theme.Colors) {
+func desktopSettings(colors, apps theme.Colors) {
 	if _, err := exec.LookPath("gsettings"); err != nil {
 		return
 	}
-	mode := colors["mode"]
+	mode := apps["mode"]
 	desktop("set", "color-scheme", "prefer-"+mode)
 	desktop("set", "gtk-theme", gtkTheme(mode))
 	desktop("set", "monospace-font-name", colors["font"]+" 11")
@@ -306,33 +313,34 @@ func rememberPick(name, mode string) {
 	}
 }
 
-func prepare(name, next string) (theme.Colors, bool) {
+func prepare(name, next string) (theme.Colors, theme.Colors, bool) {
 	if err := stage(name, next); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		return nil, false
+		return nil, nil, false
 	}
 	if !fsutil.IsFile(filepath.Join(next, "colors.toml")) {
 		fmt.Fprintf(os.Stderr, "theme %s has no colors.toml\n", name)
 		os.RemoveAll(next)
-		return nil, false
+		return nil, nil, false
 	}
 	colors, err := readColors(next)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		return nil, false
+		return nil, nil, false
 	}
-	render(next, colors)
+	apps := appColors(colors)
+	render(next, colors, apps)
 	if colors["glass"] != "yes" {
 		os.Remove(filepath.Join(next, "glass.lua"))
 	}
-	return colors, true
+	return colors, apps, true
 }
 
 func apply(name string) bool {
 	next := filepath.Join(state(), "next-theme")
 	defer cleanup.OnSignal(func() { os.RemoveAll(next) })()
 	previous, _ := fsutil.Text(filepath.Join(state(), "theme.name"))
-	colors, ok := prepare(name, next)
+	colors, apps, ok := prepare(name, next)
 	if !ok {
 		return false
 	}
@@ -345,7 +353,7 @@ func apply(name string) bool {
 	}
 	pickBackground(name, previous)
 	linkApps()
-	desktopSettings(colors)
+	desktopSettings(colors, apps)
 	rememberPick(name, colors["mode"])
 	return true
 }

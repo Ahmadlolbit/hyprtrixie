@@ -12,11 +12,29 @@ import (
 )
 
 const (
+	appsFollow  = "follow"
+	appsOff     = "off"
 	gtkOne      = "hyprtrixie-one"
 	gtkTwo      = "hyprtrixie-two"
 	gtkThemes   = "/usr/share/themes"
 	gtkUserFile = "gtk.css"
 )
+
+var toolkitFiles = []string{"gtk3.css", "gtk4.css", "kde.colors"}
+
+func appColors(colors theme.Colors) theme.Colors {
+	name := settings.Get("apps")
+	if name == appsFollow || name == appsOff {
+		return colors
+	}
+	for _, dir := range []string{filepath.Join(userThemes(), name), filepath.Join(systemRoot, "themes", name)} {
+		if fixed, err := themeColors(dir); err == nil {
+			return fixed
+		}
+	}
+	fmt.Fprintf(os.Stderr, "no theme named %s for GTK and KDE apps\n", name)
+	return colors
+}
 
 func gtkBase(mode string) string {
 	if mode == "light" {
@@ -62,7 +80,7 @@ func writeGTKTheme(name, base string) {
 
 func gtkTheme(mode string) string {
 	base := gtkBase(mode)
-	if !fsutil.IsDir(filepath.Join(gtkThemes, base)) {
+	if settings.Get("apps") == appsOff || !fsutil.IsDir(filepath.Join(gtkThemes, base)) {
 		return gtkFallback(mode)
 	}
 	name := nextGTKName()
@@ -92,7 +110,26 @@ func kdeColors(file string) {
 	}
 }
 
+func unlinkToolkits() {
+	own := filepath.Join(env.ConfigHome(), "gtk-4.0", gtkUserFile)
+	if fsutil.IsLink(own) {
+		os.Remove(own)
+	}
+	os.Remove(filepath.Join(env.DataHome(), "color-schemes", "Hyprtrixie.colors"))
+	globals := filepath.Join(env.ConfigHome(), "kdeglobals")
+	if !fsutil.IsFile(globals) {
+		return
+	}
+	if err := atomic.Write(globals, []byte(theme.WithoutKDEScheme(fsutil.Optional(globals))), 0o666); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+}
+
 func linkToolkits(current string) {
+	if settings.Get("apps") == appsOff {
+		unlinkToolkits()
+		return
+	}
 	if file := filepath.Join(current, "gtk4.css"); fsutil.IsFile(file) {
 		linkUnlessYours(file, filepath.Join(env.ConfigHome(), "gtk-4.0", gtkUserFile))
 	}
