@@ -61,6 +61,7 @@ type overlay interface {
 type wizard struct {
 	settings  *config.Config
 	nvidia    bool
+	testing   bool
 	stages    []stage
 	at        int
 	width     int

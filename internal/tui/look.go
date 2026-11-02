@@ -2,7 +2,10 @@ package tui
 
 import "github.com/charmbracelet/lipgloss"
 
-const leaveTitle = "Leave without installing?"
+const (
+	leaveTitle  = "Leave without installing?"
+	testingHelp = "Logs every command, and packs the logs and system details into a tar in the hyprtrixie folder"
+)
 
 var (
 	headingStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("5")).Bold(true)

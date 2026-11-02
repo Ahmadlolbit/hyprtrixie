@@ -49,6 +49,7 @@ type Options struct {
 	OnFailure string
 	Changes   string
 	Events    bool
+	Testing   bool
 }
 
 type session struct {
@@ -123,6 +124,8 @@ func Parse(args []string) (Options, error) {
 			options.Yes = true
 		case args[index] == "--events":
 			options.Events = true
+		case args[index] == "--testing":
+			options.Testing = true
 		case args[index] == "-h" || args[index] == "--help":
 			return options, ErrHelp
 		default:
@@ -178,6 +181,9 @@ func start(mode string, options Options, args []string) (*session, error) {
 	}
 	if options.Events {
 		log.Mirror(ui.Mirror)
+	}
+	if options.Testing {
+		run.Trace()
 	}
 	if person, found := account.Target(); found {
 		work.person = person
