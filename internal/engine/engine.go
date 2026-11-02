@@ -34,6 +34,7 @@ const (
 	askMode      = "ask"
 	continueMode = "continue"
 	installMode  = "install"
+	accountMode  = "account"
 )
 
 var (
@@ -322,6 +323,21 @@ func (work *session) install() int {
 	return work.outcome()
 }
 
+func (work *session) setUpAccount() int {
+	work.runner.Begin(accountMode)
+	context, err := work.context()
+	if err != nil {
+		work.runner.Broke("step", err.Error())
+		return work.outcome()
+	}
+	setup.AccountSteps(context)
+	work.person = context.Person
+	if work.outcome() == 0 && work.person.Name != "" {
+		ui.Print("\nLog in as " + work.person.Name + " and run: " + context.CloneFor() + "/hyprtrixie\n")
+	}
+	return work.outcome()
+}
+
 func (work *session) verify() int {
 	work.applyOverrides()
 	work.walk(checksOnly)
@@ -375,6 +391,10 @@ func entered(mode string, args []string, body func(*session) int) int {
 
 func Install(args []string) int {
 	return entered(installMode, args, (*session).install)
+}
+
+func Account(args []string) int {
+	return entered(accountMode, args, (*session).setUpAccount)
 }
 
 func Verify(args []string) int {

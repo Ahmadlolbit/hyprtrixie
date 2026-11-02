@@ -46,6 +46,10 @@ func installCommand() int {
 	return handedOver("install", engine.Install)
 }
 
+func accountCommand() int {
+	return handedOver("account", engine.Account)
+}
+
 func verifyCommand() int {
 	return handedOver("verify", engine.Verify)
 }

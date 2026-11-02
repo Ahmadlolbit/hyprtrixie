@@ -3,6 +3,8 @@ package setup
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -220,6 +222,44 @@ func (context *Context) preflightUser() error {
 	}
 	context.Run.Note("Admin account: " + context.Person.Name + " (" + context.Person.Home + ")")
 	return nil
+}
+
+func (context *Context) CloneFor() string {
+	home := context.Person.Home
+	if strings.HasPrefix(env.Root()+"/", home+"/") {
+		return env.Root()
+	}
+	return filepath.Join(home, "hyprtrixie")
+}
+
+func (context *Context) own(log *runlog.Log, path string) error {
+	return run.Logged(log, "chown", "-R", context.Person.Name+":", path)
+}
+
+func (context *Context) giveClone(log *runlog.Log) error {
+	target := context.CloneFor()
+	if target == env.Root() {
+		return context.own(log, target)
+	}
+	if fsutil.Exists(target) {
+		return nil
+	}
+	partial := target + ".part"
+	if err := os.RemoveAll(partial); err != nil {
+		return err
+	}
+	if err := run.Logged(log, "cp", "-a", env.Root(), partial); err != nil {
+		return err
+	}
+	if err := context.own(log, partial); err != nil {
+		return err
+	}
+	return os.Rename(partial, target)
+}
+
+func AccountSteps(context *Context) {
+	context.Run.Interactive("Admin account", context.preflightUser)
+	context.Run.Step("Give the account its own copy of hyprtrixie", context.giveClone)
 }
 
 func preflightDetect(log *runlog.Log) error {

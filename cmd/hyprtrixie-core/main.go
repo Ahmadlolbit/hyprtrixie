@@ -67,6 +67,7 @@ var commands = map[string]func() int{
 	"cleanup":   cleanupCommand,
 	"install":   installCommand,
 	"verify":    verifyCommand,
+	"account":   accountCommand,
 }
 
 func fail(format string, args ...any) int {
