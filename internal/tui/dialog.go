@@ -34,10 +34,10 @@ func prompt(title, text string, answer func(string, bool) tea.Cmd) *dialog {
 }
 
 func (box *dialog) press(key tea.KeyMsg) (bool, tea.Cmd) {
-	switch key.String() {
-	case "esc":
+	switch key.Type {
+	case tea.KeyEsc:
 		return box.cancelled()
-	case "enter":
+	case tea.KeyEnter:
 		return true, box.answer(box.chosen(), true)
 	}
 	if box.field != nil {
@@ -71,27 +71,31 @@ func (box *dialog) move(name string) {
 	}
 }
 
-func (box *dialog) body() []string {
-	lines := []string{headingStyle.Render(box.title), ""}
-	lines = append(lines, box.lines...)
-	if len(box.lines) > 0 {
-		lines = append(lines, "")
-	}
+func (box *dialog) answers() []string {
 	if box.field != nil {
-		return append(lines, "  "+box.field.shown())
+		return []string{"  " + box.field.shown()}
 	}
+	lines := make([]string, 0, len(box.items))
 	for index, item := range box.items {
 		lines = append(lines, marked(index == box.cursor, item))
 	}
 	return lines
 }
 
-func (box *dialog) draw(height int) string {
-	lines := box.body()
-	first := max(box.cursor+len(lines)-len(box.items)-height+1, 0)
-	if box.field != nil || len(lines) <= height {
-		first = 0
+func (box *dialog) context(room int) []string {
+	shown := box.lines[min(max(len(box.lines)-room, 0), len(box.lines)):]
+	if len(shown) == 0 {
+		return nil
 	}
+	return append(shown[:len(shown):len(shown)], "")
+}
+
+func (box *dialog) draw(_, height int) string {
+	answers := box.answers()
+	lines := []string{headingStyle.Render(box.title), ""}
+	lines = append(lines, box.context(height-len(lines)-len(answers)-1)...)
+	first := max(len(lines)+box.cursor-height+1, 0)
+	lines = append(lines, answers...)
 	return strings.Join(lines[first:min(first+height, len(lines))], "\n")
 }
 

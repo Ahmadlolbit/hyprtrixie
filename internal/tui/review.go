@@ -26,17 +26,32 @@ func (flow *wizard) saveConfiguration() tea.Cmd {
 	return nil
 }
 
+func (flow *wizard) load(path string) tea.Cmd {
+	before := len(flow.settings.Notes)
+	if !flow.settings.Load(path) {
+		flow.notice = "Could not read " + path
+		return nil
+	}
+	flow.notice = "Loaded " + path
+	if found := warnings(flow.settings.Notes[before:]); len(found) > 0 {
+		return flow.open(&viewer{lines: found, leave: func() tea.Cmd { return nil }})
+	}
+	return nil
+}
+
 func (flow *wizard) loadPrompt() *dialog {
 	return prompt("Load a configuration file", config.Path(), func(path string, ok bool) tea.Cmd {
-		switch {
-		case !ok || path == "":
-		case flow.settings.Load(path):
-			flow.notice = "Loaded " + path
-		default:
-			flow.notice = "Could not read " + path
+		if !ok || path == "" {
+			return nil
 		}
-		return nil
+		return flow.load(path)
 	})
+}
+
+func (flow *wizard) failureRow() row {
+	line := flow.pickRow(flow.option(failureKey))
+	line.enter = line.space
+	return line
 }
 
 func (flow *wizard) reviewRows() []row {
@@ -49,7 +64,7 @@ func (flow *wizard) reviewRows() []row {
 	}
 	return append(rows,
 		row{info: true},
-		flow.pickRow(flow.option(failureKey)),
+		flow.failureRow(),
 		row{label: "Save configuration", help: "Keep these choices without installing", enter: flow.saveConfiguration},
 		row{label: "Load configuration", help: "Read the choices from a file", enter: func() tea.Cmd {
 			return flow.open(flow.loadPrompt())

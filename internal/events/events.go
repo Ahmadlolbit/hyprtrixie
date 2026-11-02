@@ -30,7 +30,6 @@ const (
 
 	waiting = 64
 	answer  = "answer"
-	cancel  = "cancel"
 	stopped = "stop"
 )
 
@@ -42,33 +41,25 @@ type Event struct {
 	Items []string
 }
 
-type reply struct {
-	text string
-	ok   bool
-}
-
 type Stream struct {
 	mutex   sync.Mutex
 	output  io.Writer
-	replies chan reply
+	replies chan string
 }
 
 func Open(input io.Reader, output io.Writer, stop func()) *Stream {
-	stream := &Stream{output: output, replies: make(chan reply, 1)}
+	stream := &Stream{output: output, replies: make(chan string, 1)}
 	go stream.listen(input, stop)
 	return stream
 }
 
-func parsed(line string) (reply, bool) {
-	if line == cancel {
-		return reply{}, true
-	}
+func parsed(line string) (string, bool) {
 	quoted, found := strings.CutPrefix(line, answer+" ")
 	if !found {
-		return reply{}, false
+		return "", false
 	}
 	text, err := strconv.Unquote(quoted)
-	return reply{text, err == nil}, err == nil
+	return text, err == nil
 }
 
 func (stream *Stream) listen(input io.Reader, stop func()) {
@@ -105,8 +96,8 @@ func (stream *Stream) Send(event Event) {
 
 func (stream *Stream) Ask(event Event) (string, bool) {
 	stream.Send(event)
-	answered, open := <-stream.replies
-	return answered.text, open && answered.ok
+	text, open := <-stream.replies
+	return text, open
 }
 
 func fields(text string) ([]string, bool) {
@@ -153,12 +144,8 @@ func Watch(output io.Reader) <-chan Event {
 	return found
 }
 
-func Answer(input io.Writer, text string, ok bool) error {
-	line := cancel + "\n"
-	if ok {
-		line = answer + " " + strconv.Quote(text) + "\n"
-	}
-	_, err := io.WriteString(input, line)
+func Answer(input io.Writer, text string) error {
+	_, err := io.WriteString(input, answer+" "+strconv.Quote(text)+"\n")
 	return err
 }
 

@@ -19,6 +19,8 @@ const (
 	kibPerMib       = 1024
 	secureBootByte  = 4
 	idGroupSize     = len("[0000:0000]")
+	nvidiaVendor    = "0x10de"
+	displayClass    = "0x03"
 )
 
 var (
@@ -359,6 +361,18 @@ func (found machine) summary() string {
 		found.gpuLines() +
 		fmt.Sprintf("Wi-Fi       %s\nMemory      %d MiB\nForm        %s\nFirmware    %s, Secure Boot %s\nRoot        %s\n",
 			cmp.Or(strings.Join(found.wifiVendors, " "), "none found"), found.memoryMiB, found.form(), found.firmware(), found.secureBoot, found.root())
+}
+
+func NvidiaOnBus() bool {
+	devices, _ := filepath.Glob(at("/sys/bus/pci/devices/*"))
+	for _, device := range devices {
+		vendor := fsutil.Optional(filepath.Join(device, "vendor"))
+		class := fsutil.Optional(filepath.Join(device, "class"))
+		if vendor == nvidiaVendor && strings.HasPrefix(class, displayClass) {
+			return true
+		}
+	}
+	return false
 }
 
 func Summary() string {

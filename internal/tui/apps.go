@@ -15,12 +15,12 @@ const (
 var sourceNotes = map[string]string{"snap": "Snap also installs snapd, a background service nothing else here uses."}
 
 func (flow *wizard) profileRow(option options.Option, profile string) row {
-	mark := "( )"
-	if flow.settings.Get(profileKey) == profile {
+	mark, chosen := "( )", flow.settings.Get(profileKey) == profile
+	if chosen {
 		mark = "(*)"
 	}
 	pick := func() tea.Cmd { return flow.pickProfile(profile) }
-	return row{label: profile, mark: mark, help: option.Help, space: pick, enter: func() tea.Cmd {
+	return row{label: profile, mark: mark, chosen: chosen, help: option.Help, space: pick, enter: func() tea.Cmd {
 		pick()
 		return flow.forward()
 	}}

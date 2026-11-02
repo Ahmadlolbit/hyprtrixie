@@ -51,7 +51,13 @@ func watch(received chan os.Signal, action func()) {
 }
 
 func OwnGroup() {
-	syscall.Setsid()
+	if _, err := syscall.Setsid(); err == nil {
+		return
+	}
+	if tty, err := os.Open("/dev/tty"); err == nil {
+		syscall.Syscall(syscall.SYS_IOCTL, tty.Fd(), syscall.TIOCNOTTY, 0)
+		tty.Close()
+	}
 }
 
 func StopGroup() {

@@ -35,7 +35,7 @@ const (
 var (
 	ErrStopped = errors.New("stopped before it started")
 	stopped    atomic.Bool
-	traced     atomic.Bool
+	traced     atomic.Pointer[io.Writer]
 )
 
 func Exec(name string, args ...string) error {
@@ -50,6 +50,7 @@ func Exec(name string, args ...string) error {
 }
 
 func Status(name string, args ...string) int {
+	trace(name, args)
 	command := exec.Command(name, args...)
 	inherit(command)
 	defer cleanup.IgnoreQuit()()
@@ -104,13 +105,13 @@ func Stop() {
 	stopped.Store(true)
 }
 
-func Trace() {
-	traced.Store(true)
+func Trace(to io.Writer) {
+	traced.Store(&to)
 }
 
-func trace(output io.Writer, name string, args []string) {
-	if traced.Load() {
-		fmt.Fprintln(output, "+", name, strings.Join(args, " "))
+func trace(name string, args []string) {
+	if to := traced.Load(); to != nil {
+		fmt.Fprintln(*to, "+", name, strings.Join(args, " "))
 	}
 }
 
@@ -118,7 +119,7 @@ func Logged(output io.Writer, name string, args ...string) error {
 	if stopped.Load() {
 		return ErrStopped
 	}
-	trace(output, name, args)
+	trace(name, args)
 	command := exec.Command(name, args...)
 	command.Stdout = output
 	command.Stderr = output
@@ -142,7 +143,6 @@ func (writer *serial) Write(data []byte) (int, error) {
 }
 
 func LoggedWithin(limit time.Duration, output io.Writer, name string, args ...string) error {
-	trace(output, name, args)
 	shared := &serial{output: output}
 	command, finish := bounded(limit, shared, name, args)
 	command.Stdout = shared
@@ -151,7 +151,6 @@ func LoggedWithin(limit time.Duration, output io.Writer, name string, args ...st
 }
 
 func Supply(limit time.Duration, output io.Writer, input, name string, args ...string) error {
-	trace(output, name, args)
 	shared := &serial{output: output}
 	command, finish := bounded(limit, shared, name, args)
 	command.Stdin = strings.NewReader(input)
@@ -197,10 +196,12 @@ func Page(text string) {
 }
 
 func Output(name string, args ...string) (string, error) {
+	trace(name, args)
 	return shown(exec.Command(name, args...), os.Stderr)
 }
 
 func Filter(input, name string, args ...string) (string, error) {
+	trace(name, args)
 	command := exec.Command(name, args...)
 	command.Stdin = strings.NewReader(input)
 	return shown(command, os.Stderr)
@@ -252,6 +253,7 @@ func inherit(command *exec.Cmd) {
 }
 
 func bounded(limit time.Duration, messages io.Writer, name string, args []string) (*exec.Cmd, func(error) error) {
+	trace(name, args)
 	ctx, cancel := context.WithTimeout(context.Background(), limit)
 	command := exec.CommandContext(ctx, name, args...)
 	command.Cancel = func() error {

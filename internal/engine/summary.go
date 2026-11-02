@@ -115,6 +115,10 @@ func (work *session) paths() {
 
 func (work *session) summary() {
 	if len(work.results) == 0 {
+		if work.options.Events {
+			ui.Rule(events.SummaryTitle)
+			work.paths()
+		}
 		return
 	}
 	ui.Rule(events.SummaryTitle)

@@ -41,16 +41,9 @@ func testingLogs() {
 	ui.Print(saved)
 }
 
-func installAndPack(args []string) int {
-	code := engine.Install(args)
-	if options, err := engine.Parse(args); err == nil && options.Testing {
-		testingLogs()
-	}
-	return code
-}
-
 func installCommand() int {
-	return handedOver("install", installAndPack)
+	engine.AfterTesting = testingLogs
+	return handedOver("install", engine.Install)
 }
 
 func verifyCommand() int {

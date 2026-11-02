@@ -26,6 +26,7 @@ type row struct {
 	help    string
 	heading bool
 	info    bool
+	chosen  bool
 	input   *field
 	space   func() tea.Cmd
 	enter   func() tea.Cmd
@@ -67,6 +68,11 @@ func (view *page) arrive() {
 	if view.atEnd {
 		view.move(1, len(view.shown()))
 	}
+	for index, line := range view.shown() {
+		if line.chosen {
+			view.cursor = index
+		}
+	}
 }
 
 func (view *page) shown() []row {
@@ -92,11 +98,8 @@ func (view *page) current() (row, bool) {
 }
 
 func (view *page) settle() {
-	rows := view.shown()
-	view.cursor = min(view.cursor, max(len(rows)-1, 0))
 	if _, found := view.current(); !found {
 		view.step(1)
-		view.step(-1)
 	}
 }
 
@@ -141,10 +144,10 @@ func (view *page) press(key tea.KeyMsg) tea.Cmd {
 }
 
 func (view *page) pressSearch(key tea.KeyMsg) tea.Cmd {
-	switch key.String() {
-	case "enter":
+	switch key.Type {
+	case tea.KeyEnter:
 		view.search = nil
-	case "esc":
+	case tea.KeyEsc:
 		view.search = nil
 		view.filter = ""
 	default:
