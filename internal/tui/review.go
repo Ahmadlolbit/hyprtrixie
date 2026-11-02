@@ -54,6 +54,9 @@ func (flow *wizard) reviewRows() []row {
 		row{label: "Load configuration", help: "Read the choices from a file", enter: func() tea.Cmd {
 			return flow.open(flow.loadPrompt())
 		}},
+		row{label: "Install", help: "Set this computer up with these choices", enter: func() tea.Cmd {
+			return flow.open(confirmation("Start the setup now?", flow.install.begin))
+		}},
 	)
 }
 

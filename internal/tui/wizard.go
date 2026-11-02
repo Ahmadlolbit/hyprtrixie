@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -22,7 +23,10 @@ const (
 	settingsAt = 3
 )
 
-var reviewAt = settingsAt + len(settingsSections)
+var (
+	reviewAt  = settingsAt + len(settingsSections)
+	installAt = reviewAt + 1
+)
 
 var keyGuide = []string{
 	"Arrows or j and k   Move",
@@ -45,6 +49,13 @@ type stage interface {
 	help() string
 	keys() string
 	typing() bool
+	leaving() (string, func() tea.Cmd)
+}
+
+type overlay interface {
+	press(tea.KeyMsg) (bool, tea.Cmd)
+	draw(height int) string
+	keys() string
 }
 
 type wizard struct {
@@ -54,11 +65,15 @@ type wizard struct {
 	at        int
 	width     int
 	height    int
-	dialogs   []*dialog
+	dialogs   []overlay
+	asking    *dialog
 	guide     bool
 	notice    string
 	exit      int
 	reviewing bool
+	install   *installer
+	end       *ending
+	closing   []string
 }
 
 func newWizard(settings *config.Config) *wizard {
@@ -73,10 +88,16 @@ func (flow *wizard) Init() tea.Cmd {
 func (flow *wizard) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
-		flow.width = message.Width
-		flow.height = message.Height
+		if message.Width > 0 && message.Height > 0 {
+			flow.width = message.Width
+			flow.height = message.Height
+		}
 	case tea.KeyMsg:
 		return flow, flow.press(message)
+	case arrived:
+		return flow, flow.install.take(message)
+	case ended:
+		return flow, flow.install.finish(message)
 	}
 	return flow, nil
 }
@@ -110,25 +131,39 @@ func (flow *wizard) pressDialog(key tea.KeyMsg) tea.Cmd {
 	return nil
 }
 
-func (flow *wizard) open(box *dialog) tea.Cmd {
+func (flow *wizard) open(box overlay) tea.Cmd {
 	flow.dialogs = append(flow.dialogs, box)
 	return nil
 }
 
-func (flow *wizard) close(box *dialog) {
-	for index, open := range flow.dialogs {
-		if open == box {
-			flow.dialogs = append(flow.dialogs[:index], flow.dialogs[index+1:]...)
+func (flow *wizard) openBelow(box overlay) {
+	if last := len(flow.dialogs) - 1; last >= 0 {
+		if _, reading := flow.dialogs[last].(*viewer); reading {
+			flow.dialogs = slices.Insert(flow.dialogs, last, box)
 			return
 		}
+	}
+	flow.open(box)
+}
+
+func (flow *wizard) close(box overlay) {
+	flow.dialogs = slices.DeleteFunc(flow.dialogs, func(open overlay) bool { return open == box })
+	if box == overlay(flow.asking) {
+		flow.asking = nil
 	}
 }
 
 func (flow *wizard) interrupt() tea.Cmd {
-	if len(flow.dialogs) > 0 && flow.dialogs[len(flow.dialogs)-1].title == leaveTitle {
-		return tea.Quit
+	title, leave := flow.stages[flow.at].leaving()
+	if title == "" {
+		return leave()
 	}
-	return flow.open(confirmation(leaveTitle, func() tea.Cmd { return tea.Quit }))
+	if flow.asking != nil {
+		flow.close(flow.asking)
+		return leave()
+	}
+	flow.asking = confirmation(title, leave)
+	return flow.open(flow.asking)
 }
 
 func (flow *wizard) backToReview() bool {

@@ -22,7 +22,9 @@ func (flow *wizard) allStages(machine []string, catalogue []apps.App) []stage {
 	for _, section := range settingsSections {
 		stages = append(stages, flow.settingsStage(section.title, section.key))
 	}
-	return append(stages, flow.reviewStage())
+	flow.install = &installer{flow: flow}
+	flow.end = &ending{viewer: viewer{leave: func() tea.Cmd { return tea.Quit }}}
+	return append(stages, flow.reviewStage(), flow.install, flow.end)
 }
 
 func Run() int {
@@ -36,6 +38,9 @@ func Run() int {
 	if _, err := tea.NewProgram(flow, tea.WithAltScreen()).Run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
+	}
+	for _, line := range flow.closing {
+		fmt.Println(line)
 	}
 	return flow.exit
 }
