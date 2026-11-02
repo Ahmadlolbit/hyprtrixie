@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/events"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/term"
 )
@@ -26,9 +27,35 @@ const (
 	accent = "\x1b[35m"
 )
 
-var writeFailed bool
+var (
+	writeFailed bool
+	stream      *events.Stream
+)
+
+func Attach(to *events.Stream) {
+	stream = to
+}
+
+func send(kind, text string, items ...string) bool {
+	if stream == nil {
+		return false
+	}
+	stream.Send(events.Event{Kind: kind, Text: text, Items: items})
+	return true
+}
+
+func ask(kind, text string, items ...string) (string, bool) {
+	return stream.Ask(events.Event{Kind: kind, Text: text, Items: items})
+}
+
+func Mirror(data []byte) {
+	send(events.Log, string(data))
+}
 
 func Print(text string) {
+	if send(events.Text, text) {
+		return
+	}
 	if _, err := os.Stdout.WriteString(text); err != nil && !writeFailed {
 		writeFailed = true
 		fmt.Fprintln(os.Stderr, err)
@@ -54,43 +81,52 @@ func Header(title, line string) {
 }
 
 func Rule(text string) {
+	if send(events.Rule, text) {
+		return
+	}
 	fill := max(width-utf8.RuneCountInString(text)-4, minFill)
 	Print("\n" + paint(accent+bold, "── "+text+" "+strings.Repeat("─", fill)) + "\n")
 }
 
-func status(colour, tag, text string) {
+func status(kind, colour, tag, text string) {
+	if send(kind, text) {
+		return
+	}
 	Print("  " + paint(colour, "["+tag+"]") + " " + text + "\n")
 }
 
 func OK(text string) {
-	status(green, " ok ", text)
+	status(events.OK, green, " ok ", text)
 }
 
 func Fail(text string) {
-	status(red, "FAIL", text)
+	status(events.Fail, red, "FAIL", text)
 }
 
 func Skip(text string) {
-	status(yellow, "skip", text)
+	status(events.Skip, yellow, "skip", text)
 }
 
 func Warn(text string) {
-	status(yellow, "warn", text)
+	status(events.Warn, yellow, "warn", text)
 }
 
 func Busy(text string) {
-	if term.IsTerminal(os.Stdout) {
+	if !send(events.Busy, text) && term.IsTerminal(os.Stdout) {
 		Print("  " + paint(blue, "[ .. ]") + " " + text)
 	}
 }
 
 func Done() {
-	if term.IsTerminal(os.Stdout) {
+	if !send(events.Done, "") && term.IsTerminal(os.Stdout) {
 		Print("\r\x1b[K")
 	}
 }
 
 func ModuleResult(id, title, result string) {
+	if send(events.Result, title, id, result) {
+		return
+	}
 	colour := yellow
 	switch result {
 	case "PASS":
@@ -102,7 +138,7 @@ func ModuleResult(id, title, result string) {
 }
 
 func Page(text string) {
-	if text == "" {
+	if text == "" || send(events.Page, text) {
 		return
 	}
 	if term.IsTerminal(os.Stdout) {
@@ -113,11 +149,13 @@ func Page(text string) {
 }
 
 func Note(text string) {
-	Print("         " + paint(dim, text) + "\n")
+	if !send(events.Note, text) {
+		Print("         " + paint(dim, text) + "\n")
+	}
 }
 
 func CanAsk() bool {
-	return term.IsTerminal(os.Stdin) && term.IsTerminal(os.Stdout)
+	return stream != nil || term.IsTerminal(os.Stdin) && term.IsTerminal(os.Stdout)
 }
 
 func Confirm(prompt string) bool {
@@ -134,16 +172,26 @@ func Proceed(prompt string) bool {
 }
 
 func Input(header string) (string, bool) {
+	if stream != nil {
+		answer, ok := ask(events.Input, header)
+		return strings.TrimSpace(answer), ok
+	}
 	answer, err := term.ReadAnswer(header + " ")
 	return strings.TrimSpace(answer), err == nil
 }
 
 func Password(header string) (string, bool) {
+	if stream != nil {
+		return ask(events.Password, header)
+	}
 	answer, err := term.ReadSecret(header + " ")
 	return answer, err == nil
 }
 
 func Choose(header string, items []string) (string, bool) {
+	if stream != nil {
+		return ask(events.Choose, header, items...)
+	}
 	for {
 		Print(header + "\n")
 		for index, item := range items {

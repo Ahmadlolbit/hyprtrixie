@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/events"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/modules"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
@@ -116,7 +117,7 @@ func (work *session) summary() {
 	if len(work.results) == 0 {
 		return
 	}
-	ui.Rule("Summary")
+	ui.Rule(events.SummaryTitle)
 	for _, module := range modules.All {
 		if result, ran := work.results[module.ID]; ran {
 			ui.ModuleResult(module.ID, module.Title, result)

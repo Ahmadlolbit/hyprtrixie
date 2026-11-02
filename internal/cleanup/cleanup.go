@@ -50,6 +50,14 @@ func watch(received chan os.Signal, action func()) {
 	}
 }
 
+func OwnGroup() {
+	syscall.Setsid()
+}
+
+func StopGroup() {
+	syscall.Kill(0, syscall.SIGINT)
+}
+
 func Raise(caught os.Signal) {
 	if number, ok := caught.(syscall.Signal); ok {
 		syscall.Tgkill(syscall.Getpid(), syscall.Gettid(), number)

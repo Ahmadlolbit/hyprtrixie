@@ -16,6 +16,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/events"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/files"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/modules"
@@ -47,6 +48,7 @@ type Options struct {
 	Yes       bool
 	OnFailure string
 	Changes   string
+	Events    bool
 }
 
 type session struct {
@@ -119,6 +121,8 @@ func Parse(args []string) (Options, error) {
 			}
 		case args[index] == "--yes" || args[index] == "-y":
 			options.Yes = true
+		case args[index] == "--events":
+			options.Events = true
 		case args[index] == "-h" || args[index] == "--help":
 			return options, ErrHelp
 		default:
@@ -171,6 +175,9 @@ func start(mode string, options Options, args []string) (*session, error) {
 	}
 	for _, note := range work.settings.Notes {
 		log.Line(note.Level, note.Text)
+	}
+	if options.Events {
+		log.Mirror(ui.Mirror)
 	}
 	if person, found := account.Target(); found {
 		work.person = person
@@ -281,12 +288,14 @@ func (work *session) outcome() int {
 func (work *session) showMachine() {
 	for _, line := range run.Lines(strings.TrimSuffix(detect.Summary(), "\n")) {
 		work.log.Line("info", line)
-		ui.Print(line + "\n")
+		if !work.options.Events {
+			ui.Print(line + "\n")
+		}
 	}
 }
 
 func (work *session) confirmed() bool {
-	if !work.canAsk {
+	if !work.canAsk || work.options.Events {
 		return true
 	}
 	_, ok := work.runner.Answer(func() (string, bool) { return "", ui.Proceed("Start the setup now?") })
@@ -294,7 +303,9 @@ func (work *session) confirmed() bool {
 }
 
 func (work *session) install() int {
-	ui.Header("hyprtrixie "+env.Version, "Debian 13 with Hyprland, set up properly")
+	if !work.options.Events {
+		ui.Header("hyprtrixie "+env.Version, "Debian 13 with Hyprland, set up properly")
+	}
 	work.showMachine()
 	if !work.confirmed() {
 		return work.runner.ExitCode()
@@ -343,6 +354,10 @@ func entered(mode string, args []string, body func(*session) int) int {
 	defer lock.Close()
 	defer term.Keep()()
 	cleanup.SurviveBrokenPipes()
+	if options.Events {
+		cleanup.OwnGroup()
+		ui.Attach(events.Open(os.Stdin, os.Stdout, cleanup.StopGroup))
+	}
 	work, err := start(mode, options, args)
 	if err != nil {
 		return run.Report(err)

@@ -26,6 +26,7 @@ const (
 type Log struct {
 	file        string
 	copy        string
+	mirror      func([]byte)
 	fileWarning sync.Once
 	copyWarning sync.Once
 }
@@ -110,9 +111,16 @@ func warn(once *sync.Once, err error) {
 	}
 }
 
+func (log *Log) Mirror(to func([]byte)) {
+	log.mirror = to
+}
+
 func (log *Log) Write(data []byte) (int, error) {
 	warn(&log.fileWarning, add(log.file, os.O_CREATE, data))
 	warn(&log.copyWarning, add(log.copy, syscall.O_NOFOLLOW|syscall.O_NONBLOCK, data))
+	if log.mirror != nil {
+		log.mirror(data)
+	}
 	return len(data), nil
 }
 

@@ -145,6 +145,33 @@ func Supply(limit time.Duration, output io.Writer, input, name string, args ...s
 	return finish(command.Run())
 }
 
+type Child struct {
+	Input   io.WriteCloser
+	Output  io.ReadCloser
+	command *exec.Cmd
+	errors  *strings.Builder
+}
+
+func Spawn(environment []string, name string, args ...string) (*Child, error) {
+	command := exec.Command(name, args...)
+	command.Env = append(os.Environ(), environment...)
+	child := &Child{command: command, errors: &strings.Builder{}}
+	command.Stderr = child.errors
+	var err error
+	if child.Input, err = command.StdinPipe(); err != nil {
+		return nil, err
+	}
+	if child.Output, err = command.StdoutPipe(); err != nil {
+		return nil, err
+	}
+	return child, command.Start()
+}
+
+func (child *Child) Wait() (int, string) {
+	err := child.command.Wait()
+	return Code(err), strings.TrimSpace(child.errors.String())
+}
+
 func Page(text string) {
 	command := exec.Command("less")
 	command.Stdin = strings.NewReader(text)
