@@ -15,6 +15,7 @@ const (
 	defaultWidth  = 80
 	defaultHeight = 24
 	frameLines    = 5
+	summaryParts  = 3
 )
 
 var keyGuide = []string{
@@ -42,6 +43,7 @@ type stage interface {
 
 type wizard struct {
 	settings *config.Config
+	nvidia   bool
 	stages   []stage
 	at       int
 	width    int
