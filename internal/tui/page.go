@@ -123,6 +123,10 @@ func (view *page) typing() bool {
 	return view.search != nil || textField
 }
 
+func (view *page) leaving() (string, func() tea.Cmd) {
+	return leaveTitle, func() tea.Cmd { return tea.Quit }
+}
+
 func (view *page) press(key tea.KeyMsg) tea.Cmd {
 	if view.search != nil {
 		return view.pressSearch(key)
