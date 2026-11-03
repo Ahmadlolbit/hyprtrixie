@@ -47,6 +47,9 @@ USAGE
   hyprtrixie db start|stop|remove NAME
                                    Postgres, MySQL or Redis in a container on localhost (run it without sudo);
                                      stop keeps the data, remove deletes it
+  hyprtrixie dotfiles [REPOSITORY] Apply your dotfiles with chezmoi, which sends what you change back there
+                                     (run it without sudo; chezmoi runs that repository's scripts). Without one,
+                                     show what chezmoi would change
   hyprtrixie version
   hyprtrixie help
 
@@ -69,6 +72,7 @@ var commands = map[string]func() int{
 	"doctor":        doctor,
 	"app":           appCommand,
 	"db":            dbCommand,
+	"dotfiles":      dotfilesCommand,
 	"restore":       restore,
 	"cleanup":       cleanupCommand,
 	"install":       installCommand,
