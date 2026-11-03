@@ -24,7 +24,7 @@ Label {
     month = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1);
   }
 
-  text: Qt.formatDateTime(clock.date, root.bar && root.bar.vertical ? (Config.clock === "12h" ? "h\nmm" : "HH\nmm") : Config.clock === "12h" ? "ddd d MMM   h:mm AP" : "ddd d MMM   HH:mm")
+  text: Qt.formatDateTime(clock.date, root.bar && root.bar.vertical ? (Config.clock === "12h" ? "h\nmm" : "HH\nmm") : Config.clockFormat || (Config.clock === "12h" ? "ddd d MMM   h:mm AP" : "ddd d MMM   HH:mm"))
   horizontalAlignment: Text.AlignHCenter
   font.bold: true
 
