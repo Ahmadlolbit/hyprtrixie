@@ -149,6 +149,13 @@ func glassSettings(colors theme.Colors) {
 	colors["glass"], colors["opacity"], colors["panel_alpha"] = "no", "1.0", "ee"
 }
 
+func styleSettings(colors theme.Colors) {
+	colors["rounding"] = "0"
+	if settings.Get("style") == "soft" {
+		colors["rounding"] = "14"
+	}
+}
+
 func chooseFont(colors theme.Colors) {
 	colors["font"] = settings.Get("font")
 	if !theme.ValidFont(colors["font"]) {
@@ -177,6 +184,7 @@ func readColors(next string) (theme.Colors, error) {
 	overrideAccent(colors, filepath.Join(next, "colors.toml"))
 	chooseFont(colors)
 	glassSettings(colors)
+	styleSettings(colors)
 	return colors, nil
 }
 
