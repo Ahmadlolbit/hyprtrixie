@@ -43,6 +43,10 @@ USAGE
   hyprtrixie app list              List the apps you can install, by category (* = installed)
   hyprtrixie app install|remove APP
                                    Install or remove one app and tick or untick it in the configuration
+  hyprtrixie db [list]             List the databases you can start, and which are running
+  hyprtrixie db start|stop|remove NAME
+                                   Postgres, MySQL or Redis in a container on localhost (run it without sudo);
+                                     stop keeps the data, remove deletes it
   hyprtrixie version
   hyprtrixie help
 
@@ -64,6 +68,7 @@ var commands = map[string]func() int{
 	"collect":       collect,
 	"doctor":        doctor,
 	"app":           appCommand,
+	"db":            dbCommand,
 	"restore":       restore,
 	"cleanup":       cleanupCommand,
 	"install":       installCommand,
