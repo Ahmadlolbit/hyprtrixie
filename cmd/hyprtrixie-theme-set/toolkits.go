@@ -8,6 +8,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/theme"
 )
 
@@ -104,7 +105,11 @@ func kdeColors(file string) {
 	}
 	symlink(file, filepath.Join(env.DataHome(), "color-schemes", "Hyprtrixie.colors"))
 	globals := filepath.Join(env.ConfigHome(), "kdeglobals")
-	merged := theme.KDEGlobals(fsutil.Optional(globals), string(scheme))
+	font := settings.Get("ui_font")
+	if font == "default" {
+		font = ""
+	}
+	merged := theme.KDEGlobals(fsutil.Optional(globals), string(scheme), font)
 	if err := atomic.Write(globals, []byte(merged), 0o666); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
@@ -123,6 +128,13 @@ func unlinkToolkits() {
 	if err := atomic.Write(globals, []byte(theme.WithoutKDEScheme(fsutil.Optional(globals))), 0o666); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
+}
+
+func tellKDEApps() {
+	for _, change := range []string{"0", "2"} {
+		run.Quiet(run.Quick, "gdbus", "emit", "--session", "--object-path", "/KGlobalSettings", "--signal", "org.kde.KGlobalSettings.notifyChange", change, "0")
+	}
+	run.Quiet(run.Quick, "gdbus", "emit", "--session", "--object-path", "/KIconLoader", "--signal", "org.kde.KIconLoader.iconChanged", "0")
 }
 
 func linkToolkits(current string) {

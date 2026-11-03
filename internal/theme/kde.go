@@ -8,7 +8,11 @@ import (
 const kdeScheme = "ColorScheme=Hyprtrixie"
 
 func kdeColorGroup(header string) bool {
-	return strings.HasPrefix(header, "[Colors:") || strings.HasPrefix(header, "[ColorEffects:") || header == "[WM]"
+	return strings.HasPrefix(header, "[Colors:") || strings.HasPrefix(header, "[ColorEffects:") || header == "[WM]" || header == "[Icons]"
+}
+
+func ownKDESetting(line string) bool {
+	return strings.HasPrefix(line, "ColorScheme=") || strings.HasPrefix(line, "font=")
 }
 
 func yourKDELines(current string) []string {
@@ -18,7 +22,7 @@ func yourKDELines(current string) []string {
 		if strings.HasPrefix(line, "[") {
 			header = line
 		}
-		if kdeColorGroup(header) || header == "[UiSettings]" || header == "[General]" && strings.HasPrefix(line, "ColorScheme=") {
+		if kdeColorGroup(header) || header == "[General]" && ownKDESetting(line) {
 			continue
 		}
 		kept = append(kept, line)
@@ -40,13 +44,13 @@ func ownKDELines(scheme string) []string {
 	return own
 }
 
-func withKDEScheme(lines []string) []string {
+func withKDESettings(lines, settings []string) []string {
 	for index, line := range lines {
 		if line == "[General]" {
-			return slices.Insert(lines, index+1, kdeScheme)
+			return slices.Insert(lines, index+1, settings...)
 		}
 	}
-	return append(lines, "[General]", kdeScheme, "")
+	return append(append(lines, "[General]"), append(settings, "")...)
 }
 
 func WithoutKDEScheme(current string) string {
@@ -54,9 +58,12 @@ func WithoutKDEScheme(current string) string {
 	return strings.TrimRight(text, "\n") + "\n"
 }
 
-func KDEGlobals(current, scheme string) string {
-	lines := withKDEScheme(yourKDELines(current))
-	own := append(ownKDELines(scheme), "", "[UiSettings]", kdeScheme)
-	text := strings.TrimRight(strings.Join(lines, "\n"), "\n") + "\n\n" + strings.Join(own, "\n") + "\n"
+func KDEGlobals(current, scheme, font string) string {
+	settings := []string{kdeScheme}
+	if font != "" {
+		settings = append(settings, "font="+font+",11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1")
+	}
+	lines := withKDESettings(yourKDELines(current), settings)
+	text := strings.TrimRight(strings.Join(lines, "\n"), "\n") + "\n\n" + strings.Join(ownKDELines(scheme), "\n") + "\n"
 	return strings.TrimLeft(text, "\n")
 }

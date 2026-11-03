@@ -388,6 +388,7 @@ func retint() {
 	run.Quiet(run.Quick, "hyprctl", "reload")
 	restartPaper()
 	run.Quiet(run.Quick, "makoctl", "reload")
+	tellKDEApps()
 	look.ReloadShell()
 	run.Within(run.Quick, "pkill", "-USR1", "-x", "kitty")
 	run.Within(run.Quick, "pkill", "-USR2", "-x", "btop")
