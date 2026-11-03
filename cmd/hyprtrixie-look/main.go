@@ -25,6 +25,7 @@ const usage = `Usage: hyprtrixie-look
        hyprtrixie-look auto [off|sun|times|toggle]
        hyprtrixie-look light|dark [THEME]
        hyprtrixie-look times [LIGHT_FROM DARK_FROM]
+       hyprtrixie-look daily [on|off|toggle]
        hyprtrixie-look sun [DATE]
        hyprtrixie-look location [LATITUDE,LONGITUDE|zone]
        hyprtrixie-look rotate [MINUTES|off|toggle]
@@ -211,6 +212,10 @@ func reload() int {
 
 func glass(args []string) int {
 	return onOff{"glass", putThen("glass", "yes", reapply), putThen("glass", "no", reapply)}.run(args)
+}
+
+func daily(args []string) int {
+	return onOff{"daily", putThen("daily", "yes", nothing), putThen("daily", "no", nothing)}.run(args)
 }
 
 func corners(args []string) int {
@@ -424,7 +429,7 @@ func all() int {
 
 func commands() map[string]func([]string) int {
 	return map[string]func([]string) int{
-		"get": getSetting, "accent": accent, "glass": glass, "corners": corners, "apps": appsTheme, "sun": sun, "auto": auto, "times": times,
+		"get": getSetting, "accent": accent, "glass": glass, "corners": corners, "apps": appsTheme, "sun": sun, "auto": auto, "times": times, "daily": daily,
 		"tick": tick, "remember": remember, "rotate": rotate, "workspaces": workspaces, "bar": barLayout, "position": barPosition, "style": windowStyle, "video": video,
 		"video-battery": videoBattery, "weather": weather, "weather-units": weatherUnits, "coordinates": showCoordinates,
 		"quiet": quiet, "quiet-hours": quietHours, "night": night, "night-hours": nightHours, "night-warmth": nightWarmth, "location": location,
