@@ -20,6 +20,7 @@ if package.searchpath("hyprtrixie.hypr.options", package.path) then
 end
 
 require("hyprtrixie.hypr.lid")
+require("hyprtrixie.hypr.trackpoint")
 
 if package.searchpath("hyprtrixie.current.theme.glass", package.path) then
   require("hyprtrixie.current.theme.glass")

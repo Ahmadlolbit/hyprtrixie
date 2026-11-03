@@ -650,6 +650,40 @@
       "typing"
     ]
   },
+  "setup.trackpoint": {
+    "glyph": "\uf245",
+    "label": "TrackPoint",
+    "keywords": [
+      "trackpoint",
+      "mouse",
+      "pointer",
+      "speed"
+    ]
+  },
+  "setup.trackpoint.slow": {
+    "glyph": "\uf245",
+    "label": "Slow",
+    "action": "hyprtrixie-look trackpoint-speed -0.5",
+    "state": "test \"$(hyprtrixie-look trackpoint-speed)\" = -0.5"
+  },
+  "setup.trackpoint.medium": {
+    "glyph": "\uf245",
+    "label": "Medium",
+    "action": "hyprtrixie-look trackpoint-speed 0",
+    "state": "test \"$(hyprtrixie-look trackpoint-speed)\" = 0"
+  },
+  "setup.trackpoint.fast": {
+    "glyph": "\uf245",
+    "label": "Fast",
+    "action": "hyprtrixie-look trackpoint-speed 0.5",
+    "state": "test \"$(hyprtrixie-look trackpoint-speed)\" = 0.5"
+  },
+  "setup.trackpoint.scroll": {
+    "glyph": "\uf8cc",
+    "label": "Scroll with the middle button",
+    "action": "hyprtrixie-look trackpoint-scroll toggle",
+    "state": "test \"$(hyprtrixie-look trackpoint-scroll)\" = yes"
+  },
   "setup.power": {
     "glyph": "\udb80\udc79",
     "label": "Power",
