@@ -69,7 +69,7 @@ func swapDirPrepare(log *runlog.Log) error {
 
 func (context *Context) swapFileFits() bool {
 	info, err := os.Stat(swapFile())
-	return err == nil && info.Mode().IsRegular() && info.Size() == int64(context.number("SWAPFILE_GB"))*bytesPerGiB &&
+	return err == nil && info.Mode().IsRegular() && info.Size() == int64(context.swapGiB())*bytesPerGiB &&
 		run.Quiet(run.Quick, "swaplabel", swapFile()) == 0
 }
 
@@ -90,7 +90,7 @@ func (context *Context) swapFileCreate(log *runlog.Log) error {
 	if err := removeFiles(swapFile()); err != nil {
 		return err
 	}
-	size := context.Config.Get("SWAPFILE_GB")
+	size := strconv.Itoa(context.swapGiB())
 	if btrfs.RootIsBtrfs() {
 		return run.Logged(log, "btrfs", "filesystem", "mkswapfile", "--size", size+"g", swapFile())
 	}
@@ -196,11 +196,12 @@ func zramOn(*runlog.Log) error {
 func swapSteps(context *Context) {
 	if context.number("SWAPFILE_GB") > 0 {
 		context.Run.Step("Prepare a place for the swapfile", swapDirPrepare)
-		context.Run.Step("Create a "+context.Config.Get("SWAPFILE_GB")+" GiB swapfile", context.swapFileCreate)
+		context.Run.Step("Create a "+strconv.Itoa(context.swapGiB())+" GiB swapfile", context.swapFileCreate)
 		context.Run.Step("Turn the swapfile on", swapFileEnable)
 	} else {
 		context.Run.Step("Turn the swapfile off", swapFileDisable)
 	}
+	hibernateSteps(context)
 	zram := zramSetup{Context: context, restart: followUp{name: "zram-restart"}}
 	context.Run.Step("Compress memory with zram", zram.configure)
 	context.Run.Step("Tune swappiness", context.swappinessApply)
@@ -210,6 +211,9 @@ func swapChecks(context *Context) {
 	if context.number("SWAPFILE_GB") > 0 {
 		context.Run.Check("The swapfile is on", swapFileOn)
 		context.Run.Check("The swapfile is not copy-on-write", swapFileNoCow)
+	}
+	if context.hibernates() {
+		context.Run.Check("The computer can hibernate", resumeReady)
 	}
 	context.Run.Check("Swappiness is "+context.Config.Get("SWAPPINESS"), context.swappinessSet)
 	if context.number("ZRAM_PERCENT") > 0 {
