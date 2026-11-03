@@ -10,8 +10,12 @@ import (
 
 const shellPath = "/usr/share/hyprtrixie/shell"
 
+func CallShell(target, function string) {
+	run.Quiet(run.Quick, "qs", "-p", shellPath, "ipc", "call", target, function)
+}
+
 func ReloadShell() {
-	run.Quiet(run.Quick, "qs", "-p", shellPath, "ipc", "call", "theme", "reload")
+	CallShell("theme", "reload")
 }
 
 type barSettings struct {
