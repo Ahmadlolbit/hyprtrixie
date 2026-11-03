@@ -137,6 +137,8 @@ Scope {
       lister.command = ["fc-list", "--format", "%{family[0]}\n", kind === "fonts" ? ":spacing=100" : ":"];
     else if (kind === "restore")
       lister.command = ["hyprtrixie", "restore", "list"];
+    else if (kind === "keyboard")
+      lister.command = ["hyprtrixie", "keyboard", "list"];
     else
       lister.command = ["hyprtrixie", "app", "list", kind === "install" ? "available" : "installed"];
     lister.running = true;
@@ -164,9 +166,11 @@ Scope {
     const glyphs = {
       install: "\u{f01da}",
       remove: "\u{f0b4c}",
-      restore: "\u{f02da}"
+      restore: "\u{f02da}",
+      keyboard: "\u{f030c}"
     };
     const command = kind === "restore" ? "hyprtrixie restore" : "sudo hyprtrixie app " + kind;
+    const words = (id) => kind === "keyboard" ? "sh -c 'sudo hyprtrixie keyboard " + id + " && hyprctl reload'" : command + " " + id;
     const row = (id, label, words) => ({
           id: kind + ":" + id,
           glyph: glyphs[kind],
@@ -183,7 +187,7 @@ Scope {
         });
     const rows = text.split("\n").filter(line => line.includes("\t")).map(line => {
       const fields = line.split("\t");
-      return row(fields[0], fields[1], command + " " + fields[0]);
+      return row(fields[0], fields[1], words(fields[0]));
     });
     if (kind === "restore" && rows.length === 0)
       return [row("terminal", "Open restore points in a terminal", command)];
