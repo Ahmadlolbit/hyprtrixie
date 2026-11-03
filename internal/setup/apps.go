@@ -235,6 +235,7 @@ func appSteps(context *Context) {
 		})
 	}
 	context.Run.Step("Choose the apps that open images, PDFs, videos and archives", context.defaultApps)
+	extrasSteps(context)
 }
 
 func appChecks(context *Context) {
@@ -242,4 +243,5 @@ func appChecks(context *Context) {
 	if context.Config.Enabled("APPS", "helium") {
 		context.Run.Check("Helium is the default browser", context.heliumIsDefault)
 	}
+	extrasChecks(context)
 }
