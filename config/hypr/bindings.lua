@@ -47,7 +47,7 @@ for workspace = 1, 10 do
 end
 
 bind("SUPER + S", "Scratchpad", hl.dsp.workspace.toggle_special("scratchpad"))
-bind("SUPER + grave", "Drop-down terminal", [[sh -c 'pgrep -f "class hyprtrixie-dropdown" >/dev/null || setsid -f kitty --class hyprtrixie-dropdown; exec hyprctl dispatch "hl.dsp.workspace.toggle_special(\"dropdown\")"']])
+bind("SUPER + grave", "Drop-down terminal", [[sh -c 'pgrep -fx "kitty --class hyprtrixie-dropdown" >/dev/null || setsid -f kitty --class hyprtrixie-dropdown; exec hyprctl dispatch "hl.dsp.workspace.toggle_special(\"dropdown\")"']])
 bind("SUPER + ALT + S", "Move window to scratchpad", hl.dsp.window.move({ workspace = "special:scratchpad", follow = false }))
 bind("SUPER + TAB", "Next workspace", hl.dsp.focus({ workspace = "e+1" }))
 bind("SUPER + SHIFT + TAB", "Previous workspace", hl.dsp.focus({ workspace = "e-1" }))

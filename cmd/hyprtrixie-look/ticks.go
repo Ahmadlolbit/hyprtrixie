@@ -424,7 +424,10 @@ func dailyTick() {
 		return
 	}
 	save(lookState("daily"), today)
-	if next := themeAfter(currentTheme()); last != "" && next != "" {
+	if last == "" {
+		return
+	}
+	if next := themeAfter(currentTheme()); next != "" {
 		run.Within(run.Slow, run.Sibling("hyprtrixie-theme-set"), next)
 	}
 }

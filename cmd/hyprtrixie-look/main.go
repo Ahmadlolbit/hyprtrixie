@@ -215,7 +215,11 @@ func glass(args []string) int {
 }
 
 func daily(args []string) int {
-	return onOff{"daily", putThen("daily", "yes", nothing), putThen("daily", "no", nothing)}.run(args)
+	fresh := func() int {
+		remove(lookState("daily"))
+		return 0
+	}
+	return onOff{"daily", putThen("daily", "yes", fresh), putThen("daily", "no", nothing)}.run(args)
 }
 
 func corners(args []string) int {

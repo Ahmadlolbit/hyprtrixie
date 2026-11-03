@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
@@ -18,27 +19,36 @@ import (
 
 const (
 	secretMode = 0o600
+	configMode = 0o644
 	folderMode = 0o700
+	pullLimit  = 30 * time.Minute
+	stopLimit  = 2 * time.Minute
 )
 
 type Database struct {
-	Name     string
-	Title    string
-	Image    string
-	Port     string
-	Data     string
-	Variable string
-	Command  []string
-	Address  string
+	Name       string
+	Title      string
+	Image      string
+	Port       string
+	Data       string
+	Variable   string
+	Config     string
+	ConfigPath string
+	Command    []string
+	Address    string
 }
 
 var All = []Database{
-	{"postgres", "Postgres 17", "docker.io/library/postgres:17", "5432", "/var/lib/postgresql/data", "POSTGRES_PASSWORD", nil, "postgres://postgres:%s@localhost:5432/postgres"},
-	{"mysql", "MySQL 8.4", "docker.io/library/mysql:8.4", "3306", "/var/lib/mysql", "MYSQL_ROOT_PASSWORD", nil, "mysql://root:%s@127.0.0.1:3306"},
-	{"redis", "Redis 8", "docker.io/library/redis:8", "6379", "/data", "", []string{"redis-server", "--requirepass", "%s", "--appendonly", "yes"}, "redis://:%s@localhost:6379"},
+	{"postgres", "Postgres 17", "docker.io/library/postgres:17", "5432", "/var/lib/postgresql/data", "POSTGRES_PASSWORD", "", "", nil, "postgres://postgres:%s@localhost:5432/postgres"},
+	{"mysql", "MySQL 8.4", "docker.io/library/mysql:8.4", "3306", "/var/lib/mysql", "MYSQL_ROOT_PASSWORD", "", "", nil, "mysql://root:%s@127.0.0.1:3306"},
+	{"redis", "Redis 8", "docker.io/library/redis:8", "6379", "/data", "", "requirepass %s\nappendonly yes\n", "/usr/local/etc/redis/redis.conf",
+		[]string{"redis-server", "/usr/local/etc/redis/redis.conf"}, "redis://:%s@localhost:6379"},
 }
 
-var ErrNoEngine = errors.New("no container engine: tick Docker or Podman in the developer tools, then run the setup again")
+var (
+	ErrNoEngine = errors.New("no container engine: tick Docker or Podman in the developer tools, then run the setup again")
+	ErrNoAnswer = errors.New("the container engine isn't answering: start it, or log in again if you were just added to the docker group")
+)
 
 func Find(name string) (Database, bool) {
 	for _, database := range All {
@@ -71,16 +81,32 @@ func (database Database) Password() (string, error) {
 	if password, ok := database.saved(); ok {
 		return password, nil
 	}
+	if exists("volume", database.Container()) {
+		return "", fmt.Errorf("%s has data but its password is gone: delete the data with hyprtrixie db remove %s", database.Title, database.Name)
+	}
 	if err := os.MkdirAll(folder(), folderMode); err != nil {
 		return "", err
 	}
+	file, err := os.OpenFile(database.secret(""), os.O_WRONLY|os.O_CREATE|os.O_EXCL, secretMode)
+	if errors.Is(err, fs.ErrExist) {
+		if password, ok := database.saved(); ok {
+			return password, nil
+		}
+	}
+	if err != nil {
+		return "", err
+	}
 	password := rand.Text()
-	return password, atomic.Install(database.secret(""), []byte(password+"\n"), secretMode)
+	_, err = file.WriteString(password + "\n")
+	return password, errors.Join(err, file.Close())
 }
 
 func Engine() error {
 	if _, err := exec.LookPath("docker"); err != nil {
 		return ErrNoEngine
+	}
+	if _, err := run.CaptureQuiet(run.Minute, "docker", "info", "--format", "{{.ServerVersion}}"); err != nil {
+		return ErrNoAnswer
 	}
 	return nil
 }
@@ -103,11 +129,13 @@ func (database Database) runArgs(password string) ([]string, error) {
 		}
 		args = append(args, "--env-file", database.secret(".env"))
 	}
-	args = append(args, database.Image)
-	for _, word := range database.Command {
-		args = append(args, strings.ReplaceAll(word, "%s", password))
+	if database.Config != "" {
+		if err := atomic.Install(database.secret(".conf"), []byte(fmt.Sprintf(database.Config, password)), configMode); err != nil {
+			return nil, err
+		}
+		args = append(args, "--volume", database.secret(".conf")+":"+database.ConfigPath+":ro")
 	}
-	return args, nil
+	return append(append(args, database.Image), database.Command...), nil
 }
 
 func (database Database) Start(out io.Writer) (string, error) {
@@ -120,13 +148,13 @@ func (database Database) Start(out io.Writer) (string, error) {
 	}
 	address := fmt.Sprintf(database.Address, password)
 	if exists("container", database.Container()) {
-		return address, run.Logged(out, "docker", "start", database.Container())
+		return address, run.LoggedWithin(stopLimit, out, "docker", "start", database.Container())
 	}
 	args, err := database.runArgs(password)
 	if err != nil {
 		return "", err
 	}
-	return address, run.Logged(out, "docker", args...)
+	return address, run.LoggedWithin(pullLimit, out, "docker", args...)
 }
 
 func (database Database) Stop(out io.Writer) error {
@@ -136,7 +164,10 @@ func (database Database) Stop(out io.Writer) error {
 	if !exists("container", database.Container()) {
 		return nil
 	}
-	return run.Logged(out, "docker", "rm", "--force", database.Container())
+	if err := run.LoggedWithin(stopLimit, out, "docker", "stop", "--time", "30", database.Container()); err != nil {
+		return err
+	}
+	return run.LoggedWithin(run.Minute, out, "docker", "rm", database.Container())
 }
 
 func (database Database) Remove(out io.Writer) error {
@@ -144,11 +175,11 @@ func (database Database) Remove(out io.Writer) error {
 		return err
 	}
 	if exists("volume", database.Container()) {
-		if err := run.Logged(out, "docker", "volume", "rm", database.Container()); err != nil {
+		if err := run.LoggedWithin(run.Minute, out, "docker", "volume", "rm", database.Container()); err != nil {
 			return err
 		}
 	}
-	for _, suffix := range []string{"", ".env"} {
+	for _, suffix := range []string{"", ".env", ".conf"} {
 		if err := os.Remove(database.secret(suffix)); err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return err
 		}

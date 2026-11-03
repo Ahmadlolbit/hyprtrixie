@@ -26,7 +26,7 @@ func dbAction(action string, database databases.Database) int {
 	case "start":
 		var address string
 		if address, err = database.Start(os.Stdout); err == nil {
-			return say(fmt.Sprintf("%s is running on localhost: %s\n", database.Title, address))
+			return say(fmt.Sprintf("%s started on localhost: %s\n", database.Title, address))
 		}
 	case "stop":
 		if err = database.Stop(os.Stdout); err == nil {
