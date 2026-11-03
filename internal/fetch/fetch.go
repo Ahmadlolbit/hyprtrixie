@@ -163,10 +163,11 @@ func clone(log *runlog.Log, source Source, part, name string, paths []string) er
 		}
 	}
 	log.Line("info", "fetching "+name+" at "+source.Commit)
-	if err := run.Logged(log, "git", "-c", "http.lowSpeedLimit=1024", "-c", "http.lowSpeedTime=60", "-C", part, "fetch", "-q", "--depth", "1", "--filter=blob:none", "origin", source.Commit); err != nil {
+	stalled := []string{"-c", "http.lowSpeedLimit=1024", "-c", "http.lowSpeedTime=60", "-C", part}
+	if err := run.Logged(log, "git", append(stalled, "fetch", "-q", "--depth", "1", "--filter=blob:none", "origin", source.Commit)...); err != nil {
 		return err
 	}
-	return run.Logged(log, "git", "-C", part, "checkout", "-q", "FETCH_HEAD")
+	return run.Logged(log, "git", append(stalled, "checkout", "-q", "FETCH_HEAD")...)
 }
 
 func Git(log *runlog.Log, name, target string, paths ...string) error {

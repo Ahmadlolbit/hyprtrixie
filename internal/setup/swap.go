@@ -2,11 +2,13 @@ package setup
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/btrfs"
@@ -80,9 +82,27 @@ func swapOff(log *runlog.Log) error {
 	return run.Logged(log, "swapoff", swapFile())
 }
 
+func (context *Context) swapRoom() error {
+	var disk syscall.Statfs_t
+	if syscall.Statfs(swapDir(), &disk) != nil {
+		return nil
+	}
+	room := int64(disk.Bavail) * disk.Bsize
+	if info, err := os.Stat(swapFile()); err == nil {
+		room += info.Size()
+	}
+	if int64(context.swapGiB())*bytesPerGiB > room {
+		return fmt.Errorf("a %d GiB swapfile doesn't fit: %d GiB is free", context.swapGiB(), room/bytesPerGiB)
+	}
+	return nil
+}
+
 func (context *Context) swapFileCreate(log *runlog.Log) error {
 	if context.swapFileFits() {
 		return nil
+	}
+	if err := context.swapRoom(); err != nil {
+		return err
 	}
 	if err := swapOff(log); err != nil {
 		return err

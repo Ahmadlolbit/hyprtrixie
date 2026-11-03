@@ -1,0 +1,11 @@
+[Unit]
+Description=Set the battery charge limit
+ConditionPathExists=/etc/tmpfiles.d/hyprtrixie-battery.conf
+After=systemd-user-sessions.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemd-tmpfiles --create /etc/tmpfiles.d/hyprtrixie-battery.conf
+
+[Install]
+WantedBy=multi-user.target

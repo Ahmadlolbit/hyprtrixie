@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/btrfs"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
@@ -32,7 +33,8 @@ func resumeInitramfs() string {
 }
 
 func (context *Context) hibernates() bool {
-	return context.Config.Get(hibernateOption) == "yes" && context.number("SWAPFILE_GB") > 0
+	return context.Config.Get(hibernateOption) == "yes" && context.number("SWAPFILE_GB") > 0 &&
+		detect.SecureBoot() != "enabled" && apt.Commands("update-grub") == nil
 }
 
 func memoryGiB() int {
@@ -95,6 +97,9 @@ func (rest *hibernation) rebuild(log *runlog.Log) error {
 	return rest.boot.do(func() error {
 		if err := run.Logged(log, "update-initramfs", "-u"); err != nil {
 			return err
+		}
+		if apt.Commands("update-grub") != nil {
+			return nil
 		}
 		return run.Logged(log, "update-grub")
 	})

@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
@@ -21,7 +22,10 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 )
 
-var dpkgJournal = "/var/lib/dpkg/updates"
+var (
+	dpkgJournal = "/var/lib/dpkg/updates"
+	dpkgLock    = "/var/lib/dpkg/lock"
+)
 
 const (
 	backportsSuite = "trixie-backports"
@@ -49,17 +53,27 @@ func simulating() bool {
 	return os.Getenv("APT_SIMULATE") == "1"
 }
 
-func interrupted() bool {
+func dpkgBusy() bool {
+	file, err := os.OpenFile(dpkgLock, os.O_RDWR, 0)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+	lock := syscall.Flock_t{Type: syscall.F_WRLCK}
+	return syscall.FcntlFlock(file.Fd(), syscall.F_GETLK, &lock) == nil && lock.Type != syscall.F_UNLCK
+}
+
+func Interrupted() bool {
 	for _, entry := range fsutil.Entries(dpkgJournal) {
 		if strings.Trim(entry.Name(), "0123456789") == "" {
-			return true
+			return !dpkgBusy()
 		}
 	}
 	return false
 }
 
 func repair(out io.Writer) error {
-	if simulating() || !interrupted() {
+	if simulating() || !Interrupted() {
 		return nil
 	}
 	fmt.Fprintln(out, "dpkg was interrupted, finishing what it left")

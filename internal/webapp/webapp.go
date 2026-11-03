@@ -1,6 +1,8 @@
 package webapp
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"net/url"
 	"os/exec"
@@ -15,12 +17,16 @@ import (
 const (
 	prefix      = "webapp-"
 	suffix      = ".desktop"
+	addressKey  = "X-Hyprtrixie-Address="
+	nameKey     = "Name="
+	slugLength  = 12
 	GenericIcon = "applications-internet"
 )
 
 var (
 	browsers = []string{"helium", "chromium", "brave-browser", "google-chrome", "microsoft-edge"}
 	goodName = regexp.MustCompile(`^[\p{L}\p{N}][\p{L}\p{N} ._+-]*$`)
+	goodSlug = regexp.MustCompile(`^[a-z0-9-]+$`)
 	unsafe   = regexp.MustCompile("[\\s\"'`$\\\\<>]")
 )
 
@@ -33,11 +39,20 @@ func IconFolder() string {
 }
 
 func Slug(name string) string {
-	return strings.Trim(regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(strings.ToLower(name), "-"), "-")
+	slug := strings.Trim(regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(strings.ToLower(name), "-"), "-")
+	if slug != "" {
+		return slug
+	}
+	sum := sha256.Sum256([]byte(name))
+	return hex.EncodeToString(sum[:])[:slugLength]
+}
+
+func entryFile(slug string) string {
+	return filepath.Join(Folder(), prefix+slug+suffix)
 }
 
 func File(name string) string {
-	return filepath.Join(Folder(), prefix+Slug(name)+suffix)
+	return entryFile(Slug(name))
 }
 
 func Icon(name string) string {
@@ -45,7 +60,7 @@ func Icon(name string) string {
 }
 
 func Check(name, address string) error {
-	if !goodName.MatchString(name) || Slug(name) == "" {
+	if !goodName.MatchString(name) {
 		return errors.New("a name uses letters, digits, spaces and . _ + -")
 	}
 	parsed, err := url.Parse(address)
@@ -72,17 +87,34 @@ func Favicon(address string) string {
 	return parsed.Scheme + "://" + parsed.Host + "/favicon.ico"
 }
 
-func Entry(name, address, browser, icon string) string {
-	command := browser + " --app=" + strings.ReplaceAll(address, "%", "%%") + " --class=" + prefix + Slug(name)
-	return "[Desktop Entry]\nType=Application\nName=" + name + "\nComment=" + address + " in its own window\nExec=" + command +
-		"\nIcon=" + icon + "\nCategories=Network;\nStartupNotify=true\nTerminal=false\n"
+func Entry(name, address, icon string) string {
+	return "[Desktop Entry]\nType=Application\n" + nameKey + name + "\nComment=" + address + " in its own window\nExec=hyprtrixie-webapp open " + Slug(name) +
+		"\nIcon=" + icon + "\nCategories=Network;\nStartupNotify=true\nTerminal=false\n" + addressKey + address + "\n"
 }
 
-func nameIn(text string) string {
+func field(text, key string) string {
 	for _, line := range strings.Split(text, "\n") {
-		if name, ok := strings.CutPrefix(line, "Name="); ok {
-			return name
+		if value, ok := strings.CutPrefix(line, key); ok {
+			return value
 		}
+	}
+	return ""
+}
+
+func Address(slug string) string {
+	if !goodSlug.MatchString(slug) {
+		return ""
+	}
+	return field(fsutil.Optional(entryFile(slug)), addressKey)
+}
+
+func Class(slug string) string {
+	return prefix + slug
+}
+
+func Taken(name string) string {
+	if other := field(fsutil.Optional(File(name)), nameKey); other != name {
+		return other
 	}
 	return ""
 }
@@ -91,7 +123,7 @@ func Names() []string {
 	var names []string
 	for _, entry := range fsutil.Entries(Folder()) {
 		if strings.HasPrefix(entry.Name(), prefix) && strings.HasSuffix(entry.Name(), suffix) {
-			if name := nameIn(fsutil.Optional(filepath.Join(Folder(), entry.Name()))); name != "" {
+			if name := field(fsutil.Optional(filepath.Join(Folder(), entry.Name())), nameKey); name != "" {
 				names = append(names, name)
 			}
 		}

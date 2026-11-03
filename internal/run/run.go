@@ -155,6 +155,9 @@ func Supply(limit time.Duration, output io.Writer, input, name string, args ...s
 	command, finish := bounded(limit, shared, name, args)
 	command.Stdin = strings.NewReader(input)
 	command.Stderr = shared
+	if file, ok := output.(*os.File); ok {
+		command.Stderr = file
+	}
 	return finish(command.Run())
 }
 

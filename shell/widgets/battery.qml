@@ -164,11 +164,12 @@ Label {
     }
   }
 
-  Timer {
-    interval: 30000
-    running: root.shown
-    repeat: true
-    triggeredOnStart: true
-    onTriggered: limit.running = true
+  Connections {
+    target: popup
+
+    function onVisibleChanged() {
+      if (popup.visible)
+        limit.running = true;
+    }
   }
 }
