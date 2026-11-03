@@ -39,6 +39,7 @@ const (
 	gtkThemes      = "/usr/share/themes"
 	consoleService = "hyprtrixie-console.service"
 	consoleSetup   = "/etc/default/console-setup"
+	consoleBanner  = "/etc/issue.d/hyprtrixie.issue"
 	unitFolder     = "/etc/systemd/system/"
 	splashScript   = "/usr/share/plymouth/themes/hyprtrixie/"
 	grubFont       = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
@@ -538,6 +539,9 @@ func (theme *themeRun) grubSetup(log *runlog.Log) error {
 
 func (theme *themeRun) consoleInstall(log *runlog.Log) error {
 	if theme.Config.Get("CONSOLE_THEME") != "yes" {
+		if err := removeFiles(consoleBanner); err != nil {
+			return err
+		}
 		return service.Disable(log, consoleService)
 	}
 	if err := apt.Install(log, "kbd", "console-setup"); err != nil {
@@ -555,7 +559,10 @@ func (theme *themeRun) consoleInstall(log *runlog.Log) error {
 	if err := service.Reload(log); err != nil {
 		return err
 	}
-	return service.Enable(log, consoleService)
+	if err := service.Enable(log, consoleService); err != nil {
+		return err
+	}
+	return theme.Deploy.File("system/console/hyprtrixie.issue", consoleBanner)
 }
 
 func (theme *themeRun) followRun(log *runlog.Log) error {
