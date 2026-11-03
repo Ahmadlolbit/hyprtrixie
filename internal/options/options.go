@@ -93,6 +93,9 @@ var table = []Option{
 	{"QUIET_HOURS", "Quiet hours", YesNo, "no", "", "look", "Do not disturb every night, for the hours below", nil},
 	{"QUIET_FROM", "Quiet from", Choice, "22:00", "20:00 21:00 22:00 23:00 00:00", "look", "When notifications go quiet", quietOn},
 	{"QUIET_TO", "Quiet until", Choice, "07:00", lightAt, "look", "When notifications come back", quietOn},
+	{"NIGHT_LIGHT", "Night light", Choice, "off", "off on times", "look", "A warmer screen: never, always, or at night", nil},
+	{"NIGHT_FROM", "Night light from", Choice, "20:00", "19:00 20:00 21:00 22:00 23:00", "look", "When the screen warms up", nightByTheClock},
+	{"NIGHT_TO", "Night light until", Choice, "07:00", lightAt, "look", "When the screen goes back to normal", nightByTheClock},
 	{"BOOT_SPLASH", "Boot splash", YesNo, "yes", "", "look", "The logo and the disk password prompt in your theme's colours while it boots", nil},
 	{"BOOT_MENU_THEME", "Boot menu in the theme", YesNo, "yes", "", "look", "The boot menu, where the snapshots are, in your theme's colours", nil},
 	{"CONSOLE_THEME", "Console colours and font", YesNo, "no", "", "look", "The text consoles (Ctrl+Alt+F3) in your theme's colours, with a larger font", nil},
@@ -149,6 +152,10 @@ func quietOn(facts Facts) bool {
 func SourceOf(app string) (string, bool) {
 	key, found := sources[app]
 	return key, found
+}
+
+func nightByTheClock(facts Facts) bool {
+	return facts.Value("NIGHT_LIGHT") == "times"
 }
 
 func Themes() []string {
