@@ -200,6 +200,18 @@
       "schedule"
     ]
   },
+  "toggle.powerfollow": {
+    "glyph": "\udb80\udf29",
+    "label": "Power saver on battery",
+    "action": "hyprtrixie-look power toggle",
+    "state": "test \"$(hyprtrixie-look power)\" = yes",
+    "keywords": [
+      "power",
+      "battery",
+      "charger",
+      "saver"
+    ]
+  },
   "toggle.glass": {
     "glyph": "\udb80\udcb5",
     "label": "Glass",
