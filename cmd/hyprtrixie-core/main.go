@@ -32,6 +32,7 @@ USAGE
   hyprtrixie verbose [on|off]      Log the desktop in detail from the next login (run it without sudo)
   hyprtrixie guide                 Read the guide in the terminal
   hyprtrixie keyboard [LAYOUT]     Show the keyboard layout, list them (list), or set one (run it with sudo)
+  hyprtrixie battery-limit [N|off] Show or set where charging stops, 50 to 100 (run it with sudo to set it)
   hyprtrixie update [PART]         Update everything (run it without sudo): a snapshot, Debian, the apps,
                                      then hyprtrixie and its installer; PART is system, apps or hyprtrixie
   hyprtrixie changes               Show what the last hyprtrixie update changed
@@ -50,27 +51,28 @@ Logs:          %s/ and ~/runbook-logs/
 `
 
 var commands = map[string]func() int{
-	"version":   showVersion,
-	"--version": showVersion,
-	"help":      showHelp,
-	"-h":        showHelp,
-	"--help":    showHelp,
-	"verbose":   verbose,
-	"changes":   changes,
-	"update":    update,
-	"config":    configCommand,
-	"modules":   modulesCommand,
-	"collect":   collect,
-	"doctor":    doctor,
-	"app":       appCommand,
-	"restore":   restore,
-	"cleanup":   cleanupCommand,
-	"install":   installCommand,
-	"verify":    verifyCommand,
-	"account":   accountCommand,
-	"guide":     guide,
-	"keyboard":  keyboardCommand,
-	"module":    module,
+	"version":       showVersion,
+	"--version":     showVersion,
+	"help":          showHelp,
+	"-h":            showHelp,
+	"--help":        showHelp,
+	"verbose":       verbose,
+	"changes":       changes,
+	"update":        update,
+	"config":        configCommand,
+	"modules":       modulesCommand,
+	"collect":       collect,
+	"doctor":        doctor,
+	"app":           appCommand,
+	"restore":       restore,
+	"cleanup":       cleanupCommand,
+	"install":       installCommand,
+	"verify":        verifyCommand,
+	"account":       accountCommand,
+	"guide":         guide,
+	"keyboard":      keyboardCommand,
+	"battery-limit": batteryLimit,
+	"module":        module,
 }
 
 func fail(format string, args ...any) int {
