@@ -7,6 +7,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/service"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/step"
 )
 
@@ -15,6 +16,11 @@ const (
 	bazaarApp     = "io.github.kolunmi.Bazaar"
 	steamApp      = "com.valvesoftware.Steam"
 	mangohudLayer = "org.freedesktop.Platform.VulkanLayer.MangoHud"
+)
+
+var (
+	printUnits  = []string{"cups.service", "cups-browsed.service", "avahi-daemon.service"}
+	printGroups = []string{"lpadmin", "scanner"}
 )
 
 func (context *Context) extra(name string) bool {
@@ -67,6 +73,32 @@ func steamMangoHud(log *runlog.Log) error {
 	return flatpakInstall(mangohudLayer + "//" + branch)(log)
 }
 
+func printServices(log *runlog.Log) error {
+	return service.Start(log, printUnits...)
+}
+
+func (context *Context) printAccess(log *runlog.Log) error {
+	return context.Person.AddGroups(log, printGroups...)
+}
+
+func printReady(*runlog.Log) error {
+	for _, unit := range printUnits {
+		if !service.Enabled(unit) {
+			return fmt.Errorf("%s is off", unit)
+		}
+	}
+	return nil
+}
+
+func (context *Context) printAccessReady(*runlog.Log) error {
+	for _, group := range printGroups {
+		if !context.Person.InGroup(group) {
+			return fmt.Errorf("you are not in the %s group", group)
+		}
+	}
+	return nil
+}
+
 func extrasSteps(context *Context) {
 	if context.flathubWanted() {
 		context.Run.Step("Install Flatpak", packages("extras-flatpak"))
@@ -80,6 +112,11 @@ func extrasSteps(context *Context) {
 		context.Run.Step("Install Steam", flatpakInstall(steamApp))
 		context.Run.Step("Add MangoHud to Steam", steamMangoHud)
 	}
+	if context.extra("printing") {
+		context.Run.Step("Install printing and scanning", packages("extras-printing"))
+		context.Run.Step("Turn on printing and finding printers on the network", printServices)
+		context.Run.Step("Let you manage printers and scanners", context.printAccess)
+	}
 }
 
 func extrasChecks(context *Context) {
@@ -92,5 +129,10 @@ func extrasChecks(context *Context) {
 	if context.extra("gaming") {
 		context.Run.Check("GameMode and MangoHud are installed", commands("gamemoded", "mangohud"))
 		context.Run.Check("Steam is installed", flatpakApps(steamApp))
+	}
+	if context.extra("printing") {
+		context.Run.Check("Printing and scanning tools are installed", commands("lpstat", "scanimage", "system-config-printer", "simple-scan"))
+		context.Run.Check("Printing and finding printers are on", printReady)
+		context.Run.Check("You can manage printers and scanners", context.printAccessReady)
 	}
 }
