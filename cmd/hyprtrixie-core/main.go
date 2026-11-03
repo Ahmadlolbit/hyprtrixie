@@ -26,7 +26,11 @@ USAGE
                                      --changes FILE     show these update notes in the summary
   hyprtrixie verify [--only ...]   Run every check again
   hyprtrixie modules               List the modules and how they last ended
-  hyprtrixie config [show|path|edit|reset]
+  hyprtrixie config [show|path|edit|reset|export]
+                                   export prints your settings as a preset to share, without your Debian mirror
+  hyprtrixie config import FILE|URL
+                                   Take a preset's settings from a file or an https address (run it with sudo);
+                                     your Debian mirror stays, and it lists what changed
   hyprtrixie collect [--verbose]   Pack the logs, the report and system details for a bug report;
                                      --verbose also writes everything to ~/hyprtrixie-log-<time>.txt
   hyprtrixie verbose [on|off]      Log the desktop in detail from the next login (run it without sudo)
