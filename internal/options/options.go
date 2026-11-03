@@ -16,10 +16,11 @@ const (
 	Text   = "text"
 	Multi  = "multi"
 
-	themes   = "catppuccin catppuccin-latte ethereal everforest flexoki-light gruvbox hackerman kanagawa last-horizon lupine matte-black miasma nord northern-sea osaka-jade pitch-black retro-82 ristretto rose-pine solitude tokyo-night white"
-	devTools = "docker@developer podman@developer mise@developer python@developer rust@developer go@developer kubernetes@developer neovim@developer vscode@developer vscodium@developer zed@developer toolbox@developer"
-	lightAt  = "05:00 06:00 07:00 08:00 09:00"
-	extras   = "flatpak@offered gaming@offered printing@offered distrobox@offered"
+	themes    = "catppuccin catppuccin-latte ethereal everforest flexoki-light gruvbox hackerman kanagawa last-horizon lupine matte-black miasma nord northern-sea osaka-jade pitch-black retro-82 ristretto rose-pine solitude tokyo-night white"
+	devTools  = "docker@developer podman@developer mise@developer python@developer rust@developer go@developer kubernetes@developer neovim@developer vscode@developer vscodium@developer zed@developer toolbox@developer"
+	lightAt   = "05:00 06:00 07:00 08:00 09:00"
+	extras    = "flatpak@offered gaming@offered printing@offered distrobox@offered"
+	miseTools = "mise-node@minimal mise-python@offered mise-java@offered mise-go@offered"
 )
 
 type Facts struct {
@@ -61,6 +62,7 @@ var table = []Option{
 	{"APPS", "Applications", Multi, "", "", "apps", "Apps to install, by category; untick any you don't want", nil},
 	{"TEAMS_SOURCE", "Install Teams from", Choice, "apt", "apt snap", "apps", "Teams for Linux from its apt repository or from the Snap Store", teamsWanted},
 	{"DEV_TOOLS", "Developer tools", Multi, "", devTools, "dev", "Languages, containers and editors to set up for programming", nil},
+	{"MISE_TOOLS", "Languages through mise", Multi, "", miseTools, "dev", "What mise sets up for every terminal: Node.js LTS, Python, Java 25 (Temurin) and Go", miseWanted},
 	{"CONTAINER_ENGINE", "Docker command uses", Choice, "docker", "docker podman", "dev", "When both are installed, which engine answers the docker command", bothEngines},
 	{"DOCKER_PORTS", "Docker publishes ports on", Choice, "localhost", "localhost all", "dev", "Container ports reach only this computer, or every network", dockerWanted},
 	{"EXTRAS", "Extras", Multi, "", extras, "extras", "Optional parts, set up only if you tick them: Flatpak with the Bazaar store, Steam with GameMode and MangoHud, printing and scanning, and distrobox", nil},
@@ -123,6 +125,10 @@ func snapshotsOn(facts Facts) bool {
 
 func teamsWanted(facts Facts) bool {
 	return ticked(facts, "APPS", "teams")
+}
+
+func miseWanted(facts Facts) bool {
+	return ticked(facts, "DEV_TOOLS", "mise")
 }
 
 func dockerWanted(facts Facts) bool {
