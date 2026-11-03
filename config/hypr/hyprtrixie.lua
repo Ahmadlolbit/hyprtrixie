@@ -19,6 +19,8 @@ if package.searchpath("hyprtrixie.hypr.options", package.path) then
   require("hyprtrixie.hypr.options")
 end
 
+require("hyprtrixie.hypr.lid")
+
 if package.searchpath("hyprtrixie.current.theme.glass", package.path) then
   require("hyprtrixie.current.theme.glass")
 end
