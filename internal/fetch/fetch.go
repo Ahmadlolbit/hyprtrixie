@@ -69,7 +69,7 @@ func sumOK(file, want string) bool {
 }
 
 func download(log *runlog.Log, address, target string) error {
-	return run.Logged(log, "curl", "-fL", "--retry", "3", "--retry-delay", "3", "--connect-timeout", "20", "-o", target, address)
+	return run.Logged(log, "curl", "-fL", "--retry", "3", "--retry-delay", "3", "--connect-timeout", "20", "--speed-limit", "1024", "--speed-time", "60", "-o", target, address)
 }
 
 func fileName(address string) string {
@@ -163,7 +163,7 @@ func clone(log *runlog.Log, source Source, part, name string, paths []string) er
 		}
 	}
 	log.Line("info", "fetching "+name+" at "+source.Commit)
-	if err := run.Logged(log, "git", "-C", part, "fetch", "-q", "--depth", "1", "--filter=blob:none", "origin", source.Commit); err != nil {
+	if err := run.Logged(log, "git", "-c", "http.lowSpeedLimit=1024", "-c", "http.lowSpeedTime=60", "-C", part, "fetch", "-q", "--depth", "1", "--filter=blob:none", "origin", source.Commit); err != nil {
 		return err
 	}
 	return run.Logged(log, "git", "-C", part, "checkout", "-q", "FETCH_HEAD")
