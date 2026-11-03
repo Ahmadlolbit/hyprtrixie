@@ -25,6 +25,7 @@ bind("SUPER + K", "Key bindings", "qs -p /usr/share/hyprtrixie/shell ipc call ke
 bind("Print", "Screenshot of a region", "hyprtrixie-screenshot region")
 bind("SHIFT + Print", "Screenshot of the window", "hyprtrixie-screenshot window")
 bind("CTRL + Print", "Screenshot of the screen", "hyprtrixie-screenshot screen")
+bind("SUPER + Print", "Record a region, or stop", "hyprtrixie-record toggle")
 
 local arrows = {
   { "LEFT", "left", -50, 0 },

@@ -31,20 +31,6 @@ func windowArea() (string, bool) {
 	return fmt.Sprintf("%d,%d %dx%d", window.At[0], window.At[1], window.Size[0], window.Size[1]), true
 }
 
-func focusedOutput() (string, bool) {
-	monitors, ok := hypr.Monitors()
-	if !ok {
-		return "", false
-	}
-	for _, monitor := range monitors {
-		if monitor.Focused {
-			return monitor.Name, true
-		}
-	}
-	fmt.Fprintln(os.Stderr, "no focused monitor")
-	return "", false
-}
-
 func capture(mode, file string) int {
 	switch mode {
 	case "region":
@@ -60,19 +46,12 @@ func capture(mode, file string) int {
 		}
 		return run.Within(run.Quick, "grim", "-g", area, file)
 	default:
-		output, ok := focusedOutput()
+		output, ok := hypr.FocusedOutput()
 		if !ok {
 			return 1
 		}
 		return run.Within(run.Quick, "grim", "-o", output, file)
 	}
-}
-
-func picturesDir() string {
-	if dir, err := run.CaptureQuiet(run.Quick, "xdg-user-dir", "PICTURES"); err == nil && dir != "" && dir != env.Home() {
-		return dir
-	}
-	return filepath.Join(env.Home(), "Pictures")
 }
 
 func copyImage(file string) {
@@ -86,7 +65,7 @@ func copyImage(file string) {
 }
 
 func shoot(mode string) int {
-	dir := filepath.Join(picturesDir(), "Screenshots")
+	dir := filepath.Join(run.UserDir("PICTURES", filepath.Join(env.Home(), "Pictures")), "Screenshots")
 	file := filepath.Join(dir, "Screenshot from "+time.Now().Format("2006-01-02 15-04-05")+".png")
 	if err := os.MkdirAll(dir, 0o777); err != nil {
 		fmt.Fprintln(os.Stderr, err)

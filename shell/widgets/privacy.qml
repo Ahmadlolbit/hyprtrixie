@@ -10,6 +10,7 @@ GridLayout {
 
   property var bar
   property var held: []
+  property bool recording: false
   readonly property var links: Pipewire.linkGroups.values.filter(link => link.source && link.target)
   readonly property var listening: links.filter(link => link.source.type === PwNodeType.AudioSource && link.target.isStream)
   readonly property var filming: links.filter(link => link.source.type === PwNodeType.VideoSource && !shared(link.source))
@@ -17,7 +18,7 @@ GridLayout {
   readonly property bool mic: listening.length > 0
   readonly property bool camera: filming.length > 0 || held.length > 0
   readonly property bool screen: Pipewire.nodes.values.some(node => shared(node))
-  readonly property bool shown: mic || camera || screen
+  readonly property bool shown: mic || camera || screen || recording
 
   function shared(node) {
     return node.type === PwNodeType.VideoSource && (node.name.startsWith("xdg-desktop-portal") || node.name.startsWith("xdph-streaming"));
@@ -50,7 +51,17 @@ GridLayout {
     running: true
     repeat: true
     triggeredOnStart: true
-    onTriggered: devices.running = true
+    onTriggered: {
+      devices.running = true;
+      recorder.running = true;
+    }
+  }
+
+  Process {
+    id: recorder
+
+    command: ["pgrep", "-x", "wf-recorder"]
+    onExited: code => root.recording = code === 0
   }
 
   Label {
@@ -86,6 +97,18 @@ GridLayout {
       anchors.fill: parent
       cursorShape: Qt.PointingHandCursor
       onClicked: popup.toggle()
+    }
+  }
+
+  Label {
+    visible: root.recording
+    text: "\u{f044a}"
+    color: Theme.critical
+
+    MouseArea {
+      anchors.fill: parent
+      cursorShape: Qt.PointingHandCursor
+      onClicked: Quickshell.execDetached(["hyprtrixie-record", "stop"])
     }
   }
 

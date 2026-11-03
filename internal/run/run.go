@@ -272,6 +272,13 @@ func bounded(limit time.Duration, messages io.Writer, name string, args []string
 	}
 }
 
+func UserDir(kind, fallback string) string {
+	if dir, err := CaptureQuiet(Quick, "xdg-user-dir", kind); err == nil && dir != "" && dir != filepath.Dir(fallback) {
+		return dir
+	}
+	return fallback
+}
+
 func Sibling(name string) string {
 	self, err := os.Executable()
 	if err != nil {
