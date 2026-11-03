@@ -33,7 +33,7 @@ lock screen, btop, GTK and KDE apps, and the wallpaper. Themes come from
 `
 
 const (
-	denied     = " alacritty.toml foot.ini ghostty.conf kde.colors kitty.conf vscode.json "
+	denied     = " alacritty.toml foot.ini ghostty.conf hyprlock.conf kde.colors kitty.conf mako.ini vscode.json "
 	wallpapers = "--wallpapers-soon"
 )
 
