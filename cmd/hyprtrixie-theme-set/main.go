@@ -33,7 +33,7 @@ lock screen, btop, GTK and KDE apps, and the wallpaper. Themes come from
 `
 
 const (
-	denied     = " alacritty.toml foot.ini ghostty.conf hyprlock.conf kde.colors kitty.conf mako.ini vscode.json "
+	denied     = " alacritty.toml fastfetch.jsonc foot.ini ghostty.conf hyprlock.conf kde.colors kitty.conf mako.ini vscode.json "
 	wallpapers = "--wallpapers-soon"
 )
 
@@ -267,6 +267,9 @@ func linkApps() {
 	}
 	if file := filepath.Join(current, "btop.theme"); fsutil.IsFile(file) {
 		symlink(file, filepath.Join(env.ConfigHome(), "btop", "themes", "hyprtrixie.theme"))
+	}
+	if file := filepath.Join(current, "fastfetch.jsonc"); fsutil.IsFile(file) {
+		linkUnlessYours(file, filepath.Join(env.ConfigHome(), "fastfetch", "config.jsonc"))
 	}
 	linkToolkits(current)
 }
