@@ -168,7 +168,8 @@ func placeholders(key, value string) []string {
 	pairs := []string{"{{ " + key + " }}", value, "{{ " + key + "_strip }}", strings.TrimPrefix(value, "#")}
 	if IsHex(value) {
 		rgb := follow.Channels(value)
-		pairs = append(pairs, "{{ "+key+"_rgb }}", fmt.Sprintf("%d,%d,%d", rgb[0], rgb[1], rgb[2]))
+		pairs = append(pairs, "{{ "+key+"_rgb }}", fmt.Sprintf("%d,%d,%d", rgb[0], rgb[1], rgb[2]),
+			"{{ "+key+"_ansi }}", fmt.Sprintf("38;2;%d;%d;%d", rgb[0], rgb[1], rgb[2]))
 	}
 	return pairs
 }
