@@ -577,6 +577,17 @@
       "pair"
     ]
   },
+  "setup.keyboard": {
+    "glyph": "\udb80\udf0c",
+    "label": "Keyboard layout",
+    "list": "keyboard",
+    "keywords": [
+      "keyboard",
+      "layout",
+      "language",
+      "typing"
+    ]
+  },
   "setup.power": {
     "glyph": "\udb80\udc79",
     "label": "Power",
