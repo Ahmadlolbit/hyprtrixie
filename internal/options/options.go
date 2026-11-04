@@ -91,6 +91,7 @@ var table = []Option{
 	{"GLASS", "Glass mode", YesNo, "no", "", "look", "See-through terminals and panels, with the wallpaper blurred behind them", nil},
 	{"ROUNDED_CORNERS", "Rounded screen corners", YesNo, "no", "", "look", "Round the corners of the screen, like a phone's", nil},
 	{"APPS_THEME", "GTK and KDE apps", Choice, "follow", "follow catppuccin off", "look", "Apps follow the theme, stay Catppuccin whatever the theme is, or keep their own look", nil},
+	{"EDITORS_THEME", "Editors follow the theme", YesNo, "yes", "", "look", "VS Code and VSCodium switch to the theme's colours with it, unless you picked another theme in them", nil},
 	{"AUTO_THEME", "Automatic light and dark", Choice, "off", "off sun times", "look", "A light theme by day and a dark one at night: by the sun or at set times", nil},
 	{"LIGHT_THEME", "Light theme", Choice, "catppuccin-latte", themes, "look", "The theme for the day", autoThemeOn},
 	{"DARK_THEME", "Dark theme", Choice, "catppuccin", themes, "look", "The theme for the night", autoThemeOn},

@@ -27,10 +27,13 @@ const usage = `Usage: hyprtrixie-theme-set <theme>
        hyprtrixie-theme-set --list
        hyprtrixie-theme-set --previews
        hyprtrixie-theme-set --current
+       hyprtrixie-theme-set --editors
 
 Applies a theme to Hyprland, the bar, kitty, the launcher, notifications, the
-lock screen, btop, Neovim, GTK and KDE apps, and the wallpaper. Themes come from
-/usr/share/hyprtrixie/themes and ~/.config/hyprtrixie/themes.
+lock screen, btop, Neovim, VS Code, VSCodium, GTK and KDE apps, and the
+wallpaper. Themes come from /usr/share/hyprtrixie/themes and
+~/.config/hyprtrixie/themes. --editors gives the editors the current theme
+again, for one installed since.
 `
 
 const (
@@ -460,6 +463,7 @@ func set(argument string) int {
 	}
 	held.Close()
 	retint()
+	followEditors(name)
 	return 0
 }
 
@@ -503,6 +507,8 @@ func main() {
 		previews()
 	case "--current":
 		os.Exit(current())
+	case "--editors":
+		os.Exit(refreshEditors())
 	case wallpapers:
 		time.Sleep(time.Second)
 		os.Exit(run.Report(run.Exec("hyprtrixie-background", "workspaces")))
