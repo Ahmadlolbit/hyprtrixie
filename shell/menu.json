@@ -874,6 +874,16 @@
       "sleep"
     ]
   },
+  "system.hibernate": {
+    "glyph": "\udb82\udc4f",
+    "label": "Hibernate",
+    "action": "systemctl hibernate || notify-send Hibernate 'Turn it on in the setup, under Storage'",
+    "keywords": [
+      "hibernate",
+      "sleep",
+      "disk"
+    ]
+  },
   "system.logout": {
     "glyph": "\udb80\udf43",
     "label": "Log out",

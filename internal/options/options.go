@@ -50,6 +50,7 @@ var table = []Option{
 	{"SWAPFILE_GB", "Swapfile size (GiB)", Number, "8", "", "storage", "Disk space used as extra memory when RAM runs out; 0 turns it off", nil},
 	{"ZRAM_PERCENT", "zram size (% of memory)", Number, "50", "", "storage", "Compressed memory that works as fast swap; 0 turns it off", nil},
 	{"SWAPPINESS", "Swappiness", Number, "180", "", "storage", "How readily memory moves to swap; a high value suits zram", nil},
+	{"HIBERNATE", "Hibernate", YesNo, "no", "", "storage", "Save everything to disk and power off; the swapfile grows to the size of your memory", nil},
 	{"SNAPSHOTS", "System snapshots", YesNo, "yes", "", "storage", "Snapshots before changes, so you can roll back from the boot menu", nil},
 	{"SNAPSHOT_DAILY", "Daily snapshots to keep", Number, "7", "", "storage", "How many daily snapshots to keep", snapshotsOn},
 	{"SNAPSHOT_WEEKLY", "Weekly snapshots to keep", Number, "4", "", "storage", "How many weekly snapshots to keep", snapshotsOn},

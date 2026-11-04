@@ -248,6 +248,10 @@ func (found *machine) readRoot() {
 	found.rootEncrypted = encrypted(device)
 }
 
+func MemoryMiB() int {
+	return memory()
+}
+
 func memory() int {
 	meminfo, _ := os.ReadFile(at("/proc/meminfo"))
 	fields := strings.Fields(firstField(string(meminfo), "MemTotal"))
