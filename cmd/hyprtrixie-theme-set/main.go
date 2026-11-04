@@ -28,12 +28,12 @@ const usage = `Usage: hyprtrixie-theme-set <theme>
        hyprtrixie-theme-set --current
 
 Applies a theme to Hyprland, the bar, kitty, the launcher, notifications, the
-lock screen, btop, GTK and the wallpaper. Themes come from
+lock screen, btop, GTK and KDE apps, and the wallpaper. Themes come from
 /usr/share/hyprtrixie/themes and ~/.config/hyprtrixie/themes.
 `
 
 const (
-	denied     = " alacritty.toml foot.ini ghostty.conf kitty.conf vscode.json "
+	denied     = " alacritty.toml foot.ini ghostty.conf kde.colors kitty.conf vscode.json "
 	wallpapers = "--wallpapers-soon"
 )
 
@@ -253,6 +253,7 @@ func linkApps() {
 	if file := filepath.Join(current, "btop.theme"); fsutil.IsFile(file) {
 		symlink(file, filepath.Join(env.ConfigHome(), "btop", "themes", "hyprtrixie.theme"))
 	}
+	linkToolkits(current)
 }
 
 func desktop(action string, args ...string) {
@@ -281,11 +282,7 @@ func desktopSettings(colors theme.Colors) {
 	}
 	mode := colors["mode"]
 	desktop("set", "color-scheme", "prefer-"+mode)
-	if mode == "light" {
-		desktop("set", "gtk-theme", "Adwaita")
-	} else {
-		desktop("set", "gtk-theme", "Adwaita-dark")
-	}
+	desktop("set", "gtk-theme", gtkTheme(mode))
 	desktop("set", "monospace-font-name", colors["font"]+" 11")
 	if ui := settings.Get("ui_font"); ui == "default" {
 		desktop("reset", "font-name")

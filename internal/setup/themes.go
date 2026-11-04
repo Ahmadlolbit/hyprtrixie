@@ -35,6 +35,8 @@ const (
 	followTool     = "hyprtrixie-follow-theme"
 	followPath     = followTool + ".path"
 	followService  = followTool + ".service"
+	gtkBase        = "adw-gtk3"
+	gtkThemes      = "/usr/share/themes"
 	consoleService = "hyprtrixie-console.service"
 	consoleSetup   = "/etc/default/console-setup"
 	unitFolder     = "/etc/systemd/system/"
@@ -338,6 +340,27 @@ func (theme *themeRun) switcherInstall(*runlog.Log) error {
 	return removeFiles(filepath.Join(env.BinDir(), "hyprtrixie-theme-picker"), filepath.Join(env.BinDir(), oldName+"-theme-set"), filepath.Join(env.BinDir(), oldName+"-theme-install"))
 }
 
+func gtkBaseInPlace() bool {
+	return fsutil.IsDir(filepath.Join(gtkThemes, gtkBase)) && fsutil.IsDir(filepath.Join(gtkThemes, gtkBase+"-dark"))
+}
+
+func (theme *themeRun) gtkBaseInstall(log *runlog.Log) error {
+	if fetch.ReleaseCurrent(log, gtkBase) && gtkBaseInPlace() {
+		return nil
+	}
+	file, err := fetch.FetchRelease(log, gtkBase)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(gtkThemes, programMode); err != nil {
+		return err
+	}
+	if err := run.Logged(log, "tar", "-xJf", file, "-C", gtkThemes, gtkBase, gtkBase+"-dark"); err != nil {
+		return err
+	}
+	return fetch.ReleaseMark(log, gtkBase)
+}
+
 func (theme *themeRun) btopFirstConfig(log *runlog.Log, conf string) error {
 	if err := theme.userFolder(log, ".config/btop"); err != nil {
 		return err
@@ -569,6 +592,7 @@ func themeSteps(context *Context) {
 	context.Run.Step("Install theme packages", packages("themes"))
 	context.Run.Step("Move your themes to their new folders", theme.migrate)
 	context.Run.Step("Install the themes", theme.themesInstall)
+	context.Run.Step("Install the base for GTK themes", theme.gtkBaseInstall)
 	context.Run.Step("Install the theme switcher", theme.switcherInstall)
 	context.Run.Step("Point btop at the theme", theme.btopSetup)
 	context.Run.Step("Write the look settings", theme.lookInstall)
@@ -593,6 +617,9 @@ func themeChecks(context *Context) {
 		return expect(service.Enabled(followPath), followPath+" isn't enabled")
 	})
 	context.Run.Check("The look settings are written", func(*runlog.Log) error { return fileThere(lookConf()) })
+	context.Run.Check("GTK apps can take the theme's colours", func(*runlog.Log) error {
+		return expect(gtkBaseInPlace(), gtkBase+" isn't in "+gtkThemes)
+	})
 	if context.Config.Get("BOOT_SPLASH") == "yes" {
 		context.Run.Check("The boot splash is in the theme's colours", func(*runlog.Log) error { return fileThere(splashScript + "hyprtrixie.script") })
 	}
