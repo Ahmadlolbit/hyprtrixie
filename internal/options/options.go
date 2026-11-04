@@ -19,6 +19,7 @@ const (
 	themes   = "catppuccin catppuccin-latte ethereal everforest flexoki-light gruvbox hackerman kanagawa last-horizon lupine matte-black miasma nord northern-sea osaka-jade pitch-black retro-82 ristretto rose-pine solitude tokyo-night white"
 	devTools = "docker@developer podman@developer mise@developer python@developer rust@developer go@developer kubernetes@developer neovim@developer vscode@developer vscodium@developer zed@developer toolbox@developer"
 	lightAt  = "05:00 06:00 07:00 08:00 09:00"
+	extras   = "flatpak@offered"
 )
 
 type Facts struct {
@@ -62,6 +63,7 @@ var table = []Option{
 	{"DEV_TOOLS", "Developer tools", Multi, "", devTools, "dev", "Languages, containers and editors to set up for programming", nil},
 	{"CONTAINER_ENGINE", "Docker command uses", Choice, "docker", "docker podman", "dev", "When both are installed, which engine answers the docker command", bothEngines},
 	{"DOCKER_PORTS", "Docker publishes ports on", Choice, "localhost", "localhost all", "dev", "Container ports reach only this computer, or every network", dockerWanted},
+	{"EXTRAS", "Extras", Multi, "", extras, "extras", "Optional parts, set up only if you tick them: Flatpak with the Bazaar store", nil},
 	{"DISPLAY_SCALE", "Display scale", Choice, "auto", "auto 1 1.25 1.5 1.75 2", "input", "Size of everything on screen; auto picks it from the screen's density", nil},
 	{"NATURAL_SCROLL", "Natural scrolling", YesNo, "no", "", "input", "Content follows your fingers on the touchpad, like on a phone", nil},
 	{"TAP_TO_CLICK", "Tap to click", YesNo, "yes", "", "input", "Tap the touchpad to click instead of pressing it down", nil},

@@ -20,6 +20,7 @@ type section struct {
 
 var settingsSections = []section{
 	{"Developer tools", "dev"},
+	{"Extras", "extras"},
 	{"Look and feel", "look"},
 	{"Shell", "shell"},
 	{"Input and display", "input"},
