@@ -1,0 +1,9 @@
+avahi-daemon
+cups
+cups-browsed
+ipp-usb
+libnss-mdns
+sane-airscan
+sane-utils
+simple-scan
+system-config-printer
