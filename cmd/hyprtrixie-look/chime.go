@@ -12,7 +12,6 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
-	"github.com/Ahmadlolbit/hyprtrixie/internal/theme"
 )
 
 var (
@@ -30,10 +29,7 @@ func ownSound() string {
 }
 
 func themeMode() string {
-	data, _ := os.ReadFile(filepath.Join(env.ThemeState(), "theme", "colors.toml"))
-	colors := theme.Parse(string(data))
-	colors.Resolve()
-	return colors["mode"]
+	return themeColorsNow()["mode"]
 }
 
 func madeSound() (string, error) {

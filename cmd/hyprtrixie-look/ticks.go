@@ -180,7 +180,7 @@ func retick() int {
 
 func rotateTick() {
 	every, ok := look.WholeNumber(settings.Get("rotate"))
-	if !ok || every == 0 {
+	if !ok || every == 0 || settings.Get("day_wallpaper") != "off" {
 		return
 	}
 	at, ok := moment()
@@ -435,6 +435,7 @@ func dailyTick() {
 func tick([]string) int {
 	autoTick()
 	dailyTick()
+	dayWallpaperTick()
 	rotateTick()
 	weatherTick()
 	quietTick()

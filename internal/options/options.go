@@ -101,6 +101,8 @@ var table = []Option{
 	{"DARK_AT", "Dark from", Choice, "19:00", "17:00 18:00 19:00 20:00 21:00 22:00", "look", "When the dark theme starts", autoThemeTimes},
 	{"DAILY_THEME", "Theme of the day", YesNo, "no", "", "look", "The next theme every morning at 6; Super+Ctrl+T still changes it during the day", autoThemeOff},
 	{"WALLPAPER_MINUTES", "Change wallpaper every (minutes)", Number, "0", "", "look", "Move to the theme's next wallpaper every so many minutes; 0 keeps one", nil},
+	{"DAY_WALLPAPER", "Wallpaper of the day", Choice, "off", "off drawn nasa folder", "look", "A new wallpaper every day: drawn in the theme's colours, NASA's picture of the day (needs the internet), or one from your folder", nil},
+	{"WALLPAPER_FOLDER", "Wallpaper folder", Text, "~/Pictures/Wallpapers", "", "look", "The folder of pictures, or a file that lists them one per line, for the wallpaper of the day", dayFromFolder},
 	{"WALLPAPER_PER_WORKSPACE", "A wallpaper per workspace", YesNo, "no", "", "look", "Each workspace shows its own wallpaper from the theme", nil},
 	{"WEATHER", "Weather in the bar", YesNo, "no", "", "look", "From Open-Meteo, no account; it sends your time zone's main city there", nil},
 	{"WEATHER_UNITS", "Weather units", Choice, "celsius", "celsius fahrenheit", "look", "Degrees Celsius and km/h, or Fahrenheit and mph", weatherOn},
@@ -165,6 +167,10 @@ func autoThemeTimes(facts Facts) bool {
 
 func weatherOn(facts Facts) bool {
 	return facts.Value("WEATHER") == "yes"
+}
+
+func dayFromFolder(facts Facts) bool {
+	return facts.Value("DAY_WALLPAPER") == "folder"
 }
 
 func quietOn(facts Facts) bool {
