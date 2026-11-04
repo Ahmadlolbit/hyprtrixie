@@ -353,6 +353,22 @@ func Remove(log *runlog.Log, names ...string) error {
 	return get(log, append([]string{"remove", "--autoremove"}, names...)...)
 }
 
+func Fetch(log *runlog.Log, names ...string) error {
+	if err := Update(log); err != nil {
+		return err
+	}
+	for _, name := range names {
+		if err := get(log, "install", "--download-only", "--reinstall", name); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func InstallCached(log *runlog.Log, names ...string) error {
+	return get(log, append([]string{"install", "--no-download"}, names...)...)
+}
+
 func ExtrepoDisable(log *runlog.Log, name string) error {
 	if err := run.Logged(log, "extrepo", "disable", name); err != nil {
 		return err

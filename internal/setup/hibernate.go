@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/bootimage"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/btrfs"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
@@ -22,6 +23,7 @@ const (
 	offsetField     = 3
 	resumeFollowUp  = "resume-boot-files"
 	hibernateOption = "HIBERNATE"
+	dracutResume    = "add_dracutmodules+=\" resume \"\n"
 )
 
 func resumeGrub() string {
@@ -30,6 +32,10 @@ func resumeGrub() string {
 
 func resumeInitramfs() string {
 	return env.Or("HYPRTRIXIE_RESUME_INITRAMFS", "/etc/initramfs-tools/conf.d/hyprtrixie-resume")
+}
+
+func resumeDracut() string {
+	return env.Or("HYPRTRIXIE_RESUME_DRACUT", "/etc/dracut.conf.d/hyprtrixie-resume.conf")
 }
 
 func (context *Context) hibernates() bool {
@@ -95,7 +101,8 @@ type hibernation struct {
 
 func (rest *hibernation) rebuild(log *runlog.Log) error {
 	return rest.boot.do(func() error {
-		if err := run.Logged(log, "update-initramfs", "-u"); err != nil {
+		rebuild := bootimage.Rebuild(false)
+		if err := run.Logged(log, rebuild[0], rebuild[1:]...); err != nil {
 			return err
 		}
 		if apt.Commands("update-grub") != nil {
@@ -123,12 +130,16 @@ func (rest *hibernation) setup(log *runlog.Log) error {
 	if err != nil {
 		return err
 	}
-	rest.boot.need(first || second)
+	third, err := rest.Deploy.Content([]byte(dracutResume), resumeDracut())
+	if err != nil {
+		return err
+	}
+	rest.boot.need(first || second || third)
 	return rest.rebuild(log)
 }
 
 func (rest *hibernation) remove(log *runlog.Log) error {
-	if err := removeFiles(resumeGrub(), resumeInitramfs()); err != nil {
+	if err := removeFiles(resumeGrub(), resumeInitramfs(), resumeDracut()); err != nil {
 		return err
 	}
 	rest.boot.need(true)
