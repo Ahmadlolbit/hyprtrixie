@@ -285,13 +285,24 @@ func (work *session) one(module modules.Module, position, total int, part func(s
 	return true
 }
 
+func (work *session) undone(id string) bool {
+	if listed(work.options.Only, id) {
+		return false
+	}
+	status, _ := modules.StatusOf(fsutil.Optional(modules.StatusFile()), id)
+	return status == modules.Undone
+}
+
 func (work *session) walk(part func(setup.Module, *setup.Context)) {
 	var chosen []modules.Module
 	for _, module := range modules.All {
-		if work.options.wants(module.ID) {
-			chosen = append(chosen, module)
-		} else {
+		switch {
+		case !work.options.wants(module.ID):
 			work.log.Line("info", "module "+module.ID+" not selected")
+		case work.undone(module.ID):
+			work.log.Line("info", "module "+module.ID+" was undone; run it again with --only "+module.ID)
+		default:
+			chosen = append(chosen, module)
 		}
 	}
 	for index, module := range chosen {
