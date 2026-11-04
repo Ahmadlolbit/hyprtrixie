@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell.Io
 import Quickshell.Services.Pipewire
 import Quickshell.Wayland
 import qs.common
@@ -8,6 +9,8 @@ RowLayout {
   id: root
 
   property var bar
+  property bool fnLock: false
+  property bool fnLed: true
   readonly property PwNode source: Pipewire.defaultAudioSource
   readonly property var stays: [
     {
@@ -37,6 +40,32 @@ RowLayout {
   IdleInhibitor {
     window: root.bar
     enabled: Session.awake
+  }
+
+  Process {
+    id: fnState
+
+    command: ["sh", "-c", "cat /sys/class/leds/*fnlock*/brightness 2>/dev/null"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        root.fnLed = text.trim() !== "";
+        root.fnLock = root.fnLed && text.trim() !== "0";
+      }
+    }
+  }
+
+  Timer {
+    interval: 2000
+    running: root.fnLed
+    repeat: true
+    triggeredOnStart: true
+    onTriggered: fnState.running = true
+  }
+
+  Label {
+    visible: root.fnLock
+    text: "\u{f0a7f}"
+    color: Theme.warning
   }
 
   Label {
