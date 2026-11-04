@@ -92,6 +92,7 @@ var table = []Option{
 	{"DARK_THEME", "Dark theme", Choice, "catppuccin", themes, "look", "The theme for the night", autoThemeOn},
 	{"LIGHT_AT", "Light from", Choice, "07:00", lightAt, "look", "When the light theme starts", autoThemeTimes},
 	{"DARK_AT", "Dark from", Choice, "19:00", "17:00 18:00 19:00 20:00 21:00 22:00", "look", "When the dark theme starts", autoThemeTimes},
+	{"DAILY_THEME", "Theme of the day", YesNo, "no", "", "look", "The next theme every morning at 6; Super+Ctrl+T still changes it during the day", autoThemeOff},
 	{"WALLPAPER_MINUTES", "Change wallpaper every (minutes)", Number, "0", "", "look", "Move to the theme's next wallpaper every so many minutes; 0 keeps one", nil},
 	{"WALLPAPER_PER_WORKSPACE", "A wallpaper per workspace", YesNo, "no", "", "look", "Each workspace shows its own wallpaper from the theme", nil},
 	{"WEATHER", "Weather in the bar", YesNo, "no", "", "look", "From Open-Meteo, no account; it sends your time zone's main city there", nil},
@@ -145,6 +146,10 @@ func barHorizontal(facts Facts) bool {
 
 func autoThemeOn(facts Facts) bool {
 	return facts.Value("AUTO_THEME") != "off"
+}
+
+func autoThemeOff(facts Facts) bool {
+	return facts.Value("AUTO_THEME") == "off"
 }
 
 func autoThemeTimes(facts Facts) bool {

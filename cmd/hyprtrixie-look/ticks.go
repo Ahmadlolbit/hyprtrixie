@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -28,6 +29,7 @@ const (
 	nightLight   = "hyprsunset"
 	warmest      = 1000
 	coolest      = 6500
+	dailyHour    = 6
 )
 
 func lookState(name string) string {
@@ -392,8 +394,44 @@ func nightWarmth(args []string) int {
 	return nightOn()
 }
 
+func themeAfter(current string) string {
+	output, err := run.CaptureQuiet(run.Slow, run.Sibling("hyprtrixie-theme-set"), "--previews")
+	if err != nil {
+		return ""
+	}
+	var names []string
+	for _, line := range strings.Split(strings.TrimSpace(output), "\n") {
+		if name, _, found := strings.Cut(line, "\t"); found {
+			names = append(names, name)
+		}
+	}
+	if len(names) < 2 {
+		return ""
+	}
+	return names[(slices.Index(names, current)+1)%len(names)]
+}
+
+func dailyTick() {
+	if settings.Get("daily") != "yes" || settings.Get("auto") != "off" {
+		return
+	}
+	at, ok := moment()
+	if !ok || at.Hour() < dailyHour {
+		return
+	}
+	today, last := at.Format(time.DateOnly), stored(lookState("daily"))
+	if last == today {
+		return
+	}
+	save(lookState("daily"), today)
+	if next := themeAfter(currentTheme()); last != "" && next != "" {
+		run.Within(run.Slow, run.Sibling("hyprtrixie-theme-set"), next)
+	}
+}
+
 func tick([]string) int {
 	autoTick()
+	dailyTick()
 	rotateTick()
 	weatherTick()
 	quietTick()
