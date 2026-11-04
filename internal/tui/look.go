@@ -9,18 +9,28 @@ const (
 )
 
 var (
-	headingStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("5")).Bold(true)
-	dimStyle     = lipgloss.NewStyle().Faint(true)
-	ruleStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("5"))
-	valueStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
-	focusStyle   = lipgloss.NewStyle().Bold(true)
+	secondary = lipgloss.CompleteAdaptiveColor{
+		Light: lipgloss.CompleteColor{TrueColor: "#5C5C5C", ANSI256: "240", ANSI: "8"},
+		Dark:  lipgloss.CompleteColor{TrueColor: "#A3A3A3", ANSI256: "248", ANSI: "7"},
+	}
+	hairline = lipgloss.CompleteAdaptiveColor{
+		Light: lipgloss.CompleteColor{TrueColor: "#D4D4D4", ANSI256: "252", ANSI: "7"},
+		Dark:  lipgloss.CompleteColor{TrueColor: "#2E2E2E", ANSI256: "236", ANSI: "8"},
+	}
+	headingStyle = lipgloss.NewStyle().Bold(true)
+	dimStyle     = lipgloss.NewStyle().Foreground(secondary)
+	ruleStyle    = lipgloss.NewStyle().Foreground(hairline)
+	focusStyle   = lipgloss.NewStyle().Reverse(true)
 )
 
 func marked(focused bool, text string) string {
-	if focused {
-		return focusStyle.Render("> " + text)
+	switch {
+	case !focused:
+		return "  " + text
+	case focusStyle.Render(" ") == " ":
+		return "> " + text
 	}
-	return "  " + text
+	return " " + focusStyle.Render(" "+text+" ")
 }
 
 func cut(text string, width int) string {

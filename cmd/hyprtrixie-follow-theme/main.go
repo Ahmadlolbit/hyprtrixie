@@ -3,6 +3,7 @@ package main
 import (
 	"cmp"
 	"fmt"
+	"image/color"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/bootimage"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/burst"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/follow"
@@ -88,11 +90,34 @@ func splash(current theme, initramfs bool) bool {
 		fmt.Fprintln(os.Stderr, err)
 		return false
 	}
-	if changed || initramfs {
+	drawn, err := burstImages(current.accent)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return false
+	}
+	if changed || drawn || initramfs {
 		rebuild := bootimage.Rebuild(true)
 		return run.Within(initramfsLimit, rebuild[0], rebuild[1:]...) == 0
 	}
 	return true
+}
+
+func burstImages(accent string) (bool, error) {
+	channels := follow.Channels(accent)
+	paint := color.NRGBA{R: uint8(channels[0]), G: uint8(channels[1]), B: uint8(channels[2]), A: 255}
+	drawn := false
+	for _, scale := range []int{4, 8} {
+		picture, err := burst.PNG(scale, paint)
+		if err != nil {
+			return drawn, err
+		}
+		changed, err := refresh(filepath.Join(plymouthDir, fmt.Sprintf("burst-%d.png", scale)), string(picture))
+		drawn = drawn || changed
+		if err != nil {
+			return drawn, err
+		}
+	}
+	return drawn, nil
 }
 
 func menu(current theme) bool {

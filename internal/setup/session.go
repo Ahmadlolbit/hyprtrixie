@@ -395,7 +395,7 @@ func sessionChecks(context *Context) {
 	context.Run.Check("The floating terminal is installed", commands("hyprtrixie-terminal"))
 	context.Run.Check("Tip notifications are scheduled", timerCheck(tipTimer))
 	context.Run.Check("The tips are installed", commands("hyprtrixie-tip"))
-	context.Run.Check("Your Hyprland config loads the hyprtrixie defaults", context.hyprlandUserReady)
+	context.Run.Check("Your Hyprland config loads the Hyprtrixie defaults", context.hyprlandUserReady)
 	context.Run.Check("Walker and its providers are installed", walkerReady)
 	context.Run.Check("The wallpaper service is configured", filesCheck(hyprSystem+"hyprpaper.conf"))
 }

@@ -70,13 +70,6 @@ Scope {
     onLoadFailed: later.start()
   }
 
-  FileView {
-    id: logo
-
-    path: "/usr/share/hyprtrixie/screensaver.txt"
-    printErrors: false
-  }
-
   Process {
     id: tipper
 
@@ -157,12 +150,36 @@ Scope {
           anchors.centerIn: parent
           spacing: 18
 
-          Label {
+          Item {
+            id: burst
+
+            readonly property int cell: 4
+            readonly property var rows: [0x00000000, 0x00080000, 0x00080200, 0x00040200, 0x01040400, 0x00820400, 0x00820400, 0x00430808, 0x00430830, 0x002f1040, 0x00292180, 0x0011c300, 0x00083600, 0x00081900, 0x00100906, 0x00d00ff8, 0x1ff00b80, 0x60500800, 0x00480000, 0x004c0800, 0x00531800, 0x00616600, 0x00c31300, 0x01831180, 0x02031080, 0x04020840, 0x00020820, 0x00040410, 0x00040008, 0x00080000, 0x00080000, 0x00000000]
+
             Layout.alignment: Qt.AlignHCenter
-            visible: text !== ""
-            text: logo.text().replace(/\s+$/, "")
-            color: Theme.accent
-            font.pixelSize: Theme.size(15)
+            implicitWidth: 32 * cell
+            implicitHeight: 32 * cell
+
+            Repeater {
+              model: {
+                const lit = [];
+                for (let y = 0; y < 32; y++)
+                  for (let x = 0; x < 32; x++)
+                    if ((burst.rows[y] >>> (31 - x)) & 1)
+                      lit.push(Qt.point(x, y));
+                return lit;
+              }
+
+              Rectangle {
+                required property point modelData
+
+                x: modelData.x * burst.cell
+                y: modelData.y * burst.cell
+                width: burst.cell
+                height: burst.cell
+                color: Theme.accent
+              }
+            }
           }
 
           Label {

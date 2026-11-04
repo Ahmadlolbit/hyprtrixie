@@ -88,7 +88,7 @@ Dark from
 Dark theme	
 Debian 13 (trixie)	
 Debian 13 with Hyprland, set up properly	
-Debian 13 with Hyprland, set up properly, on this computer's disk.	
+Debian 13 with Hyprland, set up properly.	
 Debian mirror	
 Debian's security fixes install on their own in the background	
 Degrees Celsius and km/h, or Fahrenheit and mph	
@@ -111,7 +111,7 @@ Encrypt the rest
 Enough free disk space	
 Enter               Go on	
 Enter opens this window	
-Erase %s and install hyprtrixie?	
+Erase %s and install Hyprtrixie?	
 Esc                 Go back	
 Every start asks for it first. Without it nothing on the disk can be read, so keep it somewhere safe.	
 Every ticked app is installed	
@@ -136,7 +136,7 @@ Full width, floating with rounded corners, minimal, or down the left side
 GTK and KDE apps	
 GTK apps can take the theme's colours	
 GameMode and MangoHud are installed	
-Give the account its own copy of hyprtrixie	
+Give the account its own copy of Hyprtrixie	
 Give the computer its own identity	
 Give the editors the theme's colours	
 Glass mode	
@@ -155,6 +155,7 @@ Hyprland 0.55 or newer is installed
 Hyprland accepts the configuration	
 Hyprland desktop	
 Hyprland is offered as a session	
+Hyprtrixie is installed. Restart, take the USB stick out, and type your disk password.	
 IPU6 webcam	
 Idle locking and suspend are configured	
 Input and display	
@@ -165,6 +166,9 @@ Install Flatpak
 Install GameMode and MangoHud	
 Install Go	
 Install Hyprland from backports	
+Install Hyprtrixie	
+Install Hyprtrixie next to Windows on %s?	
+Install Hyprtrixie with these choices	
 Install JetBrains Mono Nerd Font	
 Install JetBrains Toolbox	
 Install LazyVim plugins	
@@ -183,9 +187,6 @@ Install desktop services
 Install distrobox	
 Install firmware for this machine	
 Install grub-btrfs	
-Install hyprtrixie	
-Install hyprtrixie next to Windows on %s?	
-Install hyprtrixie with these choices	
 Install kubectl, helm, k9s and kind	
 Install lazydocker	
 Install mise	
@@ -199,6 +200,7 @@ Install terminal packages
 Install the %s kernel	
 Install the Bazaar store	
 Install the Hyprland defaults	
+Install the Hyprtrixie login screen	
 Install the NVIDIA driver	
 Install the Walker launcher	
 Install the bar	
@@ -206,7 +208,6 @@ Install the base for GTK themes
 Install the boot loader	
 Install the colour and QR picker	
 Install the floating terminal	
-Install the hyprtrixie login screen	
 Install the login screen	
 Install the package picker	
 Install the restic-backup helper	
@@ -222,7 +223,7 @@ Install the tips
 Install the web app maker	
 Install theme packages	
 Internet connection	
-It takes about ten minutes and needs no internet. Nothing changes until you choose Install at the end.	
+It takes about ten minutes and needs no internet.	
 Its log	
 Its log is %s	
 JetBrains Mono Nerd Font is installed	
@@ -281,6 +282,7 @@ Night light from
 Night light until	
 No	
 No disk here can take it: each is under 40 GB, read-only, or in use.	
+Nothing changes until you choose Install at the end.	
 Notifications are set up	
 Now and then a tip as a notification, at most once a day	
 Now playing on the lock screen	
@@ -420,7 +422,7 @@ The install stopped at the step that failed, and nothing after it ran.
 The kernel comes from backports	
 The lock screen is configured	
 The login screen starts at boot	
-The login screen uses the hyprtrixie theme	
+The login screen uses the Hyprtrixie theme	
 The logo and the disk password prompt in your theme's colours while it boots	
 The look settings are written	
 The newest kernel is running (or starts after a reboot)	
@@ -497,11 +499,11 @@ When the light theme starts
 When the screen goes back to normal	
 When the screen warms up	
 Where Debian packages download from; the default picks a nearby server	
-Where hyprtrixie goes	
+Where Hyprtrixie goes	
 Wi-Fi and wired connections move to NetworkManager, so the bar manages them	
 Window style	
 Windows and workspaces animate as they open, close and move	
-Windows stays. hyprtrixie goes in the free space, and the boot menu offers both for five seconds.	
+Windows stays. Hyprtrixie goes in the free space, and the boot menu offers both for five seconds.	
 Words above it	
 Words above the disk password	
 Write fstab and crypttab	
@@ -509,18 +511,17 @@ Write the look settings
 Write ~/%s	
 X11 is the most reliable for the login screen; Wayland is newer	
 Yes	
-Yes puts hyprtrixie in the free space next to Windows; no erases the whole disk	
+Yes puts Hyprtrixie in the free space next to Windows; no erases the whole disk	
 You	
 You and this computer	
 You can manage printers and scanners	
-Your Hyprland config loads the hyprtrixie defaults	
+Your Hyprland config loads the Hyprtrixie defaults	
 Your account can change the brightness	
 Your name	
 Your password, for sudo	
 curl is installed	
 distrobox and Podman are installed	
 engine-switch points docker at %s	
-hyprtrixie is installed. Restart, take the USB stick out, and type your disk password.	
 kitty, zsh and tmux are installed	
 kubectl, helm, k9s and kind are installed	
 lazydocker is installed	

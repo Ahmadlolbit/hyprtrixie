@@ -51,7 +51,7 @@ func Run() int {
 		return 1
 	}
 	if lock.Busy() {
-		fmt.Fprintln(os.Stderr, "another hyprtrixie run is still going")
+		fmt.Fprintln(os.Stderr, "another Hyprtrixie run is still going")
 		return 1
 	}
 	flow := newWizard(config.Read(config.Path()))

@@ -420,7 +420,7 @@ func examine() int {
 	checkBatteries()
 	visit.firmware()
 	visit.updates()
-	ui.Rule("hyprtrixie")
+	ui.Rule("Hyprtrixie")
 	visit.files()
 	checkInstaller()
 	visit.offerFixes()

@@ -58,6 +58,10 @@ type page struct {
 	ready   func() string
 }
 
+func (view *page) base() *page {
+	return view
+}
+
 func (view *page) name() string {
 	return view.title
 }
@@ -279,7 +283,7 @@ func (view *page) text(line row, focused bool) string {
 		value = view.draft.shown()
 	}
 	if value != "" {
-		label = fmt.Sprintf("%-*s %s", labelWidth, label, valueStyle.Render(value))
+		label = fmt.Sprintf("%-*s %s", labelWidth, label, value)
 	}
 	return marked(focused, label)
 }

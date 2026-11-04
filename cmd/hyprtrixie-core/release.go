@@ -92,13 +92,13 @@ func updateHyprtrixie() int {
 	fmt.Printf("Updating %s\n", root())
 	tag, target, err := releaseTarget()
 	if errors.Is(err, errNoReleaseKey) {
-		return say("hyprtrixie itself only updates to signed releases, and this copy has no release key yet, so it stays as it is.\n")
+		return say("Hyprtrixie itself only updates to signed releases, and this copy has no release key yet, so it stays as it is.\n")
 	}
 	if err != nil {
 		return fail("%v", err)
 	}
 	if run.Quiet(run.Quick, "git", "-C", root(), "merge-base", "--is-ancestor", target, "HEAD") == 0 {
-		return say("hyprtrixie is up to date (" + tag + ").\n")
+		return say("Hyprtrixie is up to date (" + tag + ").\n")
 	}
 	from := git("rev-parse", "HEAD")
 	if run.Status("git", "-C", root(), "merge", "--ff-only", target) != 0 {

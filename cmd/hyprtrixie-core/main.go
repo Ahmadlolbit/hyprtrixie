@@ -40,7 +40,7 @@ USAGE
   hyprtrixie keyboard [LAYOUT]     Show the keyboard layout, list them (list), or set one (run it with sudo)
   hyprtrixie battery-limit [N|off] Show or set where charging stops, 50 to 100 (run it with sudo to set it)
   hyprtrixie update [PART]         Update everything (run it without sudo): a snapshot, Debian, the apps,
-                                     then hyprtrixie and its installer; PART is system, apps or hyprtrixie
+                                     then Hyprtrixie and its installer; PART is system, apps or hyprtrixie
   hyprtrixie changes               Show what the last hyprtrixie update changed
   hyprtrixie restore [NUMBER]      List the restore points, or show what changed since one and go back to it
                                      (run it without sudo)
@@ -114,7 +114,7 @@ func fail(format string, args ...any) int {
 
 func asRoot(mode string, command func() int) int {
 	if os.Geteuid() != 0 {
-		return fail("hyprtrixie needs root for this. Run it again with sudo: sudo %s %s", os.Args[0], mode)
+		return fail("Hyprtrixie needs root for this. Run it again with sudo: sudo %s %s", os.Args[0], mode)
 	}
 	defer cleanup.IgnoreQuit()()
 	return command()

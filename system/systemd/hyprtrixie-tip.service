@@ -1,5 +1,5 @@
 [Unit]
-Description=Show a hyprtrixie tip
+Description=Show a Hyprtrixie tip
 
 [Service]
 Type=oneshot

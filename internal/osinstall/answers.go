@@ -73,9 +73,9 @@ func (answers Answers) Check() error {
 func Ready() error {
 	switch secureBoot() {
 	case "enabled":
-		return errors.New("this computer has Secure Boot on, and hyprtrixie doesn't start with it: restart into the firmware setup (often F2, F10 or Del), turn Secure Boot off, then start the installer again")
+		return errors.New("this computer has Secure Boot on, and Hyprtrixie doesn't start with it: restart into the firmware setup (often F2, F10 or Del), turn Secure Boot off, then start the installer again")
 	case "legacy":
-		return errors.New("this computer started the stick in legacy BIOS mode, and hyprtrixie needs UEFI: start it again and pick the stick's UEFI entry in the boot menu")
+		return errors.New("this computer started the stick in legacy BIOS mode, and Hyprtrixie needs UEFI: start it again and pick the stick's UEFI entry in the boot menu")
 	}
 	return nil
 }
