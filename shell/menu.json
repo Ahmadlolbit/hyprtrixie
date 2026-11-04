@@ -355,6 +355,51 @@
     "action": "hyprtrixie-look bar vertical",
     "state": "test \"$(hyprtrixie-look bar)\" = vertical"
   },
+  "style.position": {
+    "glyph": "\uf0e2",
+    "label": "Bar position",
+    "keywords": [
+      "bar",
+      "panel",
+      "top",
+      "bottom"
+    ]
+  },
+  "style.position.top": {
+    "glyph": "\uf062",
+    "label": "Top",
+    "action": "hyprtrixie-look position top",
+    "state": "test \"$(hyprtrixie-look position)\" = top"
+  },
+  "style.position.bottom": {
+    "glyph": "\uf063",
+    "label": "Bottom",
+    "action": "hyprtrixie-look position bottom",
+    "state": "test \"$(hyprtrixie-look position)\" = bottom"
+  },
+  "style.window": {
+    "glyph": "\uf2d0",
+    "label": "Window style",
+    "keywords": [
+      "window",
+      "rounded",
+      "sharp",
+      "soft",
+      "gaps"
+    ]
+  },
+  "style.window.sharp": {
+    "glyph": "\uf0c8",
+    "label": "Sharp",
+    "action": "hyprtrixie-look style sharp",
+    "state": "test \"$(hyprtrixie-look style)\" = sharp"
+  },
+  "style.window.soft": {
+    "glyph": "\uf111",
+    "label": "Soft",
+    "action": "hyprtrixie-look style soft",
+    "state": "test \"$(hyprtrixie-look style)\" = soft"
+  },
   "style.apps": {
     "glyph": "\uf2d0",
     "label": "GTK and KDE apps",

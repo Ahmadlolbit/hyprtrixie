@@ -42,7 +42,7 @@ func (context *Context) barInstall(*runlog.Log) error {
 func (context *Context) barSetup(*runlog.Log) error {
 	settings := context.Config
 	return context.Deploy.File("system/shell.json", barSettings, "POSITION="+settings.Get("BAR_POSITION"), "CLOCK="+settings.Get("CLOCK_FORMAT"),
-		"STYLE="+settings.Get("WINDOW_STYLE"), "PRESET="+settings.Get("BAR_PRESET"))
+		"PRESET="+settings.Get("BAR_PRESET"))
 }
 
 func barSteps(context *Context) {

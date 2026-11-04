@@ -30,6 +30,8 @@ const usage = `Usage: hyprtrixie-look
        hyprtrixie-look rotate [MINUTES|off|toggle]
        hyprtrixie-look workspaces [on|off|toggle]
        hyprtrixie-look bar [full|floating|minimal|vertical]
+       hyprtrixie-look position [top|bottom]
+       hyprtrixie-look style [sharp|soft]
        hyprtrixie-look video [FILE|off]
        hyprtrixie-look video-battery [pause|play]
        hyprtrixie-look weather [on|off|toggle]
@@ -54,8 +56,9 @@ While it's on, a theme you pick becomes the light or the dark one.
 sun prints the day's sunrise and sunset where your time zone's main city
 is, or at the location you set. rotate changes the wallpaper every so
 many minutes; toggle switches between off and every 30 minutes.
-workspaces gives each workspace its own wallpaper. bar sets the bar's
-layout in ~/.config/hyprtrixie/shell.json. video plays a video file as
+workspaces gives each workspace its own wallpaper. bar and position set
+the bar's layout and edge in ~/.config/hyprtrixie/shell.json. style makes
+windows, popups and the lock screen sharp or soft. video plays a video file as
 the wallpaper, muted and looping; on battery it pauses, unless
 video-battery is play. weather shows the weather in the bar from
 Open-Meteo for your location (it sends that location there); coordinates
@@ -194,6 +197,17 @@ func glass(args []string) int {
 
 func corners(args []string) int {
 	return onOff{"corners", putThen("corners", "yes", reload), putThen("corners", "no", reload)}.run(args)
+}
+
+func windowStyle(args []string) int {
+	switch value := strings.ToLower(arg(args, 0)); value {
+	case "":
+		return show("style")
+	case "sharp", "soft":
+		return putThen("style", value, reapply)()
+	}
+	fmt.Fprintln(os.Stderr, "style takes sharp or soft")
+	return 2
 }
 
 func background(args ...string) int {
@@ -393,7 +407,7 @@ func all() int {
 func commands() map[string]func([]string) int {
 	return map[string]func([]string) int{
 		"get": getSetting, "accent": accent, "glass": glass, "corners": corners, "apps": appsTheme, "sun": sun, "auto": auto, "times": times,
-		"tick": tick, "remember": remember, "rotate": rotate, "workspaces": workspaces, "bar": barLayout, "video": video,
+		"tick": tick, "remember": remember, "rotate": rotate, "workspaces": workspaces, "bar": barLayout, "position": barPosition, "style": windowStyle, "video": video,
 		"video-battery": videoBattery, "weather": weather, "weather-units": weatherUnits, "coordinates": showCoordinates,
 		"quiet": quiet, "quiet-hours": quietHours, "location": location,
 		"font":    func(args []string) int { return font("font", arg(args, 0)) },

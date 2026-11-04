@@ -10,7 +10,7 @@ Singleton {
   readonly property var defaults: ({
       position: "top",
       clock: "24h",
-      style: "sharp",
+      style: "",
       left: ["workspaces", "window"],
       center: ["media", "clock", "focus"],
       right: ["privacy", "indicators", "updates", "snapshots", "weather", "tray", "cpu", "memory", "temperature", "network", "bluetooth", "audio", "brightness", "power-profile", "battery", "notifications"],

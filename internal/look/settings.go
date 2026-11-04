@@ -12,11 +12,11 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 )
 
-var Keys = []string{"accent", "font", "ui_font", "glass", "corners", "apps", "auto", "light", "dark", "light_at", "dark_at", "location",
+var Keys = []string{"accent", "font", "ui_font", "glass", "corners", "style", "apps", "auto", "light", "dark", "light_at", "dark_at", "location",
 	"rotate", "workspaces", "video", "video_battery", "weather", "weather_units", "quiet", "quiet_from", "quiet_to"}
 
 var defaults = map[string]string{
-	"accent": "theme", "font": "JetBrainsMono Nerd Font", "ui_font": "default", "glass": "no", "corners": "no", "apps": "follow", "auto": "off",
+	"accent": "theme", "font": "JetBrainsMono Nerd Font", "ui_font": "default", "glass": "no", "corners": "no", "style": "sharp", "apps": "follow", "auto": "off",
 	"light": "catppuccin-latte", "dark": "catppuccin", "light_at": "07:00", "dark_at": "19:00", "location": "zone", "rotate": "0",
 	"workspaces": "no", "video": "off", "video_battery": "pause", "weather": "off", "weather_units": "celsius", "quiet": "no",
 	"quiet_from": "22:00", "quiet_to": "07:00",

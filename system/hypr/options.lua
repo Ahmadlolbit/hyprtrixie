@@ -12,7 +12,7 @@ hl.config({
 
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = {{ SCALE }} })
 
-require("hyprtrixie.hypr.style-{{ WINDOW_STYLE }}")
+require("hyprtrixie.hypr.style")
 
 if {{ NVIDIA }} then
   hl.env("LIBVA_DRIVER_NAME", "nvidia")

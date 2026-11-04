@@ -14,19 +14,38 @@ func ReloadShell() {
 	run.Quiet(run.Quick, "qs", "-p", shellPath, "ipc", "call", "theme", "reload")
 }
 
+type barSettings struct {
+	Bar struct {
+		Preset   string `json:"preset"`
+		Position string `json:"position"`
+	} `json:"bar"`
+}
+
 func Preset(data []byte) string {
-	var shell struct {
-		Bar struct {
-			Preset string `json:"preset"`
-		} `json:"bar"`
-	}
+	var shell barSettings
 	if json.Unmarshal(data, &shell) != nil {
 		return ""
 	}
 	return shell.Bar.Preset
 }
 
+func Position(data []byte) string {
+	var shell barSettings
+	if json.Unmarshal(data, &shell) != nil {
+		return ""
+	}
+	return shell.Bar.Position
+}
+
 func WithPreset(data []byte, preset string) ([]byte, error) {
+	return withBar(data, "preset", preset)
+}
+
+func WithPosition(data []byte, position string) ([]byte, error) {
+	return withBar(data, "position", position)
+}
+
+func withBar(data []byte, key, value string) ([]byte, error) {
 	document, err := parseOrEmpty(data)
 	if err != nil {
 		return nil, err
@@ -36,11 +55,11 @@ func WithPreset(data []byte, preset string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	name, err := json.Marshal(preset)
+	name, err := json.Marshal(value)
 	if err != nil {
 		return nil, err
 	}
-	bar.Set("preset", name)
+	bar.Set(key, name)
 	updated, err := bar.Indented()
 	if err != nil {
 		return nil, err
