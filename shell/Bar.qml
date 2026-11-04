@@ -13,6 +13,7 @@ PanelWindow {
   readonly property int gap: floating ? 8 : 0
 
   screen: modelData
+  visible: !Theme.zen
   implicitHeight: vertical ? 0 : Theme.barHeight
   implicitWidth: vertical ? Theme.barWidth : 0
   color: "transparent"

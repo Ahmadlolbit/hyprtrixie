@@ -15,7 +15,7 @@ import (
 var Keys = []string{"accent", "font", "ui_font", "glass", "corners", "style", "apps", "auto", "light", "dark", "light_at", "dark_at", "location",
 	"rotate", "workspaces", "video", "video_battery", "weather", "weather_units", "quiet", "quiet_from", "quiet_to",
 	"night", "night_from", "night_to", "night_warmth", "power", "power_ac", "power_battery",
-	"trackpoint_speed", "trackpoint_accel", "trackpoint_scroll"}
+	"trackpoint_speed", "trackpoint_accel", "trackpoint_scroll", "zen", "presentation"}
 
 var defaults = map[string]string{
 	"accent": "theme", "font": "JetBrainsMono Nerd Font", "ui_font": "default", "glass": "no", "corners": "no", "style": "sharp", "apps": "follow", "auto": "off",
@@ -23,7 +23,7 @@ var defaults = map[string]string{
 	"workspaces": "no", "video": "off", "video_battery": "pause", "weather": "off", "weather_units": "celsius", "quiet": "no",
 	"quiet_from": "22:00", "quiet_to": "07:00", "night": "off", "night_from": "20:00", "night_to": "07:00", "night_warmth": "4500",
 	"power": "no", "power_ac": "balanced", "power_battery": "power-saver",
-	"trackpoint_speed": "0", "trackpoint_accel": "adaptive", "trackpoint_scroll": "yes",
+	"trackpoint_speed": "0", "trackpoint_accel": "adaptive", "trackpoint_scroll": "yes", "zen": "no", "presentation": "no",
 }
 
 type Store struct {

@@ -212,6 +212,30 @@
       "saver"
     ]
   },
+  "toggle.zen": {
+    "glyph": "\uf06e",
+    "label": "Zen mode",
+    "action": "hyprtrixie-look zen toggle",
+    "state": "test \"$(hyprtrixie-look zen)\" = yes",
+    "keywords": [
+      "zen",
+      "focus",
+      "bar",
+      "gaps"
+    ]
+  },
+  "toggle.presentation": {
+    "glyph": "\uf26c",
+    "label": "Presentation mode",
+    "action": "hyprtrixie-look presentation toggle",
+    "state": "test \"$(hyprtrixie-look presentation)\" = yes",
+    "keywords": [
+      "presentation",
+      "mirror",
+      "projector",
+      "slides"
+    ]
+  },
   "toggle.glass": {
     "glyph": "\udb80\udcb5",
     "label": "Glass",
