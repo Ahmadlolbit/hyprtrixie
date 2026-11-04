@@ -14,6 +14,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/service"
@@ -232,6 +233,7 @@ func kubernetesInstall(log *runlog.Log) error {
 		return err
 	}
 	kind := filepath.Join(env.BinDir(), "kind")
+	ledger.Note(ledger.Made, kind)
 	if fetch.ReleaseCurrent(log, "kind") && fsutil.Runnable(kind) {
 		return nil
 	}
@@ -270,6 +272,7 @@ func (context *Context) neovimInstall(log *runlog.Log) error {
 		return err
 	}
 	dir := "/opt/nvim-" + strings.TrimPrefix(release.Version, "v")
+	ledger.Note(ledger.Made, dir, filepath.Join(env.BinDir(), "nvim"))
 	if !fsutil.Runnable(filepath.Join(dir, "bin/nvim")) {
 		if err := neovimUnpack(log, dir); err != nil {
 			return err
@@ -404,6 +407,7 @@ func (context *Context) zedEntry(log *runlog.Log, app string) error {
 
 func (context *Context) zedInstall(log *runlog.Log) error {
 	app := context.Person.Path(".local/zed.app")
+	ledger.Note(ledger.Made, app, context.Person.Path(".local/bin/zed"))
 	if !fetch.ReleaseCurrent(log, "zed") || !fsutil.Runnable(filepath.Join(app, "bin/zed")) {
 		if err := context.zedUnpack(log, app); err != nil {
 			return err
@@ -447,6 +451,7 @@ func toolboxUnpack(log *runlog.Log) error {
 
 func (context *Context) toolboxInstall(log *runlog.Log) error {
 	program := filepath.Join(toolboxDir, "bin", toolboxTool)
+	ledger.Note(ledger.Made, toolboxDir, filepath.Join(env.BinDir(), toolboxTool))
 	if !fetch.ReleaseCurrent(log, "toolbox") || !fsutil.Runnable(program) {
 		if err := toolboxUnpack(log); err != nil {
 			return err

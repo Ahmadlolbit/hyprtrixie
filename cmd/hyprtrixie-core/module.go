@@ -6,10 +6,12 @@ import (
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/files"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/setup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/step"
@@ -70,11 +72,24 @@ func runModule() int {
 	if err != nil {
 		return moduleBroken("cannot read what's installed: %v", err)
 	}
-	part(context)
+	recorded(id, kind == "steps", func() { part(context) })
 	if err := handBack(context.Run); err != nil {
 		return moduleBroken("%v", err)
 	}
 	return context.Run.ExitCode()
+}
+
+func recorded(id string, steps bool, work func()) {
+	if !steps {
+		work()
+		return
+	}
+	ledger.Begin()
+	before := apt.Installed()
+	work()
+	if err := ledger.End(id, before, apt.Installed()); err != nil {
+		fmt.Fprintf(os.Stderr, "cannot record what module %s did: %v\n", id, err)
+	}
 }
 
 func module() int {
