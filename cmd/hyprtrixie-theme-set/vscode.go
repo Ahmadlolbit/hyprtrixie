@@ -28,6 +28,12 @@ type editorPack struct {
 	sum  string
 }
 
+type palette struct {
+	name   string
+	label  string
+	colors theme.Colors
+}
+
 type rendered struct {
 	name  string
 	label string
@@ -60,35 +66,46 @@ func themeDir(name string) string {
 	return filepath.Join(systemRoot, "themes", name)
 }
 
-func renderEditors(template string) []rendered {
+func editorPalettes() []palette {
+	var found []palette
+	for _, name := range themeNames() {
+		colors, err := themeColors(themeDir(name))
+		if err != nil {
+			continue
+		}
+		if accent, ok := colors.Accent(settings.Get("accent")); ok {
+			colors["accent"] = accent
+		}
+		found = append(found, palette{name, editors.Prefix + theme.Pretty(name), colors})
+	}
+	return found
+}
+
+func renderEditors(template string, palettes []palette) []rendered {
 	data, err := os.ReadFile(template)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return nil
 	}
 	var found []rendered
-	for _, name := range themeNames() {
-		colors, err := themeColors(themeDir(name))
-		if err != nil {
-			continue
-		}
-		text := colors.Replacer().Replace(string(data))
+	for _, each := range palettes {
+		text := each.colors.Replacer().Replace(string(data))
 		if !json.Valid([]byte(text)) {
-			fmt.Fprintf(os.Stderr, "%s: %s doesn't make valid JSON\n", name, template)
+			fmt.Fprintf(os.Stderr, "%s: %s doesn't make valid JSON\n", each.name, template)
 			continue
 		}
-		found = append(found, rendered{name, editors.Prefix + theme.Pretty(name), colors["mode"], []byte(text)})
+		found = append(found, rendered{each.name, each.label, each.colors["mode"], []byte(text)})
 	}
 	return found
 }
 
-func buildPack() *editorPack {
+func buildPack(palettes []palette) *editorPack {
 	template := editorTemplate("vscode.json.tpl")
 	if template == "" {
 		return nil
 	}
 	var found []editors.Theme
-	for _, item := range renderEditors(template) {
+	for _, item := range renderEditors(template, palettes) {
 		found = append(found, editors.NewTheme(item.label, item.mode, item.name+".json", item.data))
 	}
 	if len(found) == 0 {
@@ -135,10 +152,11 @@ func (editor codeEditor) refresh(pack *editorPack) {
 }
 
 func followSetting(path, key, value string) {
-	if real, err := filepath.EvalSymlinks(path); err == nil {
-		path = real
+	current, ok := readExisting(path)
+	if !ok {
+		return
 	}
-	changed, ok := editors.SetTheme(fsutil.Optional(path), key, value)
+	changed, ok := editors.SetTheme(current, key, value)
 	if !ok {
 		return
 	}
@@ -151,14 +169,14 @@ func followSetting(path, key, value string) {
 	}
 }
 
-func followCode(name string) {
+func followCode(name string, palettes []palette) {
 	var pack *editorPack
 	for _, editor := range codeEditors {
 		if _, err := exec.LookPath(editor.command); err != nil {
 			continue
 		}
 		if pack == nil {
-			if pack = buildPack(); pack == nil {
+			if pack = buildPack(palettes); pack == nil {
 				return
 			}
 		}
@@ -171,16 +189,24 @@ func followEditors(name string) {
 	if settings.Get("editors") != "yes" {
 		return
 	}
-	followCode(name)
-	followZed(name)
+	palettes := editorPalettes()
+	followCode(name, palettes)
+	followZed(name, palettes)
 }
 
 func refreshEditors() int {
+	held, err := lock()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	defer held.Close()
 	name, err := fsutil.Text(filepath.Join(state(), "theme.name"))
 	if err != nil || name == "" {
 		fmt.Fprintln(os.Stderr, "no theme is applied yet")
 		return 1
 	}
+	followFirefox(filepath.Join(state(), "theme"))
 	followEditors(name)
 	return 0
 }

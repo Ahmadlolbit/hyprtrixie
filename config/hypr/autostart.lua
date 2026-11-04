@@ -13,6 +13,7 @@ hl.on("hyprland.start", function()
   hl.exec_cmd("hyprtrixie-start bar")
   hl.exec_cmd("hyprtrixie changes --notify")
   hl.exec_cmd("hyprtrixie-look presentation off")
+  hl.exec_cmd("hyprtrixie-theme-set --editors")
   if look.get("reader") == "yes" then
     hl.exec_cmd("hyprtrixie-start orca")
   end

@@ -42,13 +42,13 @@ func zedInstalled() bool {
 	return false
 }
 
-func zedThemes() ([]byte, bool) {
+func zedThemes(palettes []palette) ([]byte, bool) {
 	template := editorTemplate("zed.json.tpl")
 	if template == "" {
 		return nil, false
 	}
 	family := zedFamily{Schema: zedSchema, Name: "hyprtrixie", Author: "hyprtrixie"}
-	for _, item := range renderEditors(template) {
+	for _, item := range renderEditors(template, palettes) {
 		family.Themes = append(family.Themes, zedTheme{item.label, item.mode, item.data})
 	}
 	data, err := json.MarshalIndent(family, "", "  ")
@@ -74,11 +74,11 @@ func writeChanged(file string, data []byte) bool {
 	return true
 }
 
-func followZed(name string) {
+func followZed(name string, palettes []palette) {
 	if !zedInstalled() {
 		return
 	}
-	data, ok := zedThemes()
+	data, ok := zedThemes(palettes)
 	if !ok {
 		return
 	}
