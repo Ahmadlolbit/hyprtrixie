@@ -2,6 +2,7 @@ package battery
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -81,4 +82,61 @@ func KeepLines(folders []string, limit int) string {
 		}
 	}
 	return lines.String()
+}
+
+type Reading struct {
+	Percent  int
+	Charging bool
+}
+
+func number(folder, name string) (float64, bool) {
+	value, err := strconv.ParseFloat(strings.TrimSpace(fsutil.Optional(filepath.Join(folder, name))), 64)
+	return value, err == nil
+}
+
+func stored(folder string) (float64, float64, bool) {
+	for _, kind := range []string{"energy", "charge"} {
+		now, haveNow := number(folder, kind+"_now")
+		full, haveFull := number(folder, kind+"_full")
+		if haveNow && haveFull && full > 0 {
+			return now, full, true
+		}
+	}
+	return 0, 0, false
+}
+
+func percent(levels []int, now, full float64, weighed bool) int {
+	if weighed && full > 0 {
+		return min(max(int(math.Round(now*Full/full)), 0), Full)
+	}
+	total := 0
+	for _, level := range levels {
+		total += level
+	}
+	return (total + len(levels)/2) / len(levels)
+}
+
+func Read() (Reading, bool) {
+	folders, err := filepath.Glob(filepath.Join(root(), "BAT*"))
+	if err != nil {
+		return Reading{}, false
+	}
+	var levels []int
+	var now, full float64
+	weighed, charging := true, false
+	for _, folder := range folders {
+		level, err := strconv.Atoi(strings.TrimSpace(fsutil.Optional(filepath.Join(folder, "capacity"))))
+		if err != nil {
+			continue
+		}
+		levels = append(levels, min(max(level, 0), Full))
+		left, size, ok := stored(folder)
+		now, full, weighed = now+left, full+size, weighed && ok
+		status := strings.TrimSpace(fsutil.Optional(filepath.Join(folder, "status")))
+		charging = charging || status == "Charging" || status == "Full"
+	}
+	if len(levels) == 0 {
+		return Reading{}, false
+	}
+	return Reading{percent(levels, now, full, weighed), charging}, true
 }

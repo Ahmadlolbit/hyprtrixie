@@ -84,6 +84,8 @@ var table = []Option{
 	{"BAR_PRESET", "Bar layout", Choice, "full", "full floating minimal vertical", "look", "Full width, floating with rounded corners, minimal, or down the left side", nil},
 	{"BAR_POSITION", "Bar position", Choice, "top", "top bottom", "look", "The bar at the top or the bottom of the screen", barHorizontal},
 	{"CLOCK_FORMAT", "Clock", Choice, "24h", "24h 12h", "look", "24-hour or 12-hour time in the bar and on the lock screen", nil},
+	{"LOCK_MEDIA", "Now playing on the lock screen", YesNo, "yes", "", "look", "The song or video that's playing, under the password field", nil},
+	{"LOCK_BATTERY", "Battery on the lock screen", YesNo, "yes", "", "look", "How full the battery is, in a corner; nothing on a computer without one", nil},
 	{"THEME", "Theme", Choice, "catppuccin", themes, "look", "Colours, wallpaper and icons for every app; Super+Ctrl+T changes it later", nil},
 	{"ACCENT_COLOR", "Accent colour", Choice, "theme", "theme red orange yellow green cyan blue magenta", "look", "The theme's own accent, or another of its colours, for borders and highlights", nil},
 	{"GLASS", "Glass mode", YesNo, "no", "", "look", "See-through terminals and panels, with the wallpaper blurred behind them", nil},

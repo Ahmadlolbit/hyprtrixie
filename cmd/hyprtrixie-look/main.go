@@ -50,6 +50,8 @@ const usage = `Usage: hyprtrixie-look
        hyprtrixie-look trackpoint-speed [-1 to 1]
        hyprtrixie-look trackpoint-accel [adaptive|flat]
        hyprtrixie-look trackpoint-scroll [on|off|toggle]
+       hyprtrixie-look lock-media [on|off|toggle]
+       hyprtrixie-look lock-battery [on|off|toggle]
        hyprtrixie-look zen [on|off|toggle]
        hyprtrixie-look presentation [on|off|toggle]
        hyprtrixie-look get SETTING
@@ -86,9 +88,11 @@ night warms the screen: on, off, or for the night hours (times, 20:00 to
 power switches the power profile when you plug in or unplug, to the two
 in power-profiles: balanced on the charger and power-saver on battery unless
 you set others. The trackpoint commands set a TrackPoint's speed, its
-acceleration, and scrolling with the middle button. zen hides the bar and
-the gaps. presentation turns notifications off, stays awake, shows a bigger
-cursor and mirrors the laptop to other screens, until you log in again.
+acceleration, and scrolling with the middle button. lock-media and
+lock-battery show what's playing and the battery on the lock screen. zen
+hides the bar and the gaps. presentation turns notifications off, stays
+awake, shows a bigger cursor and mirrors the laptop to other screens,
+until you log in again.
 `
 
 const (
@@ -456,7 +460,7 @@ func commands() map[string]func([]string) int {
 		"quiet": quiet, "quiet-hours": quietHours, "night": night, "night-hours": nightHours, "night-warmth": nightWarmth, "location": location,
 		"power": powerFollow, "power-profiles": powerProfiles, "power-apply": powerApply,
 		"trackpoint-speed": trackpointSpeed, "trackpoint-accel": trackpointAccel, "trackpoint-scroll": trackpointScroll,
-		"zen": zen, "presentation": presentation,
+		"zen": zen, "presentation": presentation, "lock-media": lockMedia, "lock-battery": lockBattery, "lock-line": lockLine,
 		"font":    func(args []string) int { return font("font", arg(args, 0)) },
 		"ui-font": func(args []string) int { return font("ui_font", arg(args, 0)) },
 		"light":   func(args []string) int { return themeChoice("light", arg(args, 0)) },
