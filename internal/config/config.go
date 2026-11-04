@@ -70,6 +70,16 @@ func (current *Config) Load(path string) bool {
 	return true
 }
 
+func (current *Config) Merge(path string) bool {
+	if !fsutil.IsFile(path) {
+		return false
+	}
+	loaded := current.apply(path, strings.ReplaceAll(fsutil.Optional(path), "\r\n", "\n"))
+	current.migrate(cmp.Or(loaded, strconv.Itoa(version)))
+	current.validate()
+	return true
+}
+
 func (current *Config) Get(key string) string {
 	return current.values[key]
 }
@@ -213,16 +223,20 @@ func (current *Config) renameThemes() {
 	}
 }
 
-func (current *Config) Save(path string) error {
+func (current *Config) Text() string {
 	var text strings.Builder
 	fmt.Fprintf(&text, "%s=\"%d\"\n", versionKey, version)
 	for _, option := range current.options {
 		fmt.Fprintf(&text, "%s=\"%s\"\n", option.Key, current.values[option.Key])
 	}
+	return text.String()
+}
+
+func (current *Config) Save(path string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
 		return err
 	}
-	return atomic.Install(path, []byte(text.String()), 0o644)
+	return atomic.Install(path, []byte(current.Text()), 0o644)
 }
 
 func (current *Config) Show() string {
