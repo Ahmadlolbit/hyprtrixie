@@ -452,7 +452,7 @@ func (theme *themeRun) followInstall(*runlog.Log) error {
 	if err := theme.Deploy.Tool(followTool); err != nil {
 		return err
 	}
-	if err := theme.Deploy.File("system/plymouth/hyprtrixie.script", followFile("hyprtrixie.script")); err != nil {
+	if err := theme.Deploy.File("system/plymouth/hyprtrixie.script", followFile("hyprtrixie.script"), "BOOT_PROMPT="+theme.Config.Get("BOOT_PROMPT")); err != nil {
 		return err
 	}
 	if err := theme.Deploy.File("system/grub/theme.txt", followFile("theme.txt")); err != nil {
