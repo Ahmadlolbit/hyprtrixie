@@ -73,6 +73,7 @@ var table = []Option{
 	{"WINDOW_STYLE", "Window style", Choice, "sharp", "sharp soft", "look", "Sharp corners with thin gaps, or soft rounded corners", nil},
 	{"TEXT_SIZE", "Text size", Choice, "normal", "normal large larger", "look", "Larger text in the bar, terminals, notifications, the lock screen and apps: large is a quarter bigger, larger half", nil},
 	{"SCREEN_READER", "Screen reader", YesNo, "no", "", "look", "Orca reads apps aloud; Super+Alt+R starts or stops it. On Hyprland it can't read the bar, the menu or the launcher, and its own key commands don't work", nil},
+	{"STARTUP_SOUND", "Startup sound", YesNo, "no", "", "look", "A short chime when you log in, lower for dark themes and higher for light ones; a sound of your own in ~/.config/hyprtrixie/startup.ogg plays instead", nil},
 	{"SCREENSAVER_MINUTES", "Screensaver after (minutes)", Number, "3", "", "system", "An animated logo on every screen; a key or mouse move ends it; 0 = never", nil},
 	{"TIPS_TERMINAL", "Tips in new terminals", YesNo, "yes", "", "look", "A short tip under the prompt in every new terminal", nil},
 	{"TIPS_WELCOME", "Tips on the welcome screen", YesNo, "yes", "", "look", "A tip at the bottom of the welcome screen", nil},

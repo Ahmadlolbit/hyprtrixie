@@ -21,6 +21,7 @@ const usage = `Usage: hyprtrixie-look
        hyprtrixie-look ui-font [FAMILY|default]
        hyprtrixie-look text [normal|large|larger]
        hyprtrixie-look reader [on|off|toggle]
+       hyprtrixie-look chime [on|off|toggle|play]
        hyprtrixie-look glass [on|off|toggle]
        hyprtrixie-look corners [on|off|toggle]
        hyprtrixie-look apps [follow|off|THEME]
@@ -65,7 +66,9 @@ the terminal's, the bar's and the lock screen's; ui-font is the apps'.
 text makes the text everywhere a quarter (large) or half (larger) bigger.
 reader turns Orca, the screen reader, on or off, now and at every login.
 It reads apps, but not the bar, the menu or the launcher, and Qt apps for
-sure only after you log in again.
+sure only after you log in again. chime plays a short chime when you log
+in, or ~/.config/hyprtrixie/startup.ogg (.oga, .wav, .flac, .mp3) if it's
+there; play plays it now.
 Glass makes terminals and panels see-through, with blur behind them.
 corners rounds the screen's corners. apps sets what GTK and KDE apps do:
 follow the theme, keep one theme whatever the others are, or stay as they
@@ -465,7 +468,7 @@ func all() int {
 func commands() map[string]func([]string) int {
 	return map[string]func([]string) int{
 		"get": getSetting, "accent": accent, "glass": glass, "editors": editorsFollow, "corners": corners, "apps": appsTheme, "sun": sun, "auto": auto, "times": times, "daily": daily,
-		"tick": tick, "remember": remember, "rotate": rotate, "workspaces": workspaces, "bar": barLayout, "position": barPosition, "style": windowStyle, "text": textSize, "reader": reader, "video": video,
+		"tick": tick, "remember": remember, "rotate": rotate, "workspaces": workspaces, "bar": barLayout, "position": barPosition, "style": windowStyle, "text": textSize, "reader": reader, "chime": chimeCommand, "video": video,
 		"video-battery": videoBattery, "weather": weather, "weather-units": weatherUnits, "coordinates": showCoordinates,
 		"quiet": quiet, "quiet-hours": quietHours, "night": night, "night-hours": nightHours, "night-warmth": nightWarmth, "location": location,
 		"power": powerFollow, "power-profiles": powerProfiles, "power-apply": powerApply,
