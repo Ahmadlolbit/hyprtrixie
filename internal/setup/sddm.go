@@ -103,7 +103,7 @@ func sddmThemeReady(*runlog.Log) error {
 
 func sddmSteps(context *Context) {
 	context.Run.Step("Install the login screen", context.sddmPackages)
-	context.Run.Step("Install the hyprtrixie login screen", context.sddmThemeInstall)
+	context.Run.Step("Install the Hyprtrixie login screen", context.sddmThemeInstall)
 	context.Run.Step("Configure the login screen", context.sddmConfigure)
 	context.Run.Step("Start into the login screen at boot", sddmEnable)
 }
@@ -111,5 +111,5 @@ func sddmSteps(context *Context) {
 func sddmChecks(context *Context) {
 	context.Run.Check("The login screen starts at boot", func(*runlog.Log) error { return holds(service.Enabled("sddm.service")) })
 	context.Run.Check("Hyprland is offered as a session", filesCheck(sessionFile))
-	context.Run.Check("The login screen uses the hyprtrixie theme", sddmThemeReady)
+	context.Run.Check("The login screen uses the Hyprtrixie theme", sddmThemeReady)
 }

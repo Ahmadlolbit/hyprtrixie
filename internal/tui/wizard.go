@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/burst"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/privilege"
@@ -86,6 +87,7 @@ type wizard struct {
 	unlock    func(string) error
 	offset    int
 	system    *system
+	ticking   bool
 }
 
 func newWizard(settings *config.Config) *wizard {
@@ -101,7 +103,17 @@ func (flow *wizard) watchTerminal() tea.Cmd {
 
 func (flow *wizard) Init() tea.Cmd {
 	flow.stages[flow.at].arrive()
-	return flow.watchTerminal()
+	return tea.Batch(flow.watchTerminal(), flow.logoLater())
+}
+
+func (flow *wizard) logoLater() tea.Cmd {
+	view, onWelcome := flow.stages[flow.at].(*welcome)
+	if flow.show == nil || flow.ticking || !onWelcome {
+		return nil
+	}
+	flow.ticking = true
+	_, wait := burst.At(time.Since(view.started))
+	return tea.Tick(wait, func(time.Time) tea.Msg { return logoTick{} })
 }
 
 func (flow *wizard) checkTerminal() tea.Cmd {
@@ -119,11 +131,17 @@ func (flow *wizard) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			flow.height = message.Height
 		}
 	case tea.KeyMsg:
-		return flow, flow.press(message)
+		command := flow.press(message)
+		return flow, tea.Batch(command, flow.logoLater())
+	case logoTick:
+		flow.ticking = false
+		return flow, flow.logoLater()
 	case arrived:
 		return flow, flow.install.take(message)
 	case ended:
 		return flow, flow.install.finish(message)
+	case busyTick:
+		return flow, flow.install.ticked()
 	case checked:
 		return flow, flow.checkTerminal()
 	case unlocked:
@@ -224,8 +242,8 @@ func (flow *wizard) backToReview() bool {
 }
 
 func (flow *wizard) forward() tea.Cmd {
-	if gate, ok := flow.stages[flow.at].(*page); ok && gate.ready != nil {
-		if why := gate.ready(); why != "" {
+	if gate, ok := flow.stages[flow.at].(interface{ base() *page }); ok && gate.base().ready != nil {
+		if why := gate.base().ready(); why != "" {
 			flow.notice = why
 			return nil
 		}
@@ -284,10 +302,10 @@ func (flow *wizard) footer() (string, string) {
 }
 
 func (flow *wizard) header(width int) string {
-	title := "hyprtrixie " + env.Version
+	title := headingStyle.Render("hyprtrixie") + " " + dimStyle.Render(env.Version)
 	where := fmt.Sprintf(words.T("%s · %d of %d"), words.T(flow.stages[flow.at].name()), flow.at+1, len(flow.stages))
 	gap := max(width-lipgloss.Width(title)-lipgloss.Width(where), 1)
-	return headingStyle.Render(title) + strings.Repeat(" ", gap) + where
+	return title + strings.Repeat(" ", gap) + dimStyle.Render(where)
 }
 
 func (flow *wizard) View() string {

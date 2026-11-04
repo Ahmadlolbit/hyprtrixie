@@ -808,7 +808,7 @@
   },
   "update.hyprtrixie": {
     "glyph": "\udb81\udeb0",
-    "label": "hyprtrixie",
+    "label": "Hyprtrixie",
     "action": "hyprtrixie-terminal --wait hyprtrixie update hyprtrixie",
     "keywords": [
       "update",

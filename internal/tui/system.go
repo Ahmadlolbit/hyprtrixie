@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -101,7 +102,7 @@ func (state *system) besideRow(disk disks.Disk) row {
 	if state.answers.Beside {
 		value = "yes"
 	}
-	return row{label: "Keep Windows", value: value, help: "Yes puts hyprtrixie in the free space next to Windows; no erases the whole disk", space: func() tea.Cmd {
+	return row{label: "Keep Windows", value: value, help: "Yes puts Hyprtrixie in the free space next to Windows; no erases the whole disk", space: func() tea.Cmd {
 		if state.answers.Beside || state.roomBeside(disk) == "" {
 			state.answers.Beside = !state.answers.Beside
 		}
@@ -116,7 +117,7 @@ func (state *system) consequences() []row {
 	}
 	if state.answers.Beside {
 		return []row{state.besideRow(disk), {info: true},
-			{label: "Windows stays. hyprtrixie goes in the free space, and the boot menu offers both for five seconds.", info: true},
+			{label: "Windows stays. Hyprtrixie goes in the free space, and the boot menu offers both for five seconds.", info: true},
 			{label: "Before you go on: save your BitLocker recovery key somewhere off this computer, and turn off Fast Startup in Windows.", info: true}}
 	}
 	rows := []row{{label: "Everything on " + disk.Name() + " is erased.", info: true}}
@@ -131,7 +132,7 @@ func (state *system) consequences() []row {
 }
 
 func (state *system) diskRows(flow *wizard) []row {
-	rows := []row{{label: "Where hyprtrixie goes", heading: true}, {info: true}}
+	rows := []row{{label: "Where Hyprtrixie goes", heading: true}, {info: true}}
 	if len(state.found) == 0 {
 		return append(rows, row{label: "No disk here can take it: each is under 40 GB, read-only, or in use.", info: true})
 	}
@@ -268,7 +269,7 @@ func (flow *wizard) systemRows() []row {
 }
 
 func (state *system) installRow(flow *wizard) row {
-	return row{label: "Install", help: "Install hyprtrixie with these choices", enter: func() tea.Cmd {
+	return row{label: "Install", help: "Install Hyprtrixie with these choices", enter: func() tea.Cmd {
 		for index, ready := range []func() string{state.welcomeReady, state.diskReady, state.lockReady, state.youReady} {
 			if why := ready(); why != "" {
 				flow.notice = why
@@ -277,9 +278,9 @@ func (state *system) installRow(flow *wizard) row {
 			}
 		}
 		disk, _ := state.chosen()
-		question := "Erase " + disk.Name() + " and install hyprtrixie?"
+		question := "Erase " + disk.Name() + " and install Hyprtrixie?"
 		if state.answers.Beside {
-			question = "Install hyprtrixie next to Windows on " + disk.Name() + "?"
+			question = "Install Hyprtrixie next to Windows on " + disk.Name() + "?"
 		}
 		return flow.open(confirmation(question, flow.install.begin))
 	}}
@@ -344,9 +345,10 @@ func (state *system) welcomeReady() string {
 
 func (state *system) welcomeRows(machine []string) []row {
 	state.followLayout()
-	rows := []row{{label: "Install hyprtrixie", heading: true}, {info: true},
-		{label: "Debian 13 with Hyprland, set up properly, on this computer's disk.", info: true},
-		{label: "It takes about ten minutes and needs no internet. Nothing changes until you choose Install at the end.", info: true},
+	rows := []row{{label: "Install Hyprtrixie", heading: true}, {info: true},
+		{label: "Debian 13 with Hyprland, set up properly.", info: true},
+		{label: "It takes about ten minutes and needs no internet.", info: true},
+		{label: "Nothing changes until you choose Install at the end.", info: true},
 		{info: true}}
 	if state.blocked != "" {
 		rows = append(rows, row{label: state.blocked, info: true}, row{info: true})
@@ -361,7 +363,7 @@ func (state *system) welcomeRows(machine []string) []row {
 func (flow *wizard) systemStages(machine []string, catalogue []apps.App) []stage {
 	state := flow.system
 	stages := []stage{
-		&page{wizard: flow, title: "Welcome", rows: func() []row { return state.welcomeRows(machine) }, ready: state.welcomeReady},
+		&welcome{page: &page{wizard: flow, title: "Welcome", rows: func() []row { return state.welcomeRows(machine) }, ready: state.welcomeReady}, started: time.Now()},
 		&page{wizard: flow, title: "Disk", rows: func() []row { return state.diskRows(flow) }, ready: state.diskReady},
 		&page{wizard: flow, title: "Disk password", rows: flow.lockRows, ready: state.lockReady},
 		&page{wizard: flow, title: "You", rows: flow.youRows, ready: state.youReady},

@@ -41,7 +41,7 @@ func notifyChanges(dir string) int {
 	}
 	remove(unseen)
 	count := strings.Count("\n"+text, "\n  - ")
-	action := notify.Ask("--app-name=hyprtrixie", "--action=default=Read", "hyprtrixie was updated",
+	action := notify.Ask("--app-name=hyprtrixie", "--action=default=Read", "Hyprtrixie was updated",
 		fmt.Sprintf("%d changes since the last update. Click to read them, or open Menu › Update › What changed.", count))
 	if action == "default" {
 		return run.Report(run.Exec("hyprtrixie-terminal", "--wait", script(), "changes"))

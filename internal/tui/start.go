@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -36,7 +37,7 @@ func (flow *wizard) testingRow() row {
 }
 
 func (flow *wizard) startStage(machine []string) stage {
-	return &page{wizard: flow, title: "Start", rows: func() []row {
+	return &welcome{started: time.Now(), page: &page{wizard: flow, title: "Start", rows: func() []row {
 		rows := []row{{label: "Debian 13 with Hyprland, set up properly", heading: true}, {info: true}}
 		for _, line := range machine {
 			rows = append(rows, row{label: line, info: true})
@@ -45,5 +46,5 @@ func (flow *wizard) startStage(machine []string) stage {
 			rows = append(rows, row{label: text, info: true})
 		}
 		return append(rows, row{info: true}, flow.testingRow())
-	}}
+	}}}
 }

@@ -17,7 +17,7 @@ import (
 )
 
 const firstBootUnit = `[Unit]
-Description=Finish setting up hyprtrixie
+Description=Finish setting up Hyprtrixie
 Wants=network-online.target
 After=network-online.target
 Before=display-manager.service

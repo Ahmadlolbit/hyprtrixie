@@ -20,7 +20,7 @@ as_root() {
 
 needs_root() {
   ((EUID == 0)) && return 0
-  printf 'hyprtrixie needs root for this. Run it again with sudo: sudo %s %s\n' "$0" "$1" >&2
+  printf 'Hyprtrixie needs root for this. Run it again with sudo: sudo %s %s\n' "$0" "$1" >&2
   exit 1
 }
 
@@ -39,7 +39,7 @@ build() {
   if [[ -e $root/build && ! -w $root/build ]]; then
     as_root chown -R "$(id -u):$(id -g)" "$root/build"
   fi
-  printf 'Building the hyprtrixie tools\n' >&2
+  printf 'Building the Hyprtrixie tools\n' >&2
   (cd "$root" && CGO_ENABLED=0 go build -buildvcs=false -trimpath -ldflags='-s -w' -o "$tools/" ./cmd/...)
 }
 

@@ -7,7 +7,9 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 	"unicode"
+	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -23,27 +25,26 @@ const (
 	stepsWidth = 44
 	batchSize  = 256
 	logLines   = 2000
-	titleWidth = 48
 	context    = 14
+
+	runningTick = 120 * time.Millisecond
 )
 
 var (
 	sequences = regexp.MustCompile(`\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[()*+].|\x1b.`)
 
-	okStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
-	failStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
-	warnStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
-	busyStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
-
 	marks = map[string]string{
-		events.OK:   okStyle.Render("[ ok ]"),
-		events.Fail: failStyle.Render("[FAIL]"),
-		events.Skip: warnStyle.Render("[skip]"),
-		events.Warn: warnStyle.Render("[warn]"),
+		events.OK:   "■ PASS",
+		events.Fail: "▨ FAIL",
+		events.Skip: "□ --  ",
+		events.Warn: "▧ WARN",
 	}
+	plainMarks = map[string]string{"■": "█", "▨": "▓", "□": "░", "▧": "▒", "▩": "▒", "▦": "░"}
 )
 
 type arrived []events.Event
+
+type busyTick struct{}
 
 type ended struct {
 	code int
@@ -65,6 +66,7 @@ type installer struct {
 	stopped bool
 	over    bool
 	heard   bool
+	shifted bool
 }
 
 var handlers = map[string]func(*installer, events.Event){
@@ -193,6 +195,21 @@ func (work *installer) begin() tea.Cmd {
 
 func (work *installer) next() tea.Msg {
 	first, open := <-work.stream
+	return work.gather(first, open)
+}
+
+func (work *installer) nextOrTick() tea.Msg {
+	timer := time.NewTimer(runningTick)
+	defer timer.Stop()
+	select {
+	case first, open := <-work.stream:
+		return work.gather(first, open)
+	case <-timer.C:
+		return busyTick{}
+	}
+}
+
+func (work *installer) gather(first events.Event, open bool) tea.Msg {
 	if !open {
 		code, text := work.child.Wait()
 		return ended{code, text}
@@ -219,7 +236,19 @@ func (work *installer) take(batch arrived) tea.Cmd {
 			handle(work, event)
 		}
 	}
-	return work.next
+	return work.listen()
+}
+
+func (work *installer) listen() tea.Cmd {
+	if work.busy == "" {
+		return work.next
+	}
+	return work.nextOrTick
+}
+
+func (work *installer) ticked() tea.Cmd {
+	work.shifted = !work.shifted
+	return work.listen()
 }
 
 func (work *installer) closingLines(said string) []string {
@@ -227,7 +256,7 @@ func (work *installer) closingLines(said string) []string {
 	if len(work.failed) > 0 {
 		lines = append(lines, "")
 		for _, title := range work.failed {
-			lines = append(lines, marks[events.Fail]+" "+title)
+			lines = append(lines, statusLine(events.Fail, title))
 		}
 	}
 	if said != "" {
@@ -281,7 +310,7 @@ func (work *installer) remember(event events.Event) {
 }
 
 func (work *installer) status(event events.Event) {
-	line := marks[event.Kind] + " " + clean(event.Text)
+	line := statusLine(event.Kind, clean(event.Text))
 	if work.summing {
 		work.closing = append(work.closing, line)
 		return
@@ -329,14 +358,11 @@ func (work *installer) result(event events.Event) {
 	if len(event.Items) != 2 {
 		return
 	}
-	style := warnStyle
-	switch event.Items[1] {
-	case "PASS":
-		style = okStyle
-	case "FAIL":
-		style = failStyle
+	word := clean(event.Items[1])
+	line := fmt.Sprintf("%-9s  %s  %s", glyphs(resultMark(word)), clean(event.Items[0]), clean(event.Text))
+	if word == "FAIL" {
+		line = focusStyle.Render(line)
 	}
-	line := fmt.Sprintf("  %s  %-*s %s", clean(event.Items[0]), titleWidth, clean(event.Text), style.Render(clean(event.Items[1])))
 	work.closing = append(work.closing, line)
 }
 
@@ -373,11 +399,44 @@ func lastOf(lines []string, count, width int) string {
 	return strings.Join(shown, "\n")
 }
 
+func glyphs(mark string) string {
+	first, size := utf8.DecodeRuneInString(mark)
+	plain, known := plainMarks[string(first)]
+	if os.Getenv("TERM") != "linux" || !known {
+		return mark
+	}
+	return plain + mark[size:]
+}
+
+func statusLine(kind, text string) string {
+	line := glyphs(marks[kind]) + " " + text
+	if kind == events.Fail {
+		return focusStyle.Render(line)
+	}
+	return line
+}
+
+func resultMark(word string) string {
+	switch word {
+	case "PASS":
+		return "■ PASS"
+	case "FAIL":
+		return "▨ FAIL"
+	case "SKIP":
+		return "□ --"
+	}
+	return "▧ " + word
+}
+
 func (work *installer) stepLines() []string {
 	if work.busy == "" {
 		return work.steps
 	}
-	return append(work.steps[:len(work.steps):len(work.steps)], busyStyle.Render("[ .. ]")+" "+clean(work.busy))
+	mark := "▩ ... "
+	if work.shifted {
+		mark = "▦ ... "
+	}
+	return append(work.steps[:len(work.steps):len(work.steps)], glyphs(mark)+" "+clean(work.busy))
 }
 
 func (work *installer) draw(width, height int) string {

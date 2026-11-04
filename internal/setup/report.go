@@ -50,7 +50,7 @@ func markList(text *strings.Builder, heading string, marks []step.Mark) {
 
 func report(context *Context) string {
 	var text strings.Builder
-	text.WriteString("# hyprtrixie report\n\n")
+	text.WriteString("# Hyprtrixie report\n\n")
 	fmt.Fprintf(&text, "- Date: %s\n- hyprtrixie: %s\n- Configuration: %s\n- Log: %s\n\n",
 		time.Now().Format(time.DateTime), env.Version, config.Path(), context.Run.Log.Path())
 	text.WriteString("## Machine\n\n")

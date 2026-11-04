@@ -71,7 +71,7 @@ func installOSCommand() int {
 		ui.Print(words.T("Its log") + ": " + log.Path() + "\n")
 		return code
 	}
-	ui.Print(words.T("hyprtrixie is installed. Restart, take the USB stick out, and type your disk password.") + "\n")
+	ui.Print(words.T("Hyprtrixie is installed. Restart, take the USB stick out, and type your disk password.") + "\n")
 	ui.Print(words.T("The first start finishes the setup before the login screen, which takes a few minutes.") + "\n")
 	return 0
 }
