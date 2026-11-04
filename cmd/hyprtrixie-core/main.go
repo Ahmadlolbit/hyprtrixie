@@ -59,6 +59,10 @@ USAGE
   hyprtrixie fingerprint add|list|remove
                                    Add, list or remove your fingerprints (run it without sudo), once
                                      Fingerprint is on in the setup
+  hyprtrixie tpm on|off|tidy|status
+                                   Unlock the disk at boot with the TPM and a short PIN, the disk password kept
+                                     (run it with sudo, in a terminal); moves the boot image to dracut, and tidy
+                                     takes away the boot entry kept from before
   hyprtrixie credits               Who made hyprtrixie, and the projects it builds on with their licences
   hyprtrixie version
   hyprtrixie help
@@ -95,6 +99,7 @@ var commands = map[string]func() int{
 	"undo":          undoCommand,
 	"credits":       creditsCommand,
 	"fingerprint":   fingerprintCommand,
+	"tpm":           tpmCommand,
 }
 
 func fail(format string, args ...any) int {

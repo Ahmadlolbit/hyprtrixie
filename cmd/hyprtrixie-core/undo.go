@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -83,13 +84,14 @@ func (plan undoPlan) describe() string {
 		"other packages nothing needs any more, as apt autoremove does.\n"
 }
 
-func undoSnapshot(id string) error {
+func snapshotBefore(description string) error {
 	if !installed("snapper") || !fsutil.IsFile(env.Or("HYPRTRIXIE_SNAPPER_CONFIG", "/etc/snapper/configs/root")) {
+		fmt.Println("Snapshots aren't set up, so there's no restore point.")
 		return nil
 	}
 	fmt.Println("Taking a restore point first")
-	if run.Status("snapper", "--no-dbus", "-c", "root", "create", "--description", "before undoing module "+id, "--cleanup-algorithm", "number") != 0 {
-		return fmt.Errorf("the restore point failed, so module %s is left as it is", id)
+	if run.Status("snapper", "--no-dbus", "-c", "root", "create", "--description", description, "--cleanup-algorithm", "number") != 0 {
+		return errors.New("the restore point failed, so nothing was changed")
 	}
 	return nil
 }
@@ -148,7 +150,7 @@ func undo(id string, yes bool) int {
 	if !yes && !ui.Confirm("Undo module "+id+"?") {
 		return fail("Nothing was changed.")
 	}
-	if err := undoSnapshot(id); err != nil {
+	if err := snapshotBefore("before undoing module " + id); err != nil {
 		return fail("%v", err)
 	}
 	log := runlog.Joined()

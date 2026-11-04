@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/bootimage"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/follow"
@@ -88,7 +89,8 @@ func splash(current theme, initramfs bool) bool {
 		return false
 	}
 	if changed || initramfs {
-		return run.Within(initramfsLimit, "update-initramfs", "-u", "-k", "all") == 0
+		rebuild := bootimage.Rebuild(true)
+		return run.Within(initramfsLimit, rebuild[0], rebuild[1:]...) == 0
 	}
 	return true
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/bootimage"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
@@ -20,8 +21,6 @@ import (
 const (
 	kernelPackage  = "linux-image-amd64"
 	kernelSpec     = kernelPackage + "/backports"
-	bootDir        = "/boot"
-	kernelPrefix   = "vmlinuz-"
 	packageFiles   = "/var/lib/dpkg/info/linux-image-"
 	nvidiaSettings = "/etc/modprobe.d/hyprtrixie-nvidia.conf"
 	hybridPower    = " NVreg_DynamicPowerManagement=0x02"
@@ -51,14 +50,7 @@ func (context *Context) kernelInstall(log *runlog.Log) error {
 }
 
 func newestKernel() string {
-	output, _ := run.CaptureQuiet(run.Minute, "ls", "-v", "--quoting-style=literal", bootDir)
-	newest := ""
-	for _, name := range run.Lines(output) {
-		if version, ok := strings.CutPrefix(name, kernelPrefix); ok {
-			newest = version
-		}
-	}
-	return newest
+	return bootimage.Newest()
 }
 
 func bootedAt() int64 {
@@ -126,7 +118,8 @@ func (driver *nvidiaDriver) configure(log *runlog.Log) error {
 	if err := service.Enable(log, nvidiaUnits...); err != nil {
 		return err
 	}
-	return driver.initramfs.do(func() error { return run.Logged(log, "update-initramfs", "-u", "-k", "all") })
+	rebuild := bootimage.Rebuild(true)
+	return driver.initramfs.do(func() error { return run.Logged(log, rebuild[0], rebuild[1:]...) })
 }
 
 func kernelSteps(context *Context) {

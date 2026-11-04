@@ -241,6 +241,10 @@ func encrypted(device string) bool {
 	return slices.Contains(run.Lines(types), "crypt")
 }
 
+func RootSource() string {
+	return findmnt("SOURCE")
+}
+
 func RootEncrypted() bool {
 	device, _, _ := strings.Cut(findmnt("SOURCE"), "[")
 	return encrypted(device)
