@@ -30,14 +30,14 @@ const usage = `Usage: hyprtrixie-theme-set <theme>
        hyprtrixie-theme-set --editors
 
 Applies a theme to Hyprland, the bar, kitty, the launcher, notifications, the
-lock screen, btop, Neovim, VS Code, VSCodium, Zed, GTK and KDE apps, and
-the wallpaper. Themes come from /usr/share/hyprtrixie/themes and
-~/.config/hyprtrixie/themes. --editors gives the editors the current theme
-again, for one installed since.
+lock screen, btop, Neovim, VS Code, VSCodium, Zed, Firefox, GTK and KDE
+apps, and the wallpaper. Themes come from /usr/share/hyprtrixie/themes and
+~/.config/hyprtrixie/themes. --editors gives the editors and Firefox's
+profiles the current theme again, for one installed or made since.
 `
 
 const (
-	denied     = " alacritty.toml fastfetch.jsonc foot.ini ghostty.conf hyprlock.conf kde.colors kitty.conf mako.ini vscode.json "
+	denied     = " alacritty.toml fastfetch.jsonc firefox.css foot.ini ghostty.conf hyprlock.conf kde.colors kitty.conf mako.ini vscode.json "
 	wallpapers = "--wallpapers-soon"
 )
 
@@ -277,6 +277,7 @@ func linkApps() {
 		linkUnlessYours(file, filepath.Join(env.ConfigHome(), "fastfetch", "config.jsonc"))
 	}
 	linkNeovim(current)
+	followFirefox(current)
 	linkToolkits(current)
 }
 
@@ -463,8 +464,7 @@ func set(argument string) int {
 	}
 	held.Close()
 	retint()
-	followEditors(name)
-	return 0
+	return refreshEditors()
 }
 
 func list() {
