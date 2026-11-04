@@ -29,7 +29,7 @@ const usage = `Usage: hyprtrixie-theme-set <theme>
        hyprtrixie-theme-set --current
 
 Applies a theme to Hyprland, the bar, kitty, the launcher, notifications, the
-lock screen, btop, GTK and KDE apps, and the wallpaper. Themes come from
+lock screen, btop, Neovim, GTK and KDE apps, and the wallpaper. Themes come from
 /usr/share/hyprtrixie/themes and ~/.config/hyprtrixie/themes.
 `
 
@@ -273,6 +273,7 @@ func linkApps() {
 	if file := filepath.Join(current, "fastfetch.jsonc"); fsutil.IsFile(file) {
 		linkUnlessYours(file, filepath.Join(env.ConfigHome(), "fastfetch", "config.jsonc"))
 	}
+	linkNeovim(current)
 	linkToolkits(current)
 }
 
@@ -420,6 +421,7 @@ func retint() {
 	look.ReloadShell()
 	run.Within(run.Quick, "pkill", "-USR1", "-x", "kitty")
 	run.Within(run.Quick, "pkill", "-USR2", "-x", "btop")
+	reloadNeovim()
 	if run.Within(run.Quick, "pkill", "-x", "walker") == 0 {
 		detached("hyprtrixie-start", "walker")
 	}

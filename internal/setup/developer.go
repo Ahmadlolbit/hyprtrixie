@@ -306,10 +306,25 @@ func (context *Context) lazyvimSetup(log *runlog.Log) error {
 	if err := os.RemoveAll(filepath.Join(part, ".git")); err != nil {
 		return err
 	}
+	if err := lazyvimScheme(part); err != nil {
+		return err
+	}
 	if err := give(log, context.Person.Name, part); err != nil {
 		return err
 	}
 	return os.Rename(part, config)
+}
+
+func lazyvimScheme(config string) error {
+	data, err := os.ReadFile(filepath.Join(env.Root(), "config/nvim/hyprtrixie.lua"))
+	if err != nil {
+		return err
+	}
+	plugins := filepath.Join(config, "lua", "plugins")
+	if err := os.MkdirAll(plugins, programMode); err != nil {
+		return err
+	}
+	return atomic.Write(filepath.Join(plugins, "hyprtrixie.lua"), data, plainMode)
 }
 
 func (context *Context) lazyvimPlugins(log *runlog.Log) error {
