@@ -149,7 +149,11 @@ func (context *Context) hyprlockSetup(*runlog.Log) error {
 	if context.Config.Get("CLOCK_FORMAT") == "12h" {
 		clock = "$TIME12"
 	}
-	return context.Deploy.File("system/hypr/hyprlock.conf", hyprSystem+"hyprlock.conf", "TIME="+clock)
+	finger, placeholder := "false", "Password"
+	if context.Config.Get("FINGERPRINT") == "yes" {
+		finger, placeholder = "true", "Password or finger"
+	}
+	return context.Deploy.File("system/hypr/hyprlock.conf", hyprSystem+"hyprlock.conf", "TIME="+clock, "FINGERPRINT="+finger, "PLACEHOLDER="+placeholder)
 }
 
 func idleListener(timeout int, action, resume string) string {

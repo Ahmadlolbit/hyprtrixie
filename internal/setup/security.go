@@ -209,6 +209,11 @@ func securitySteps(context *Context) {
 	if settings.Get("NM_HANDOVER") == "yes" {
 		context.Run.Step("Hand the network over to NetworkManager", networkHandover)
 	}
+	if settings.Get("FINGERPRINT") == "yes" {
+		context.Run.Step("Use your finger for sudo and the lock screen", fingerprintSetup)
+	} else if fingerprintInSudo() {
+		context.Run.Step("Take your finger out of sudo", fingerprintOff)
+	}
 }
 
 func securityChecks(context *Context) {
@@ -225,5 +230,8 @@ func securityChecks(context *Context) {
 	}
 	if settings.Get("AUTO_UPDATES") == "yes" {
 		context.Run.Check("Security updates install automatically", autoUpdatesReady)
+	}
+	if settings.Get("FINGERPRINT") == "yes" {
+		context.Run.Check("sudo takes your finger", fingerprintReady)
 	}
 }

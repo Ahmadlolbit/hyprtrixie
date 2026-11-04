@@ -56,6 +56,9 @@ USAGE
   hyprtrixie dotfiles [REPOSITORY] Apply your dotfiles with chezmoi, which sends what you change back there
                                      (run it without sudo; chezmoi runs that repository's scripts). Without one,
                                      show what chezmoi would change
+  hyprtrixie fingerprint add|list|remove
+                                   Add, list or remove your fingerprints (run it without sudo), once
+                                     Fingerprint is on in the setup
   hyprtrixie credits               Who made hyprtrixie, and the projects it builds on with their licences
   hyprtrixie version
   hyprtrixie help
@@ -91,6 +94,7 @@ var commands = map[string]func() int{
 	"module":        module,
 	"undo":          undoCommand,
 	"credits":       creditsCommand,
+	"fingerprint":   fingerprintCommand,
 }
 
 func fail(format string, args ...any) int {

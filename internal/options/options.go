@@ -119,6 +119,7 @@ var table = []Option{
 	{"AUTO_UPDATES", "Automatic security updates", YesNo, "yes", "", "security", "Debian's security fixes install on their own in the background", nil},
 	{"SSH_POLICY", "SSH", Choice, "client", "client leave", "security", "Client: the SSH server doesn't start at boot. Leave: keep it as it is", nil},
 	{"NM_HANDOVER", "NetworkManager for everything", YesNo, "yes", "", "security", "Wi-Fi and wired connections move to NetworkManager, so the bar manages them", nil},
+	{"FINGERPRINT", "Fingerprint", YesNo, "no", "", "security", "Unlock the lock screen and approve sudo with a finger; the login screen keeps your password. Add a finger with hyprtrixie fingerprint add", nil},
 }
 
 func ticked(facts Facts, key, item string) bool {
