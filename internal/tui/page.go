@@ -19,6 +19,7 @@ type field struct {
 	valid   func(string) bool
 	set     func(string)
 	replace bool
+	secret  bool
 }
 
 type row struct {
@@ -54,6 +55,7 @@ type page struct {
 	draft   *input
 	replace bool
 	atEnd   bool
+	ready   func() string
 }
 
 func (view *page) name() string {
@@ -171,7 +173,10 @@ func (view *page) pressField(key tea.KeyMsg) bool {
 		return false
 	}
 	if view.draft == nil {
-		view.draft = &input{text: line.value, allow: line.input.allow}
+		view.draft = &input{allow: line.input.allow, secret: line.input.secret}
+		if !line.input.secret {
+			view.draft.text = line.value
+		}
 		view.replace = line.input.replace
 	}
 	if view.replace && key.Type != tea.KeyBackspace {

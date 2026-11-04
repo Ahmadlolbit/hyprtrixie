@@ -84,6 +84,8 @@ type wizard struct {
 	waiting   bool
 	ready     func() bool
 	unlock    func(string) error
+	offset    int
+	system    *system
 }
 
 func newWizard(settings *config.Config) *wizard {
@@ -217,12 +219,18 @@ func (flow *wizard) backToReview() bool {
 		return false
 	}
 	flow.reviewing = false
-	flow.jump(reviewAt)
+	flow.jump(reviewAt + flow.offset)
 	return true
 }
 
 func (flow *wizard) forward() tea.Cmd {
-	if !flow.backToReview() && flow.at+1 < min(len(flow.stages), reviewAt+1) {
+	if gate, ok := flow.stages[flow.at].(*page); ok && gate.ready != nil {
+		if why := gate.ready(); why != "" {
+			flow.notice = why
+			return nil
+		}
+	}
+	if !flow.backToReview() && flow.at+1 < min(len(flow.stages), reviewAt+flow.offset+1) {
 		flow.jump(flow.at + 1)
 	}
 	return nil

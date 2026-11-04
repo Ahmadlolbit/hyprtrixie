@@ -58,6 +58,10 @@ func Run() int {
 	flow.show = canShow
 	flow.nvidia = detect.ReadHardware().HasGPU("nvidia") || detect.NvidiaOnBus()
 	flow.stages = flow.allStages(run.Lines(detect.Summary()), apps.All())
+	return play(flow)
+}
+
+func play(flow *wizard) int {
 	if _, err := tea.NewProgram(flow, tea.WithAltScreen()).Run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
