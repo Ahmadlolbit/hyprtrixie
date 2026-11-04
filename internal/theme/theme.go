@@ -3,8 +3,10 @@ package theme
 import (
 	"fmt"
 	"maps"
+	"math"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -23,7 +25,10 @@ var (
 	themeName = pattern(`^[a-z0-9][a-z0-9_-]*$`)
 	fontName  = pattern(`^[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N} ._+-]*$`)
 	markup    = pattern(`<[^>\n]+>`)
+	sizeSlot  = pattern(`\{\{ size ([0-9]{1,4}) \}\}`)
+	largeLine = pattern(`(?m)^\{\{ larger \}\}(.*\n?)`)
 	hues      = []string{"red", "green", "yellow", "blue", "magenta", "cyan"}
+	textScale = map[string]float64{"normal": 1, "large": 1.25, "larger": 1.5}
 	aliases   = [][2]string{
 		{"background", "bg"}, {"foreground", "fg"}, {"dark_background", "dark_bg"}, {"darker_background", "darker_bg"},
 		{"lighter_background", "lighter_bg"}, {"dark_foreground", "dark_fg"}, {"light_foreground", "light_fg"},
@@ -172,6 +177,31 @@ func placeholders(key, value string) []string {
 	rgb := follow.Channels(value)
 	return append(pairs, "{{ "+key+"_rgb }}", fmt.Sprintf("%d,%d,%d", rgb[0], rgb[1], rgb[2]),
 		"{{ "+key+"_ansi }}", fmt.Sprintf("38;2;%d;%d;%d", rgb[0], rgb[1], rgb[2]))
+}
+
+func TextScale(size string) float64 {
+	if scale, ok := textScale[size]; ok {
+		return scale
+	}
+	return 1
+}
+
+func Scaled(size int, scale float64) int {
+	return int(math.Round(float64(size) * scale))
+}
+
+func Sized(text string, scale float64) string {
+	if strings.Contains(text, "{{ larger }}") {
+		kept := "$1"
+		if scale == 1 {
+			kept = ""
+		}
+		text = largeLine().ReplaceAllString(text, kept)
+	}
+	return sizeSlot().ReplaceAllStringFunc(text, func(slot string) string {
+		size, _ := strconv.Atoi(sizeSlot().FindStringSubmatch(slot)[1])
+		return strconv.Itoa(Scaled(size, scale))
+	})
 }
 
 func Pretty(text string) string {

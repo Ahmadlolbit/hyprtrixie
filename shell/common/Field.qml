@@ -13,8 +13,8 @@ Rectangle {
     input.forceActiveFocus();
   }
 
-  implicitWidth: 240
-  implicitHeight: 30
+  implicitWidth: Theme.size(240)
+  implicitHeight: Theme.size(30)
   radius: Theme.radius
   color: Theme.surface
   border.color: input.activeFocus ? Theme.accent : Theme.overlay

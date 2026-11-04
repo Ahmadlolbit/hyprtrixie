@@ -53,7 +53,7 @@ Label {
 
     signal pressed
 
-    font.pixelSize: 22
+    font.pixelSize: Theme.size(22)
     color: enabled ? Theme.text : Theme.subtext
 
     MouseArea {
@@ -71,7 +71,7 @@ Label {
     owner: root
 
     RowLayout {
-      Layout.preferredWidth: 320
+      Layout.preferredWidth: Theme.size(320)
       spacing: 14
 
       Rectangle {
@@ -96,7 +96,7 @@ Label {
           visible: !cover.visible
           text: "\u{f075a}"
           color: Theme.subtext
-          font.pixelSize: 32
+          font.pixelSize: Theme.size(32)
         }
       }
 

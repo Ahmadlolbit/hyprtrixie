@@ -71,6 +71,7 @@ var table = []Option{
 	{"TAP_TO_CLICK", "Tap to click", YesNo, "yes", "", "input", "Tap the touchpad to click instead of pressing it down", nil},
 	{"ANIMATIONS", "Animations", YesNo, "yes", "", "look", "Windows and workspaces animate as they open, close and move", nil},
 	{"WINDOW_STYLE", "Window style", Choice, "sharp", "sharp soft", "look", "Sharp corners with thin gaps, or soft rounded corners", nil},
+	{"TEXT_SIZE", "Text size", Choice, "normal", "normal large larger", "look", "Larger text in the bar, terminals, notifications, the lock screen and apps: large is a quarter bigger, larger half", nil},
 	{"SCREENSAVER_MINUTES", "Screensaver after (minutes)", Number, "3", "", "system", "An animated logo on every screen; a key or mouse move ends it; 0 = never", nil},
 	{"TIPS_TERMINAL", "Tips in new terminals", YesNo, "yes", "", "look", "A short tip under the prompt in every new terminal", nil},
 	{"TIPS_WELCOME", "Tips on the welcome screen", YesNo, "yes", "", "look", "A tip at the bottom of the welcome screen", nil},

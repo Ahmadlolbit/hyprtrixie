@@ -77,13 +77,13 @@ Label {
     owner: root
 
     RowLayout {
-      Layout.preferredWidth: 260
+      Layout.preferredWidth: Theme.size(260)
       spacing: 12
 
       Label {
         text: root.icon()
         color: root.color
-        font.pixelSize: 26
+        font.pixelSize: Theme.size(26)
       }
 
       ColumnLayout {

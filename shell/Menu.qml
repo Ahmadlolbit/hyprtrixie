@@ -9,7 +9,7 @@ import qs.common
 Scope {
   id: root
 
-  readonly property int rowHeight: 40
+  readonly property int rowHeight: Theme.size(40)
   readonly property int visibleRows: 11
   property bool open: false
   property var stack: ["root"]
@@ -394,7 +394,7 @@ Scope {
 
       Rectangle {
         anchors.centerIn: parent
-        width: 480
+        width: Theme.size(480)
         height: header.height + list.height + 36
         color: Theme.panel
         border.color: Theme.accent
@@ -412,7 +412,7 @@ Scope {
           anchors.left: parent.left
           anchors.right: parent.right
           anchors.margins: 18
-          height: 28
+          height: Theme.size(28)
 
           Label {
             Layout.fillWidth: true
@@ -498,7 +498,7 @@ Scope {
                   visible: !icon.visible
                   text: item.modelData.glyph
                   color: Theme.palette[item.modelData.color] || Theme.accent
-                  font.pixelSize: 18
+                  font.pixelSize: Theme.size(18)
                 }
               }
 
@@ -519,7 +519,7 @@ Scope {
                 visible: item.modelData.page || !!item.modelData.state || item.modelData.shell === "awake"
                 text: item.modelData.page ? "\u{f0142}" : (item.modelData.shell === "awake" ? Session.awake : item.on) ? "\u{f0765}" : "\u{f0766}"
                 color: item.modelData.page ? Theme.subtext : (item.modelData.shell === "awake" ? Session.awake : item.on) ? Theme.accent : Theme.subtext
-                font.pixelSize: 16
+                font.pixelSize: Theme.size(16)
               }
             }
 

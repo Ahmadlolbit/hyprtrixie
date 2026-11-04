@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -203,10 +204,10 @@ func templates(dir string) []string {
 	return paths
 }
 
-func renderOne(template, target string, replacer *strings.Replacer) {
+func renderOne(template, target string, replacer *strings.Replacer, scale float64) {
 	data, err := os.ReadFile(template)
 	if err == nil {
-		err = atomic.Write(target, []byte(replacer.Replace(string(data))), 0o666)
+		err = atomic.Write(target, []byte(theme.Sized(replacer.Replace(string(data)), scale)), 0o666)
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -215,11 +216,12 @@ func renderOne(template, target string, replacer *strings.Replacer) {
 
 func render(dir string, colors, apps theme.Colors) {
 	replacers := map[bool]*strings.Replacer{false: colors.Replacer(), true: apps.Replacer()}
+	scale := theme.TextScale(settings.Get("text"))
 	found := append(templates(filepath.Join(env.AppConfig(), "themed")), templates(filepath.Join(systemRoot, "themed"))...)
 	for _, template := range found {
 		base := strings.TrimSuffix(filepath.Base(template), ".tpl")
 		if target := filepath.Join(dir, base); !fsutil.Exists(target) {
-			renderOne(template, target, replacers[slices.Contains(toolkitFiles, base)])
+			renderOne(template, target, replacers[slices.Contains(toolkitFiles, base)], scale)
 		}
 	}
 }
@@ -283,6 +285,20 @@ func desktop(action string, args ...string) {
 	run.Quiet(run.Quick, "dbus-run-session", append([]string{"--", "gsettings"}, args...)...)
 }
 
+func desktopValue(key string) string {
+	name, args := "gsettings", []string{"get", "org.gnome.desktop.interface", key}
+	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") == "" {
+		name, args = "dbus-run-session", append([]string{"--", "gsettings"}, args...)
+	}
+	output, _ := run.CaptureQuiet(run.Quick, name, args...)
+	return strings.TrimSpace(output)
+}
+
+func ourScaling() bool {
+	factor, err := strconv.ParseFloat(desktopValue("text-scaling-factor"), 64)
+	return err == nil && slices.Contains([]float64{theme.TextScale("large"), theme.TextScale("larger")}, factor)
+}
+
 func iconTheme(mode string) string {
 	icons, _, _ := strings.Cut(fsutil.Optional(filepath.Join(state(), "theme", "icons.theme")), "\n")
 	if iconName.MatchString(icons) && fsutil.IsDir("/usr/share/icons/"+icons) {
@@ -310,6 +326,11 @@ func desktopSettings(colors, apps theme.Colors) {
 		desktop("reset", "font-name")
 	} else {
 		desktop("set", "font-name", ui+" 11")
+	}
+	if scale := theme.TextScale(settings.Get("text")); scale != 1 {
+		desktop("set", "text-scaling-factor", strconv.FormatFloat(scale, 'f', -1, 64))
+	} else if ourScaling() {
+		desktop("reset", "text-scaling-factor")
 	}
 	desktop("set", "icon-theme", iconTheme(mode))
 	desktop("set", "cursor-theme", "Bibata-Modern-Ice")

@@ -69,8 +69,8 @@ Scope {
     anchors.bottom: true
     margins.bottom: 96
     exclusiveZone: 0
-    implicitWidth: 280
-    implicitHeight: 52
+    implicitWidth: Theme.size(280)
+    implicitHeight: Theme.size(52)
     color: "transparent"
     mask: Region {}
     WlrLayershell.layer: WlrLayer.Overlay
@@ -89,7 +89,7 @@ Scope {
         anchors.leftMargin: 16
         anchors.verticalCenter: parent.verticalCenter
         text: root.icon
-        font.pixelSize: 20
+        font.pixelSize: Theme.size(20)
       }
 
       Rectangle {

@@ -39,7 +39,7 @@ Scope {
     required property string command
 
     implicitWidth: text.implicitWidth + 32
-    implicitHeight: 36
+    implicitHeight: Theme.size(36)
     radius: Theme.radius
     color: hover.containsMouse ? Theme.overlay : Theme.surface
     border.color: hover.containsMouse ? Theme.accent : "transparent"
@@ -162,7 +162,7 @@ Scope {
             visible: text !== ""
             text: logo.text().replace(/\s+$/, "")
             color: Theme.accent
-            font.pixelSize: 15
+            font.pixelSize: Theme.size(15)
           }
 
           Label {
@@ -224,7 +224,7 @@ Scope {
 
           Label {
             Layout.alignment: Qt.AlignHCenter
-            Layout.maximumWidth: 640
+            Layout.maximumWidth: Theme.size(640)
             visible: root.tip !== ""
             text: "Tip: " + root.tip
             wrapMode: Text.WordWrap

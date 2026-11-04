@@ -99,7 +99,7 @@ Label {
         Label {
           required property int index
 
-          Layout.preferredWidth: 34
+          Layout.preferredWidth: Theme.size(34)
           horizontalAlignment: Text.AlignHCenter
           text: Qt.locale().dayName((Qt.locale().firstDayOfWeek + index) % 7, Locale.ShortFormat)
           color: Theme.subtext
@@ -115,8 +115,8 @@ Label {
           required property var modelData
           readonly property bool today: modelData.toDateString() === clock.date.toDateString()
 
-          Layout.preferredWidth: 34
-          Layout.preferredHeight: 28
+          Layout.preferredWidth: Theme.size(34)
+          Layout.preferredHeight: Theme.size(28)
           radius: Theme.radius
           color: today ? Theme.accent : "transparent"
 

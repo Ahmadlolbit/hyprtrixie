@@ -5,3 +5,5 @@ $check = rgb({{ green_strip }})
 $fail = rgb({{ red_strip }})
 $field = rgba({{ background_strip }}cc)
 $rounding = {{ rounding }}
+$clock_size = {{ size 96 }}
+$date_size = {{ size 20 }}

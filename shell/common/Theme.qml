@@ -26,11 +26,16 @@ Singleton {
   readonly property bool zen: looks.zen === "yes"
   readonly property string video: looks.video && looks.video !== "off" ? looks.video : ""
   readonly property bool videoOnBattery: looks.video_battery === "play"
-  readonly property int fontSize: 13
-  readonly property int barHeight: 30
-  readonly property int barWidth: 60
+  readonly property real textScale: looks.text === "larger" ? 1.5 : looks.text === "large" ? 1.25 : 1
+  readonly property int fontSize: size(13)
+  readonly property int barHeight: size(30)
+  readonly property int barWidth: size(60)
   readonly property int spacing: 14
   readonly property int radius: (Config.style || looks.style) === "soft" ? 10 : 0
+
+  function size(pixels) {
+    return Math.round(pixels * textScale);
+  }
 
   function parse(text) {
     const colors = {};

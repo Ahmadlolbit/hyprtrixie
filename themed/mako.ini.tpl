@@ -1,4 +1,4 @@
-font={{ font }} 11
+font={{ font }} {{ size 11 }}
 background-color={{ background }}{{ panel_alpha }}
 text-color={{ foreground }}
 border-color={{ accent }}

@@ -77,7 +77,7 @@ RowLayout {
     owner: root
 
     Label {
-      Layout.preferredWidth: 220
+      Layout.preferredWidth: Theme.size(220)
       text: "Stay awake"
       font.bold: true
     }

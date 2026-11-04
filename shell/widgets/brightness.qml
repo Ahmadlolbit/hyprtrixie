@@ -25,7 +25,7 @@ Label {
     owner: root
 
     Label {
-      Layout.preferredWidth: 280
+      Layout.preferredWidth: Theme.size(280)
       text: "Screen"
       font.bold: true
     }
@@ -45,7 +45,7 @@ Label {
       }
 
       Label {
-        Layout.preferredWidth: 36
+        Layout.preferredWidth: Theme.size(36)
         horizontalAlignment: Text.AlignRight
         text: Math.round(Brightness.level * 100) + "%"
       }
@@ -73,7 +73,7 @@ Label {
       }
 
       Label {
-        Layout.preferredWidth: 36
+        Layout.preferredWidth: Theme.size(36)
         horizontalAlignment: Text.AlignRight
         text: Math.round(Brightness.keyboardLevel * 100) + "%"
       }

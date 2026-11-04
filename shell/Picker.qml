@@ -278,7 +278,7 @@ Scope {
         anchors.topMargin: 24
         anchors.horizontalCenter: parent.horizontalCenter
         text: root.shown.length ? (root.busy ? "Applying " : "") + root.shown[root.index].label : root.items.length ? "Nothing matches " + root.filter : ""
-        font.pixelSize: 22
+        font.pixelSize: Theme.size(22)
         font.bold: true
       }
 
