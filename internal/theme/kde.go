@@ -49,6 +49,11 @@ func withKDEScheme(lines []string) []string {
 	return append(lines, "[General]", kdeScheme, "")
 }
 
+func WithoutKDEScheme(current string) string {
+	text := strings.Join(yourKDELines(current), "\n")
+	return strings.TrimRight(text, "\n") + "\n"
+}
+
 func KDEGlobals(current, scheme string) string {
 	lines := withKDEScheme(yourKDELines(current))
 	own := append(ownKDELines(scheme), "", "[UiSettings]", kdeScheme)
