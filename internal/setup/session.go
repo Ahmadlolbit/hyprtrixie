@@ -354,6 +354,7 @@ func sessionSteps(context *Context) {
 	context.Run.Step("Install the Walker launcher", context.walkerInstall)
 	context.Run.Step("Let you change the brightness", context.brightnessAccess)
 	context.toolStep("Install the screenshot command", "hyprtrixie-screenshot")
+	context.toolStep("Install the colour and QR picker", "hyprtrixie-pick")
 	context.Run.Step("Install the screensaver", func(*runlog.Log) error {
 		if err := context.Deploy.Tool("hyprtrixie-screensaver"); err != nil {
 			return err
@@ -381,6 +382,7 @@ func sessionChecks(context *Context) {
 	context.Run.Check("The package picker is installed", commands("hyprtrixie-pkg"))
 	context.Run.Check("The screensaver is installed", commands("hyprtrixie-screensaver", "tte"))
 	context.Run.Check("The screenshot command is installed", commands("hyprtrixie-screenshot"))
+	context.Run.Check("The colour and QR picker is installed", commands("hyprtrixie-pick"))
 	context.Run.Check("The session starter is installed", commands("hyprtrixie-start"))
 	context.Run.Check("The floating terminal is installed", commands("hyprtrixie-terminal"))
 	context.Run.Check("Tip notifications are scheduled", timerCheck(tipTimer))

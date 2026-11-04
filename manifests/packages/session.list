@@ -13,3 +13,5 @@ libnotify-bin
 libgtk-3-bin
 sound-theme-freedesktop
 python3-terminaltexteffects
+hyprpicker/backports
+zbar-tools

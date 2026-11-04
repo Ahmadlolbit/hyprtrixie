@@ -75,6 +75,27 @@
       "capture"
     ]
   },
+  "capture.colour": {
+    "glyph": "\uf1fb",
+    "label": "Colour from the screen",
+    "action": "sleep 0.3; hyprtrixie-pick colour",
+    "keywords": [
+      "colour",
+      "color",
+      "picker",
+      "hex"
+    ]
+  },
+  "capture.qr": {
+    "glyph": "\uf029",
+    "label": "QR code from the screen",
+    "action": "sleep 0.3; hyprtrixie-pick qr",
+    "keywords": [
+      "qr",
+      "code",
+      "scan"
+    ]
+  },
   "toggle": {
     "glyph": "\udb81\udd21",
     "label": "Toggle"
