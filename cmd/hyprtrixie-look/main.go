@@ -33,6 +33,7 @@ const usage = `Usage: hyprtrixie-look
        hyprtrixie-look sun [DATE]
        hyprtrixie-look location [LATITUDE,LONGITUDE|zone]
        hyprtrixie-look rotate [MINUTES|off|toggle]
+       hyprtrixie-look wallpaper-day [off|drawn|nasa|folder [PATH]]
        hyprtrixie-look workspaces [on|off|toggle]
        hyprtrixie-look bar [full|floating|minimal|vertical]
        hyprtrixie-look position [top|bottom]
@@ -80,6 +81,10 @@ While it's on, a theme you pick becomes the light or the dark one.
 sun prints the day's sunrise and sunset where your time zone's main city
 is, or at the location you set. rotate changes the wallpaper every so
 many minutes; toggle switches between off and every 30 minutes.
+wallpaper-day gives you a new wallpaper every day: drawn in the theme's
+colours, NASA's picture of the day (with its credit; a day without a
+picture is drawn), or one from a folder or a list of pictures, one per
+line.
 workspaces gives each workspace its own wallpaper. bar and position set
 the bar's layout and edge in ~/.config/hyprtrixie/shell.json. style makes
 windows, popups and the lock screen sharp or soft. video plays a video file as
@@ -468,7 +473,7 @@ func all() int {
 func commands() map[string]func([]string) int {
 	return map[string]func([]string) int{
 		"get": getSetting, "accent": accent, "glass": glass, "editors": editorsFollow, "corners": corners, "apps": appsTheme, "sun": sun, "auto": auto, "times": times, "daily": daily,
-		"tick": tick, "remember": remember, "rotate": rotate, "workspaces": workspaces, "bar": barLayout, "position": barPosition, "style": windowStyle, "text": textSize, "reader": reader, "chime": chimeCommand, "video": video,
+		"tick": tick, "remember": remember, "rotate": rotate, "wallpaper-day": dayWallpaper, "workspaces": workspaces, "bar": barLayout, "position": barPosition, "style": windowStyle, "text": textSize, "reader": reader, "chime": chimeCommand, "video": video,
 		"video-battery": videoBattery, "weather": weather, "weather-units": weatherUnits, "coordinates": showCoordinates,
 		"quiet": quiet, "quiet-hours": quietHours, "night": night, "night-hours": nightHours, "night-warmth": nightWarmth, "location": location,
 		"power": powerFollow, "power-profiles": powerProfiles, "power-apply": powerApply,
