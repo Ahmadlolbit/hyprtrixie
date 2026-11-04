@@ -1,3 +1,5 @@
+local look = require("hyprtrixie.hypr.look")
+
 hl.on("hyprland.start", function()
   hl.exec_cmd("dbus-update-activation-environment --systemd --all")
   hl.exec_cmd("xdg-user-dirs-update")
@@ -11,4 +13,7 @@ hl.on("hyprland.start", function()
   hl.exec_cmd("hyprtrixie-start bar")
   hl.exec_cmd("hyprtrixie changes --notify")
   hl.exec_cmd("hyprtrixie-look presentation off")
+  if look.get("reader") == "yes" then
+    hl.exec_cmd("hyprtrixie-start orca")
+  end
 end)
