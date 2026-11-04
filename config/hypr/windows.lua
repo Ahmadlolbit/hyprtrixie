@@ -49,3 +49,12 @@ hl.window_rule({
   center = true,
   size = { "(monitor_w*0.66)", "(monitor_h*0.66)" },
 })
+
+hl.window_rule({
+  name = "dropdown-terminal",
+  match = { class = "^hyprtrixie-dropdown$" },
+  float = true,
+  size = "monitor_w monitor_h*0.45",
+  move = "0 30",
+  workspace = "special:dropdown silent",
+})
