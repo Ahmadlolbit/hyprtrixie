@@ -1,6 +1,7 @@
 package step
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/ui"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/words"
 )
 
 const (
@@ -191,7 +193,7 @@ func (runner *Runner) attempt(kind, title string, perform func() error) bool {
 		}
 		if err == nil {
 			runner.passed(kind)
-			ui.OK(title)
+			ui.OK(words.T(title))
 			return true
 		}
 		choice := runner.failed(kind, title, offset, err)
@@ -215,7 +217,7 @@ func (runner *Runner) passed(kind string) {
 func (runner *Runner) failed(kind, title string, offset int64, err error) string {
 	run.Explain(runner.Log, err)
 	runner.Log.Line("error", kind+" failed (exit "+strconv.Itoa(run.Code(err))+"): "+title)
-	ui.Fail(title)
+	ui.Fail(words.T(title))
 	for _, line := range runner.Log.Since(offset, shownLines) {
 		ui.Note(line)
 	}
@@ -224,7 +226,7 @@ func (runner *Runner) failed(kind, title string, offset int64, err error) string
 
 func (runner *Runner) choice(title string, offset int64) string {
 	for runner.Mode == ask {
-		pick := runner.question("\"" + title + "\" failed. What now?")
+		pick := runner.question(fmt.Sprintf(words.T("\"%s\" failed. What now?"), words.T(title)))
 		if pick != showLog {
 			return strings.ToLower(pick)
 		}

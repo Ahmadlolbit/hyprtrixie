@@ -1,9 +1,12 @@
 package tui
 
 import (
+	"slices"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/Ahmadlolbit/hyprtrixie/internal/words"
 )
 
 type dialog struct {
@@ -17,7 +20,7 @@ type dialog struct {
 }
 
 func question(title string, items []string, answer func(string, bool) tea.Cmd) *dialog {
-	return &dialog{title: title, items: items, answer: answer}
+	return &dialog{title: words.T(title), items: items, answer: answer}
 }
 
 func confirmation(title string, yes func() tea.Cmd) *dialog {
@@ -30,7 +33,7 @@ func confirmation(title string, yes func() tea.Cmd) *dialog {
 }
 
 func prompt(title, text string, answer func(string, bool) tea.Cmd) *dialog {
-	return &dialog{title: title, field: &input{text: text, allow: anything}, answer: answer}
+	return &dialog{title: words.T(title), field: &input{text: text, allow: anything}, answer: answer}
 }
 
 func (box *dialog) press(key tea.KeyMsg) (bool, tea.Cmd) {
@@ -77,7 +80,7 @@ func (box *dialog) answers() []string {
 	}
 	lines := make([]string, 0, len(box.items))
 	for index, item := range box.items {
-		lines = append(lines, marked(index == box.cursor, item))
+		lines = append(lines, marked(index == box.cursor, words.T(item)))
 	}
 	return lines
 }
@@ -87,7 +90,7 @@ func (box *dialog) context(room int) []string {
 	if len(shown) == 0 {
 		return nil
 	}
-	return append(shown[:len(shown):len(shown)], "")
+	return append(slices.Clone(shown), "")
 }
 
 func (box *dialog) draw(_, height int) string {

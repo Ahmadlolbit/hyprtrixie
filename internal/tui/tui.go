@@ -14,6 +14,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/lock"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/term"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/words"
 )
 
 const stoppedCode = 130
@@ -62,7 +63,7 @@ func Run() int {
 		return 1
 	}
 	for _, line := range flow.end.lines {
-		fmt.Println(line)
+		fmt.Println(words.T(line))
 	}
 	if flow.install.running() {
 		return stoppedCode

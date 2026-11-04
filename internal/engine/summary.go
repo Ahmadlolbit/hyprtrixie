@@ -13,6 +13,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/setup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/step"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/ui"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/words"
 )
 
 const (
@@ -124,7 +125,7 @@ func (work *session) summary() {
 	ui.Rule(events.SummaryTitle)
 	for _, module := range modules.All {
 		if result, ran := work.results[module.ID]; ran {
-			ui.ModuleResult(module.ID, module.Title, result)
+			ui.ModuleResult(module.ID, words.T(module.Title), result)
 		}
 	}
 	if work.mode == installMode {

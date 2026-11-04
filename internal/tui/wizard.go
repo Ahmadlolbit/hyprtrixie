@@ -12,6 +12,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/privilege"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/words"
 )
 
 const (
@@ -239,10 +240,18 @@ func (flow *wizard) jump(index int) {
 	flow.stages[index].arrive()
 }
 
+func translated(lines []string) []string {
+	shown := make([]string, len(lines))
+	for index, line := range lines {
+		shown[index] = words.T(line)
+	}
+	return shown
+}
+
 func (flow *wizard) body(width, height int) string {
 	switch {
 	case flow.guide:
-		return strings.Join(keyGuide, "\n")
+		return strings.Join(translated(keyGuide), "\n")
 	case len(flow.dialogs) > 0:
 		return flow.dialogs[len(flow.dialogs)-1].draw(width, height)
 	}
@@ -268,7 +277,7 @@ func (flow *wizard) footer() (string, string) {
 
 func (flow *wizard) header(width int) string {
 	title := "hyprtrixie " + env.Version
-	where := fmt.Sprintf("%s · %d of %d", flow.stages[flow.at].name(), flow.at+1, len(flow.stages))
+	where := fmt.Sprintf(words.T("%s · %d of %d"), words.T(flow.stages[flow.at].name()), flow.at+1, len(flow.stages))
 	gap := max(width-lipgloss.Width(title)-lipgloss.Width(where), 1)
 	return headingStyle.Render(title) + strings.Repeat(" ", gap) + where
 }
@@ -278,6 +287,6 @@ func (flow *wizard) View() string {
 	rule := ruleStyle.Render(strings.Repeat("─", width))
 	help, keys := flow.footer()
 	body := lipgloss.NewStyle().MaxWidth(width).Height(height).MaxHeight(height).Render(flow.body(width, height))
-	lines := []string{cut(flow.header(width), width), rule, body, rule, cut(dimStyle.Render(help), width), cut(dimStyle.Render(keys), width)}
+	lines := []string{cut(flow.header(width), width), rule, body, rule, cut(dimStyle.Render(words.T(help)), width), cut(dimStyle.Render(words.T(keys)), width)}
 	return strings.Join(lines, "\n")
 }
