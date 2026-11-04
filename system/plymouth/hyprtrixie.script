@@ -21,6 +21,7 @@ for (i = 0; i < logo_count; i++) {
   logo_sprites[i].SetPosition(Window.GetWidth() / 2 - widest / 2, top + i * line_height, 1);
 }
 
+custom = "{{ BOOT_PROMPT }}";
 prompt_sprite = Sprite();
 bullet_sprite = Sprite();
 message_sprite = Sprite();
@@ -31,10 +32,19 @@ fun centre(sprite, image, y) {
   sprite.SetOpacity(1);
 }
 
+fun asks_pin(text) {
+  for (i = 0; i < 200; i++)
+    if (text.SubString(i, i + 3) == "PIN")
+      return 1;
+  return 0;
+}
+
 fun display_password(prompt, bullets) {
   dots = "";
   for (i = 0; i < bullets; i++)
     dots = dots + "• ";
+  if (custom != "" && !asks_pin(prompt))
+    prompt = custom;
   if (prompt == "")
     prompt = "Password";
   centre(prompt_sprite, Image.Text(prompt, {{ FOREGROUND }}, 1, "Sans 13"), top + line_height * logo_count + 60);

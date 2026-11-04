@@ -113,6 +113,7 @@ var table = []Option{
 	{"NIGHT_FROM", "Night light from", Choice, "20:00", "19:00 20:00 21:00 22:00 23:00", "look", "When the screen warms up", nightByTheClock},
 	{"NIGHT_TO", "Night light until", Choice, "07:00", lightAt, "look", "When the screen goes back to normal", nightByTheClock},
 	{"BOOT_SPLASH", "Boot splash", YesNo, "yes", "", "look", "The logo and the disk password prompt in your theme's colours while it boots", nil},
+	{"BOOT_PROMPT", "Words above the disk password", Text, "", "", "look", "What the boot splash shows above the disk password, such as Welcome back; empty keeps the system's own words, and the TPM's PIN prompt keeps its own", splashOn},
 	{"BOOT_MENU_THEME", "Boot menu in the theme", YesNo, "yes", "", "look", "The boot menu, where the snapshots are, in your theme's colours", nil},
 	{"CONSOLE_THEME", "Console colours and font", YesNo, "no", "", "look", "The text consoles (Ctrl+Alt+F3) in your theme's colours, with a larger font and the logo above the login", nil},
 	{"FIREWALL", "Firewall", YesNo, "yes", "", "security", "Blocks connections from other computers; your own connections still work", nil},
@@ -164,6 +165,10 @@ func autoThemeOff(facts Facts) bool {
 
 func autoThemeTimes(facts Facts) bool {
 	return facts.Value("AUTO_THEME") == "times"
+}
+
+func splashOn(facts Facts) bool {
+	return facts.Value("BOOT_SPLASH") == "yes"
 }
 
 func weatherOn(facts Facts) bool {
