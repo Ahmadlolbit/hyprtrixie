@@ -16,7 +16,7 @@ const (
 	Text   = "text"
 	Multi  = "multi"
 
-	themes    = "catppuccin catppuccin-latte ethereal everforest flexoki-light gruvbox hackerman kanagawa last-horizon lupine matte-black miasma nord northern-sea osaka-jade pitch-black retro-82 ristretto rose-pine solitude tokyo-night white"
+	themes    = "catppuccin catppuccin-latte ethereal everforest flexoki-light gruvbox hackerman high-contrast high-contrast-light kanagawa last-horizon lupine matte-black miasma nord northern-sea osaka-jade pitch-black retro-82 ristretto rose-pine solitude tokyo-night white"
 	devTools  = "docker@developer podman@developer mise@developer python@developer rust@developer go@developer kubernetes@developer neovim@developer vscode@developer vscodium@developer zed@developer toolbox@developer"
 	lightAt   = "05:00 06:00 07:00 08:00 09:00"
 	extras    = "flatpak@offered gaming@offered printing@offered distrobox@offered"

@@ -12,7 +12,7 @@ Singleton {
   readonly property color surface: palette.lighter_background || "#313244"
   readonly property color overlay: palette.selection || "#45475a"
   readonly property color text: palette.foreground || "#cdd6f4"
-  readonly property color subtext: Qt.tint(text, Qt.alpha(base, 0.3))
+  readonly property color subtext: palette.subtext || Qt.tint(text, Qt.alpha(base, 0.3))
   readonly property color accent: palette.accent || "#89b4fa"
   readonly property color good: palette.green || "#a6e3a1"
   readonly property color warning: palette.yellow || "#f9e2af"

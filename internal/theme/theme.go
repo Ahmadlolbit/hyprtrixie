@@ -125,6 +125,7 @@ func (colors Colors) resolveShades() {
 	colors.fallback("darker_background", "", Mix(colors["background"], "#000000", 50))
 	colors.fallback("surface", "", Mix(colors["background"], colors["foreground"], 6))
 	colors.fallback("raised", "", Mix(colors["background"], colors["foreground"], 14))
+	colors.fallback("subtext", "", Mix(colors["foreground"], colors["background"], 30))
 	for _, hue := range hues {
 		colors.fallback("bright_"+hue, "", Mix(colors[hue], "#ffffff", 20))
 	}
