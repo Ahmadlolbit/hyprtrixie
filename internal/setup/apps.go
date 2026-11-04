@@ -15,6 +15,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 )
@@ -40,6 +41,7 @@ func (context *Context) wantedApps() []apps.App {
 }
 
 func extrepoAppInstall(log *runlog.Log, app apps.App, repository string) error {
+	ledger.Note(ledger.Wants, app.Packages...)
 	if apt.Present(app.Packages...) == nil {
 		return nil
 	}

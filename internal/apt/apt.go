@@ -18,6 +18,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 )
@@ -242,6 +243,9 @@ func sorted(specs []string, installed map[string]bool) ([]string, []string) {
 }
 
 func Install(log *runlog.Log, specs ...string) error {
+	for _, spec := range specs {
+		ledger.Note(ledger.Wants, strings.TrimSuffix(spec, backportsMark))
+	}
 	stable, backports := sorted(specs, Installed())
 	if len(stable)+len(backports) == 0 {
 		log.Line("info", "already installed: "+strings.Join(specs, " "))

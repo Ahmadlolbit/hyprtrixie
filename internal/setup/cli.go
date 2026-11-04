@@ -8,6 +8,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 )
 
@@ -18,9 +19,13 @@ var cliCommands = []string{
 
 func shortName(target, name string) error {
 	path := filepath.Join(env.BinDir(), name)
+	if link, err := os.Readlink(path); err == nil && link == target {
+		ledger.Note(ledger.Made, path)
+	}
 	if !fsutil.Runnable(target) || fsutil.Exists(path) {
 		return nil
 	}
+	ledger.Note(ledger.Made, path)
 	return atomic.Symlink(target, path)
 }
 
@@ -38,6 +43,7 @@ func cliSteps(context *Context) {
 	context.Run.Step("Install command-line tools", packages("cli"))
 	context.Run.Step("Add short names for bat and fd", cliNames)
 	context.Run.Step("Install lazydocker", func(log *runlog.Log) error {
+		ledger.Note(ledger.Made, filepath.Join(env.BinDir(), "lazydocker"))
 		return fetch.ReleaseExtract(log, "lazydocker", "lazydocker", filepath.Join(env.BinDir(), "lazydocker"), programMode)
 	})
 }

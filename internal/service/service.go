@@ -3,6 +3,7 @@ package service
 import (
 	"io"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
@@ -16,6 +17,7 @@ func Active(unit string) bool {
 
 func Enable(out io.Writer, units ...string) error {
 	for _, unit := range units {
+		ledger.Note(ledger.Service, unit)
 		if Enabled(unit) {
 			continue
 		}

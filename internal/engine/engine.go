@@ -13,6 +13,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apps"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
@@ -20,6 +21,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/events"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/files"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/lock"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/modules"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
@@ -243,6 +245,23 @@ func (work *session) guarded(part func(setup.Module, *setup.Context), body setup
 	part(body, context)
 }
 
+func (work *session) recordStart() map[string]bool {
+	if !work.changesFiles() {
+		return nil
+	}
+	ledger.Begin()
+	return apt.Installed()
+}
+
+func (work *session) recordEnd(id string, before map[string]bool) {
+	if before == nil {
+		return
+	}
+	if err := ledger.End(id, before, apt.Installed()); err != nil {
+		work.log.Line("warn", "cannot record what module "+id+" did: "+err.Error())
+	}
+}
+
 func (work *session) one(module modules.Module, position, total int, part func(setup.Module, *setup.Context)) bool {
 	work.runner.Begin(module.ID)
 	ui.Rule(fmt.Sprintf("%s  %s  ·  %d of %d", module.ID, module.Title, position, total))
@@ -252,7 +271,9 @@ func (work *session) one(module modules.Module, position, total int, part func(s
 		work.runner.Broke("step", "cannot read what's installed: "+err.Error())
 		return false
 	}
+	before := work.recordStart()
 	work.guarded(part, setup.Modules[module.ID], context)
+	work.recordEnd(module.ID, before)
 	work.person = context.Person
 	if work.runner.Ended() {
 		return false

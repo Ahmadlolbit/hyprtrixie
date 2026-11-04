@@ -17,6 +17,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 )
@@ -196,6 +197,7 @@ func (deployer *Deployer) existing(target string, data []byte, mode os.FileMode,
 }
 
 func (deployer *Deployer) deploy(data []byte, target string, mode os.FileMode, owner string) (bool, error) {
+	ledger.Note(ledger.File, target)
 	if fsutil.IsDir(target) {
 		return false, fmt.Errorf("a folder is in the way of %s", target)
 	}
