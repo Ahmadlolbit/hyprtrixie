@@ -460,7 +460,7 @@ func (theme *themeRun) followInstall(*runlog.Log) error {
 	}
 	settings := theme.Config
 	return theme.Deploy.File("system/follow-theme.conf", "/etc/hyprtrixie/follow-theme", "USER="+theme.Person.Name, "SPLASH="+settings.Get("BOOT_SPLASH"),
-		"MENU="+settings.Get("BOOT_MENU_THEME"), "CONSOLE="+settings.Get("CONSOLE_THEME"), "CLOCK="+settings.Get("CLOCK_FORMAT"))
+		"MENU="+settings.Get("BOOT_MENU_THEME"), "CONSOLE="+settings.Get("CONSOLE_THEME"), "CLOCK="+settings.Get("CLOCK_FORMAT"), "BROWSERS="+settings.Get("BROWSERS_THEME"))
 }
 
 func (theme *themeRun) splashFile(source, target string) error {

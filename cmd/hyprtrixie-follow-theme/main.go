@@ -20,8 +20,9 @@ import (
 
 const usage = `Usage: hyprtrixie-follow-theme [--initramfs]
 
-Paints the boot splash, the boot menu, the text consoles and the login screen in
-the colours and wallpaper of the theme the desktop user has picked.
+Paints the boot splash, the boot menu, the text consoles, the login screen and
+Chromium-based browsers in the colours and wallpaper of the theme the desktop
+user has picked.
 --initramfs rebuilds the initramfs even when the colours didn't change.
 Run as root; the installer and a theme switch run it for you.
 `
@@ -234,6 +235,9 @@ func paint(initramfs bool) int {
 		console(current)
 	}
 	if fsutil.IsDir(sddmDir) && !loginScreen(current) {
+		return 1
+	}
+	if !paintBrowsers(current) {
 		return 1
 	}
 	return 0

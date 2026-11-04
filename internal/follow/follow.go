@@ -89,3 +89,19 @@ func Fill(template string, pairs ...string) string {
 	}
 	return template
 }
+
+func FromRGB(text string) (string, bool) {
+	parts := strings.Split(strings.TrimSpace(text), ",")
+	if len(parts) != 3 {
+		return "", false
+	}
+	var values [3]int
+	for index, part := range parts {
+		value, err := strconv.Atoi(strings.TrimSpace(part))
+		if err != nil || value < 0 || value > 255 {
+			return "", false
+		}
+		values[index] = value
+	}
+	return fmt.Sprintf("#%02x%02x%02x", values[0], values[1], values[2]), true
+}
