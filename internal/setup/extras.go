@@ -117,6 +117,10 @@ func extrasSteps(context *Context) {
 		context.Run.Step("Turn on printing and finding printers on the network", printServices)
 		context.Run.Step("Let you manage printers and scanners", context.printAccess)
 	}
+	if context.extra("distrobox") {
+		context.Run.Step("Install distrobox", packages("extras-distrobox"))
+		context.Run.Step("Let Podman run boxes as you", context.podmanInstall)
+	}
 }
 
 func extrasChecks(context *Context) {
@@ -134,5 +138,8 @@ func extrasChecks(context *Context) {
 		context.Run.Check("Printing and scanning tools are installed", commands("lpstat", "scanimage", "system-config-printer", "simple-scan"))
 		context.Run.Check("Printing and finding printers are on", printReady)
 		context.Run.Check("You can manage printers and scanners", context.printAccessReady)
+	}
+	if context.extra("distrobox") {
+		context.Run.Check("distrobox and Podman are installed", commands("distrobox", "podman"))
 	}
 }
