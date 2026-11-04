@@ -23,7 +23,7 @@ GridLayout {
       required property HyprlandWorkspace modelData
       readonly property bool current: root.monitor ? root.monitor.activeWorkspace === modelData : modelData.focused
 
-      visible: modelData.id > 0 && (!root.monitor || modelData.monitor === root.monitor)
+      visible: modelData.id > 0 && (!root.monitor || modelData.monitor === root.monitor) && (Config.workspaces.length === 0 || Config.workspaces.includes(modelData.id))
       implicitWidth: root.vertical ? Theme.barWidth - 16 : Math.max(22, label.implicitWidth + 12)
       implicitHeight: root.vertical ? 24 : Theme.barHeight - 8
       color: current ? Theme.accent : "transparent"
