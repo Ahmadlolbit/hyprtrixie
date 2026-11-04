@@ -19,9 +19,11 @@ type pattern struct {
 }
 
 var (
-	table    = sync.OnceValue(func() map[string]string { return Catalogue(Language()) })
-	patterns = sync.OnceValue(func() []pattern { return patternsOf(table()) })
-	verb     = regexp.MustCompile(`%[0-9]*[sdvq]`)
+	table     = sync.OnceValue(func() map[string]string { return Catalogue(Language()) })
+	patterns  = sync.OnceValue(func() []pattern { return patternsOf(table()) })
+	verb      = regexp.MustCompile(`%[0-9]*[sdvq]`)
+	escaper   = strings.NewReplacer("\\", "\\\\", "\n", "\\n", "\t", "\\t")
+	unescaper = strings.NewReplacer("\\\\", "\\", "\\n", "\n", "\\t", "\t")
 )
 
 func bare(value string) string {
@@ -42,6 +44,10 @@ func Language() string {
 	return cmp.Or(bare(os.Getenv("LANGUAGE")), locale)
 }
 
+func escape(text string) string {
+	return escaper.Replace(text)
+}
+
 func sameVerbs(english, translated string) bool {
 	return slices.Equal(verb.FindAllString(english, -1), verb.FindAllString(translated, -1))
 }
@@ -50,6 +56,7 @@ func Read(text string) map[string]string {
 	found := map[string]string{}
 	for _, line := range strings.Split(text, "\n") {
 		english, translated, ok := strings.Cut(line, "\t")
+		english, translated = unescaper.Replace(english), unescaper.Replace(translated)
 		if ok && english != "" && !strings.HasPrefix(english, "#") && strings.TrimSpace(translated) != "" && sameVerbs(english, translated) {
 			found[english] = translated
 		}
