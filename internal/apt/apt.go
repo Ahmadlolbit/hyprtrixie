@@ -21,6 +21,8 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 )
 
+var dpkgJournal = "/var/lib/dpkg/updates"
+
 const (
 	backportsSuite = "trixie-backports"
 	backportsMark  = "/backports"
@@ -47,11 +49,31 @@ func simulating() bool {
 	return os.Getenv("APT_SIMULATE") == "1"
 }
 
+func interrupted() bool {
+	for _, entry := range fsutil.Entries(dpkgJournal) {
+		if strings.Trim(entry.Name(), "0123456789") == "" {
+			return true
+		}
+	}
+	return false
+}
+
+func repair(out io.Writer) error {
+	if simulating() || !interrupted() {
+		return nil
+	}
+	fmt.Fprintln(out, "dpkg was interrupted, finishing what it left")
+	return run.Logged(out, "dpkg", "--force-confdef", "--force-confold", "--configure", "-a")
+}
+
 func get(out io.Writer, args ...string) error {
 	os.Setenv("DEBIAN_FRONTEND", "noninteractive")
 	os.Setenv("NEEDRESTART_MODE", "a")
 	os.Setenv("NEEDRESTART_SUSPEND", "1")
 	os.Setenv("APT_LISTCHANGES_FRONTEND", "none")
+	if err := repair(out); err != nil {
+		return err
+	}
 	command := []string{"-y"}
 	if simulating() {
 		command = append(command, "-s")
