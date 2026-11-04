@@ -123,6 +123,49 @@ func (context *Context) engineReady(*runlog.Log) error {
 	return expect(engine == context.engineWanted(), "it points at "+cmp.Or(engine, "nothing"))
 }
 
+type misePreset struct {
+	tool  string
+	spec  string
+	label string
+	name  string
+	check []string
+}
+
+var misePresets = []misePreset{
+	{"mise-node", "node@lts", "Node.js LTS", "Node.js", []string{"node", "--version"}},
+	{"mise-python", "python@latest", "Python", "Python", []string{"python", "--version"}},
+	{"mise-java", "java@temurin-25", "Java 25", "Java", []string{"java", "--version"}},
+	{"mise-go", "go@latest", "Go", "Go", []string{"go", "version"}},
+}
+
+func (context *Context) presets() []misePreset {
+	var chosen []misePreset
+	for _, preset := range misePresets {
+		if context.Config.Enabled("MISE_TOOLS", preset.tool) {
+			chosen = append(chosen, preset)
+		}
+	}
+	return chosen
+}
+
+func spoken(words []string) string {
+	if len(words) < 2 {
+		return strings.Join(words, "")
+	}
+	return strings.Join(words[:len(words)-1], ", ") + " and " + words[len(words)-1]
+}
+
+func (context *Context) miseTitle() string {
+	var labels []string
+	for _, preset := range context.presets() {
+		labels = append(labels, preset.label)
+	}
+	if len(labels) == 0 {
+		return "Install mise"
+	}
+	return "Install mise with " + spoken(labels)
+}
+
 func (context *Context) miseInstall(log *runlog.Log) error {
 	if err := apt.ExtrepoTry(log, "mise"); err != nil {
 		return err
@@ -130,7 +173,23 @@ func (context *Context) miseInstall(log *runlog.Log) error {
 	if err := apt.InstallLists(log, "dev-mise"); err != nil {
 		return err
 	}
-	return context.Person.Run(log, "mise", "use", "--global", "node@lts")
+	args := []string{"mise", "use", "--global"}
+	for _, preset := range context.presets() {
+		args = append(args, preset.spec)
+	}
+	if len(args) == 3 {
+		return nil
+	}
+	return context.Person.Run(log, args...)
+}
+
+func (context *Context) miseReady() error {
+	for _, preset := range context.presets() {
+		if !context.answers(append([]string{"mise", "exec", "--"}, preset.check...)...) {
+			return errors.New("mise has no " + preset.name)
+		}
+	}
+	return nil
 }
 
 func (context *Context) rustInstall(log *runlog.Log) error {
@@ -141,8 +200,10 @@ func (context *Context) rustInstall(log *runlog.Log) error {
 }
 
 func (context *Context) toolchainsReady(*runlog.Log) error {
-	if context.Config.Enabled("DEV_TOOLS", "mise") && !context.answers("mise", "exec", "--", "node", "--version") {
-		return errors.New("mise has no Node.js")
+	if context.Config.Enabled("DEV_TOOLS", "mise") {
+		if err := context.miseReady(); err != nil {
+			return err
+		}
 	}
 	if context.Config.Enabled("DEV_TOOLS", "python") {
 		if err := apt.Commands("pyenv"); err != nil {
@@ -388,7 +449,7 @@ func (context *Context) toolSteps() []toolStep {
 		{[]string{"docker"}, "Install Docker", docker.install},
 		{[]string{"podman"}, "Install Podman", context.podmanInstall},
 		{[]string{"docker", "podman"}, "Set up engine-switch", context.engineInstall},
-		{[]string{"mise"}, "Install mise with Node.js LTS", context.miseInstall},
+		{[]string{"mise"}, context.miseTitle(), context.miseInstall},
 		{[]string{"python"}, "Install pyenv", packages("dev-python")},
 		{[]string{"rust"}, "Install Rust (stable)", context.rustInstall},
 		{[]string{"go"}, "Install Go", packages("dev-go")},
