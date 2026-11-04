@@ -129,13 +129,25 @@
   "toggle.nightlight": {
     "glyph": "\udb81\udd94",
     "label": "Night light",
-    "action": "pkill -x hyprsunset || setsid -f hyprsunset -t 4500 >/dev/null 2>&1",
-    "state": "pgrep -x hyprsunset >/dev/null",
+    "action": "hyprtrixie-look night toggle",
+    "state": "test \"$(hyprtrixie-look night)\" != off",
     "keywords": [
       "night",
       "light",
       "warm",
       "blue light"
+    ]
+  },
+  "toggle.nighthours": {
+    "glyph": "\udb81\udd94",
+    "label": "Night light at night",
+    "action": "test \"$(hyprtrixie-look night)\" = times && hyprtrixie-look night off || hyprtrixie-look night times",
+    "state": "test \"$(hyprtrixie-look night)\" = times",
+    "keywords": [
+      "night",
+      "light",
+      "warm",
+      "schedule"
     ]
   },
   "toggle.glass": {

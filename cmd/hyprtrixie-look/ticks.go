@@ -25,6 +25,9 @@ const (
 	weatherStale = 1800
 	weatherLimit = time.Minute
 	doNotDisturb = "do-not-disturb"
+	nightLight   = "hyprsunset"
+	warmest      = 1000
+	coolest      = 6500
 )
 
 func lookState(name string) string {
@@ -299,10 +302,101 @@ func quietHours(args []string) int {
 	return quietOn()
 }
 
+func nightNow() (wanted, known bool) {
+	switch settings.Get("night") {
+	case "on":
+		return true, true
+	case "times":
+		at, ok := moment()
+		if !ok {
+			return false, false
+		}
+		return look.Inside(minuteOfDay(at), minuteSetting("night_from"), minuteSetting("night_to")), true
+	}
+	return false, false
+}
+
+func nightTick() {
+	wanted, known := nightNow()
+	if !known || wanted == (run.Within(run.Quick, "pgrep", "-x", nightLight) == 0) {
+		return
+	}
+	if wanted {
+		run.Quiet(run.Quick, "setsid", "-f", nightLight, "-t", settings.Get("night_warmth"))
+		return
+	}
+	run.Within(run.Quick, "pkill", "-x", nightLight)
+}
+
+func nightOn() int {
+	nightTick()
+	return 0
+}
+
+func nightOff() int {
+	run.Within(run.Quick, "pkill", "-x", nightLight)
+	return 0
+}
+
+func night(args []string) int {
+	value := strings.ToLower(arg(args, 0))
+	if value == "toggle" {
+		value = "on"
+		if settings.Get("night") != "off" {
+			value = "off"
+		}
+	}
+	switch value {
+	case "":
+		return show("night")
+	case "on", "times":
+		return putThen("night", value, nightOn)()
+	case "off":
+		return putThen("night", value, nightOff)()
+	}
+	fmt.Fprintln(os.Stderr, "night takes on, off, times or toggle")
+	return 2
+}
+
+func nightHours(args []string) int {
+	if len(args) == 0 {
+		fmt.Println(settings.Get("night_from"), settings.Get("night_to"))
+		return 0
+	}
+	if !validTimes(args) {
+		fmt.Fprintln(os.Stderr, "night-hours takes two times like 20:00 07:00: when it starts, then ends")
+		return 2
+	}
+	if !put("night_from", args[0]) || !put("night_to", args[1]) {
+		return 1
+	}
+	return nightOn()
+}
+
+func nightWarmth(args []string) int {
+	value := arg(args, 0)
+	if value == "" {
+		return show("night_warmth")
+	}
+	kelvin, err := strconv.Atoi(value)
+	if err != nil || kelvin < warmest || kelvin > coolest {
+		fmt.Fprintf(os.Stderr, "night-warmth takes a colour temperature from %d to %d\n", warmest, coolest)
+		return 2
+	}
+	if !put("night_warmth", value) {
+		return 1
+	}
+	if run.Within(run.Quick, "pkill", "-x", nightLight) == 0 {
+		run.Quiet(3*time.Second, "pidwait", "-x", nightLight)
+	}
+	return nightOn()
+}
+
 func tick([]string) int {
 	autoTick()
 	rotateTick()
 	weatherTick()
 	quietTick()
+	nightTick()
 	return 0
 }
