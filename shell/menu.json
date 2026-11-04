@@ -668,6 +668,17 @@
       "apt"
     ]
   },
+  "install.webapp": {
+    "glyph": "\uf0ac",
+    "label": "A website as an app",
+    "action": "hyprtrixie-terminal --wait hyprtrixie-webapp add",
+    "keywords": [
+      "web",
+      "app",
+      "website",
+      "url"
+    ]
+  },
   "remove": {
     "glyph": "\udb82\udf4c",
     "label": "Remove",
@@ -686,6 +697,15 @@
       "uninstall",
       "package",
       "apt"
+    ]
+  },
+  "remove.webapp": {
+    "glyph": "\uf0ac",
+    "label": "A web app",
+    "action": "hyprtrixie-terminal --wait hyprtrixie-webapp remove",
+    "keywords": [
+      "web",
+      "app"
     ]
   },
   "update": {
