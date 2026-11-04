@@ -75,6 +75,35 @@
       "capture"
     ]
   },
+  "capture.record": {
+    "glyph": "\uf03d",
+    "label": "Record a region",
+    "action": "sleep 0.3; hyprtrixie-record region",
+    "keywords": [
+      "record",
+      "video",
+      "screencast"
+    ]
+  },
+  "capture.recordscreen": {
+    "glyph": "\uf108",
+    "label": "Record the screen",
+    "action": "sleep 0.3; hyprtrixie-record screen",
+    "keywords": [
+      "record",
+      "video",
+      "screencast"
+    ]
+  },
+  "capture.recordstop": {
+    "glyph": "\uf04d",
+    "label": "Stop recording",
+    "action": "hyprtrixie-record stop",
+    "keywords": [
+      "record",
+      "stop"
+    ]
+  },
   "capture.colour": {
     "glyph": "\uf1fb",
     "label": "Colour from the screen",

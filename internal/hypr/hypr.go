@@ -27,6 +27,20 @@ func Monitors() ([]Monitor, bool) {
 	return parsed[[]Monitor]("monitors", output, err)
 }
 
+func FocusedOutput() (string, bool) {
+	monitors, ok := Monitors()
+	if !ok {
+		return "", false
+	}
+	for _, monitor := range monitors {
+		if monitor.Focused {
+			return monitor.Name, true
+		}
+	}
+	fmt.Fprintln(os.Stderr, "no focused monitor")
+	return "", false
+}
+
 func QuietMonitors() ([]Monitor, bool) {
 	output, err := run.CaptureQuiet(run.Quick, "hyprctl", "monitors", "-j")
 	var found []Monitor
