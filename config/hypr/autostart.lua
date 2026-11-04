@@ -17,4 +17,7 @@ hl.on("hyprland.start", function()
   if look.get("reader") == "yes" then
     hl.exec_cmd("hyprtrixie-start orca")
   end
+  if look.get("chime") == "yes" then
+    hl.exec_cmd("hyprtrixie-look chime play")
+  end
 end)
