@@ -124,18 +124,18 @@ func (context *Context) engineReady(*runlog.Log) error {
 }
 
 type misePreset struct {
-	tool  string
-	spec  string
-	label string
-	name  string
-	check []string
+	tool    string
+	spec    string
+	label   string
+	name    string
+	command string
 }
 
 var misePresets = []misePreset{
-	{"mise-node", "node@lts", "Node.js LTS", "Node.js", []string{"node", "--version"}},
-	{"mise-python", "python@latest", "Python", "Python", []string{"python", "--version"}},
-	{"mise-java", "java@temurin-25", "Java 25", "Java", []string{"java", "--version"}},
-	{"mise-go", "go@latest", "Go", "Go", []string{"go", "version"}},
+	{"mise-node", "node@lts", "Node.js LTS", "Node.js", "node"},
+	{"mise-python", "python@latest", "Python", "Python", "python"},
+	{"mise-java", "java@temurin-25", "Java 25", "Java", "java"},
+	{"mise-go", "go@latest", "Go", "Go", "go"},
 }
 
 func (context *Context) presets() []misePreset {
@@ -173,19 +173,19 @@ func (context *Context) miseInstall(log *runlog.Log) error {
 	if err := apt.InstallLists(log, "dev-mise"); err != nil {
 		return err
 	}
-	args := []string{"mise", "use", "--global"}
+	var specs []string
 	for _, preset := range context.presets() {
-		args = append(args, preset.spec)
+		specs = append(specs, preset.spec)
 	}
-	if len(args) == 3 {
+	if len(specs) == 0 {
 		return nil
 	}
-	return context.Person.Run(log, args...)
+	return context.Person.Run(log, append([]string{"mise", "use", "--global"}, specs...)...)
 }
 
 func (context *Context) miseReady() error {
 	for _, preset := range context.presets() {
-		if !context.answers(append([]string{"mise", "exec", "--"}, preset.check...)...) {
+		if !context.answers("mise", "which", preset.command) {
 			return errors.New("mise has no " + preset.name)
 		}
 	}

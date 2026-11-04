@@ -83,7 +83,7 @@ func (context *Context) printAccess(log *runlog.Log) error {
 
 func printReady(*runlog.Log) error {
 	for _, unit := range printUnits {
-		if !service.Enabled(unit) {
+		if !service.Enabled(unit) || !service.Active(unit) {
 			return fmt.Errorf("%s is off", unit)
 		}
 	}
@@ -133,6 +133,7 @@ func extrasChecks(context *Context) {
 	if context.extra("gaming") {
 		context.Run.Check("GameMode and MangoHud are installed", commands("gamemoded", "mangohud"))
 		context.Run.Check("Steam is installed", flatpakApps(steamApp))
+		context.Run.Check("MangoHud reaches Steam", flatpakApps(mangohudLayer))
 	}
 	if context.extra("printing") {
 		context.Run.Check("Printing and scanning tools are installed", commands("lpstat", "scanimage", "system-config-printer", "simple-scan"))

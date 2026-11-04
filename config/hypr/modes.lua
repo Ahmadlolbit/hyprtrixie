@@ -8,7 +8,7 @@ if look.get("zen") == "yes" then
   })
 end
 
-if look.get("presentation") == "yes" then
+if look.get("presentation") == "yes" and not screens.lid_closed() then
   local panels, others = screens.connected()
   for _, output in ipairs(others) do
     if panels[1] then

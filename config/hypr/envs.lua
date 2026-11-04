@@ -13,7 +13,20 @@ hl.env("XDG_SESSION_TYPE", "wayland")
 hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
 hl.env("XDG_SESSION_DESKTOP", "Hyprland")
 hl.env("XDG_MENU_PREFIX", "hyprtrixie-")
-hl.env("XDG_DATA_DIRS", (os.getenv("HOME") or "") .. "/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share:/var/lib/snapd/desktop")
+local data_dirs, seen = {}, {}
+local function data_dir(dir)
+  if dir ~= "" and not seen[dir] then
+    seen[dir] = true
+    table.insert(data_dirs, dir)
+  end
+end
+data_dir((os.getenv("HOME") or "") .. "/.local/share/flatpak/exports/share")
+data_dir("/var/lib/flatpak/exports/share")
+for dir in string.gmatch(os.getenv("XDG_DATA_DIRS") or "/usr/local/share:/usr/share", "[^:]+") do
+  data_dir(dir)
+end
+data_dir("/var/lib/snapd/desktop")
+hl.env("XDG_DATA_DIRS", table.concat(data_dirs, ":"))
 
 hl.config({
   xwayland = {

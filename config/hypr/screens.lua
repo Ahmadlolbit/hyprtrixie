@@ -32,4 +32,14 @@ function screens.connected()
   return panels, others
 end
 
+function screens.lid_closed()
+  for _, name in ipairs({ "LID", "LID0", "LID1" }) do
+    local state = screens.first_line("/proc/acpi/button/lid/" .. name .. "/state")
+    if state then
+      return state:find("closed", 1, true) ~= nil
+    end
+  end
+  return false
+end
+
 return screens
