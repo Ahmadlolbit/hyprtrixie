@@ -18,6 +18,7 @@ import (
 
 const (
 	powerProfiles  = "power-profiles-daemon.service"
+	batteryUnit    = "hyprtrixie-battery.service"
 	autoUpgrades   = "/etc/apt/apt.conf.d/52hyprtrixie-auto-upgrades"
 	networkManager = "NetworkManager"
 	loopbackOnly   = "source /etc/network/interfaces.d/*\n\nauto lo\niface lo inet loopback\n"
@@ -33,7 +34,13 @@ func interfacesFile() string {
 	return env.Or("HYPRTRIXIE_INTERFACES", "/etc/network/interfaces")
 }
 
-func powerInstall(log *runlog.Log) error {
+func (context *Context) powerInstall(log *runlog.Log) error {
+	if err := context.Deploy.File("system/systemd/"+batteryUnit, unitFolder+batteryUnit); err != nil {
+		return err
+	}
+	if err := run.Logged(log, "systemctl", "enable", batteryUnit); err != nil {
+		return err
+	}
 	lists := []string{"power"}
 	if detect.ReadHardware().CPU == "intel" {
 		lists = append(lists, "power-intel")
@@ -191,7 +198,7 @@ func networkReady(*runlog.Log) error {
 
 func securitySteps(context *Context) {
 	settings := context.Config
-	context.Run.Step("Set up power profiles", powerInstall)
+	context.Run.Step("Set up power profiles", context.powerInstall)
 	if settings.Get("FIREWALL") == "yes" {
 		context.Run.Step("Turn on the firewall", firewallSetup)
 	}

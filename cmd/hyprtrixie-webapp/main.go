@@ -16,12 +16,15 @@ import (
 const usage = `Usage: hyprtrixie-webapp add [NAME URL [ICON]]
        hyprtrixie-webapp remove [NAME]
        hyprtrixie-webapp list
+       hyprtrixie-webapp open SLUG
 
 add makes a website an app of its own: it shows in the launcher with the
 site's icon, or the ICON file you give, and opens in its own window. It needs
 a browser built on Chromium, such as Helium. With no name, add asks and remove
-lets you pick.
+lets you pick. open is what the launcher runs.
 `
+
+const noBrowser = "this needs a browser built on Chromium: install Helium or Chromium first"
 
 func ask(input *bufio.Reader, question string) string {
 	fmt.Print(question)
@@ -52,9 +55,12 @@ func add(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}
-	browser := webapp.Browser()
-	if browser == "" {
-		fmt.Fprintln(os.Stderr, "this needs a browser built on Chromium: install Helium or Chromium first")
+	if other := webapp.Taken(name); other != "" {
+		fmt.Fprintf(os.Stderr, "that clashes with your web app %s; pick another name\n", other)
+		return 2
+	}
+	if webapp.Browser() == "" {
+		fmt.Fprintln(os.Stderr, noBrowser)
 		return 1
 	}
 	icon := ""
@@ -67,12 +73,26 @@ func add(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	if err := atomic.Write(webapp.File(name), []byte(webapp.Entry(name, address, browser, icon)), 0o666); err != nil {
+	if err := atomic.Write(webapp.File(name), []byte(webapp.Entry(name, address, icon)), 0o666); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
 	fmt.Printf("%s is in the launcher\n", name)
 	return 0
+}
+
+func open(slug string) int {
+	address := webapp.Address(slug)
+	if address == "" {
+		fmt.Fprintf(os.Stderr, "no web app called %s\n", slug)
+		return 1
+	}
+	browser := webapp.Browser()
+	if browser == "" {
+		fmt.Fprintln(os.Stderr, noBrowser)
+		return 1
+	}
+	return run.Report(run.Exec(browser, "--app="+address, "--class="+webapp.Class(slug)))
 }
 
 func pick() string {
@@ -121,6 +141,8 @@ func main() {
 		os.Exit(remove(os.Args[2:]))
 	case "list":
 		os.Exit(list())
+	case "open":
+		os.Exit(open(env.Arg(2)))
 	case "-h", "--help", "help":
 		fmt.Print(usage)
 	default:

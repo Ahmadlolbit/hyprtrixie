@@ -296,8 +296,12 @@ func desktopSettings(colors, apps theme.Colors) {
 		return
 	}
 	mode := apps["mode"]
-	desktop("set", "color-scheme", "prefer-"+mode)
-	desktop("set", "gtk-theme", gtkTheme(mode))
+	if settings.Get("apps") == appsOff {
+		releaseGTK(mode)
+	} else {
+		desktop("set", "color-scheme", "prefer-"+mode)
+		desktop("set", "gtk-theme", gtkTheme(mode))
+	}
 	desktop("set", "monospace-font-name", colors["font"]+" 11")
 	if ui := settings.Get("ui_font"); ui == "default" {
 		desktop("reset", "font-name")

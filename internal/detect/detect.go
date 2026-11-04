@@ -241,6 +241,11 @@ func encrypted(device string) bool {
 	return slices.Contains(run.Lines(types), "crypt")
 }
 
+func RootEncrypted() bool {
+	device, _, _ := strings.Cut(findmnt("SOURCE"), "[")
+	return encrypted(device)
+}
+
 func (found *machine) readRoot() {
 	found.rootFS = findmnt("FSTYPE")
 	found.rootSubvolume = subvolume(findmnt("OPTIONS"))

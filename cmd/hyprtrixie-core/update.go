@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
@@ -34,6 +35,12 @@ func updateSystem() int {
 		fmt.Println("Taking a snapshot first")
 		if run.Status("sudo", "snapper", "--no-dbus", "-c", "root", "create", "--description", "before hyprtrixie update", "--cleanup-algorithm", "number") != 0 {
 			return fail("the snapshot failed, so nothing was updated")
+		}
+	}
+	if apt.Interrupted() {
+		fmt.Println("dpkg was interrupted, finishing what it left")
+		if run.Status("sudo", "dpkg", "--force-confdef", "--force-confold", "--configure", "-a") != 0 {
+			return fail("finishing what dpkg left failed, so nothing was updated")
 		}
 	}
 	fmt.Println("Updating Debian")

@@ -356,7 +356,7 @@ func (theme *themeRun) gtkBaseInstall(log *runlog.Log) error {
 	if err := os.MkdirAll(gtkThemes, programMode); err != nil {
 		return err
 	}
-	if err := run.Logged(log, "tar", "-xJf", file, "-C", gtkThemes, gtkBase, gtkBase+"-dark"); err != nil {
+	if err := run.Logged(log, "tar", "--no-same-owner", "-xJf", file, "-C", gtkThemes, gtkBase, gtkBase+"-dark"); err != nil {
 		return err
 	}
 	return fetch.ReleaseMark(log, gtkBase)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
@@ -81,7 +82,7 @@ func writeGTKTheme(name, base string) {
 
 func gtkTheme(mode string) string {
 	base := gtkBase(mode)
-	if settings.Get("apps") == appsOff || !fsutil.IsDir(filepath.Join(gtkThemes, base)) {
+	if !fsutil.IsDir(filepath.Join(gtkThemes, base)) {
 		return gtkFallback(mode)
 	}
 	name := nextGTKName()
@@ -89,12 +90,27 @@ func gtkTheme(mode string) string {
 	return name
 }
 
+func ourLink(link string) bool {
+	target, err := os.Readlink(link)
+	return err == nil && strings.HasPrefix(target, filepath.Join(state(), "theme")+string(filepath.Separator))
+}
+
 func linkUnlessYours(file, link string) {
-	if fsutil.Exists(link) && !fsutil.IsLink(link) {
+	if (fsutil.Exists(link) || fsutil.IsLink(link)) && !ourLink(link) {
 		fmt.Fprintf(os.Stderr, "left your %s alone\n", link)
 		return
 	}
 	symlink(file, link)
+}
+
+func keepKDEGlobals(globals, text string) {
+	backup := globals + ".before-hyprtrixie"
+	if text == "" || strings.Contains(text, theme.KDEScheme) || fsutil.Exists(backup) {
+		return
+	}
+	if err := atomic.Write(backup, []byte(text), 0o666); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
 }
 
 func kdeColors(file string) {
@@ -105,29 +121,41 @@ func kdeColors(file string) {
 	}
 	symlink(file, filepath.Join(env.DataHome(), "color-schemes", "Hyprtrixie.colors"))
 	globals := filepath.Join(env.ConfigHome(), "kdeglobals")
+	current := fsutil.Optional(globals)
+	keepKDEGlobals(globals, current)
 	font := settings.Get("ui_font")
 	if font == "default" {
 		font = ""
 	}
-	merged := theme.KDEGlobals(fsutil.Optional(globals), string(scheme), font)
+	merged := theme.KDEGlobals(current, string(scheme), font)
 	if err := atomic.Write(globals, []byte(merged), 0o666); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
 }
 
 func unlinkToolkits() {
-	own := filepath.Join(env.ConfigHome(), "gtk-4.0", gtkUserFile)
-	if fsutil.IsLink(own) {
-		os.Remove(own)
+	for _, link := range []string{filepath.Join(env.ConfigHome(), "gtk-4.0", gtkUserFile), filepath.Join(env.DataHome(), "color-schemes", "Hyprtrixie.colors")} {
+		if ourLink(link) {
+			os.Remove(link)
+		}
 	}
-	os.Remove(filepath.Join(env.DataHome(), "color-schemes", "Hyprtrixie.colors"))
 	globals := filepath.Join(env.ConfigHome(), "kdeglobals")
-	if !fsutil.IsFile(globals) {
+	text := fsutil.Optional(globals)
+	if !strings.Contains(text, theme.KDEScheme) {
 		return
 	}
-	if err := atomic.Write(globals, []byte(theme.WithoutKDEScheme(fsutil.Optional(globals))), 0o666); err != nil {
+	if err := atomic.Write(globals, []byte(theme.WithoutKDEScheme(text)), 0o666); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
+}
+
+func releaseGTK(mode string) {
+	used := filepath.Join(state(), "gtk.name")
+	if !fsutil.Exists(used) {
+		return
+	}
+	desktop("set", "gtk-theme", gtkFallback(mode))
+	os.Remove(used)
 }
 
 func tellKDEApps() {

@@ -64,17 +64,20 @@ func Writes(folder string, limit int) []Write {
 	if !fsutil.Exists(start) {
 		return []Write{end}
 	}
-	return []Write{{start, "0"}, end, {start, strconv.Itoa(limit - headroom)}}
+	writes := []Write{{start, "0"}, end}
+	if limit < Full {
+		writes = append(writes, Write{start, strconv.Itoa(limit - headroom)})
+	}
+	return writes
 }
 
 func KeepLines(folders []string, limit int) string {
 	var lines strings.Builder
 	for _, folder := range folders {
-		for _, write := range Writes(folder, limit)[1:] {
-			fmt.Fprintf(&lines, "w %s - - - - %s\n", write.File, write.Value)
-		}
-		if len(Writes(folder, limit)) == 1 {
-			fmt.Fprintf(&lines, "w %s - - - - %d\n", filepath.Join(folder, endFile), limit)
+		for _, write := range Writes(folder, limit) {
+			if write.Value != "0" {
+				fmt.Fprintf(&lines, "w %s - - - - %s\n", write.File, write.Value)
+			}
 		}
 	}
 	return lines.String()
