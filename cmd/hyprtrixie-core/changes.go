@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -15,7 +16,21 @@ func changesDir() string {
 	return filepath.Join(env.StateHome(), "hyprtrixie")
 }
 
+func notifyFirstStart(dir string) {
+	note := filepath.Join(dir, "first-start.txt")
+	if !fsutil.IsFile(note) {
+		return
+	}
+	remove(note)
+	action := notify.Ask("--app-name=hyprtrixie", "--action=default=Read", "The setup isn't finished",
+		"The first start couldn't do all of it. Connect to the internet, then run: sudo hyprtrixie install --yes")
+	if action == "default" {
+		run.Status("hyprtrixie-terminal", "--wait", "less", filepath.Join(os.Getenv("HOME"), "runbook-report.md"))
+	}
+}
+
 func notifyChanges(dir string) int {
+	notifyFirstStart(dir)
 	unseen := filepath.Join(dir, "changes-unseen")
 	if !fsutil.IsFile(unseen) {
 		return 0

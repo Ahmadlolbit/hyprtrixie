@@ -113,7 +113,7 @@ func (plan Plan) Partition() []Step {
 		steps = append(steps, Step{"Format the EFI partition", []string{"mkfs.vfat", "-F", "32", "-n", "EFI", plan.ESPDevice()}, false})
 	}
 	return append(steps,
-		Step{"Format /boot", []string{"mkfs.ext4", "-F", "-q", "-L", "boot", plan.BootDevice()}, false},
+		Step{"Format the boot partition", []string{"mkfs.ext4", "-F", "-q", "-L", "boot", plan.BootDevice()}, false},
 		Step{"Encrypt the rest", []string{"cryptsetup", "luksFormat", "--type", "luks2", "--batch-mode", "--key-file=-", plan.RootDevice()}, true},
 		Step{"Unlock it", []string{"cryptsetup", "open", "--key-file=-", plan.RootDevice(), Mapper}, true},
 		Step{"Make the btrfs filesystem", []string{"mkfs.btrfs", "-f", "-q", "-L", "hyprtrixie", "/dev/mapper/" + Mapper}, false})
@@ -146,7 +146,7 @@ func Layout() []Step {
 
 func (plan Plan) Boot() []Step {
 	return []Step{
-		{"Mount /boot", []string{"mkdir", "-p", Target + "/boot"}, false},
+		{"Mount the boot partition", []string{"mkdir", "-p", Target + "/boot"}, false},
 		{"", []string{"mount", plan.BootDevice(), Target + "/boot"}, false},
 		{"", []string{"mkdir", "-p", Target + "/boot/efi"}, false},
 		{"", []string{"mount", plan.ESPDevice(), Target + "/boot/efi"}, false},

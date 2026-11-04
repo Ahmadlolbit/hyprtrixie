@@ -100,6 +100,8 @@ var commands = map[string]func() int{
 	"credits":       creditsCommand,
 	"fingerprint":   fingerprintCommand,
 	"tpm":           tpmCommand,
+	"install-os":    installOSCommand,
+	"first-start":   firstStartCommand,
 }
 
 func fail(format string, args ...any) int {

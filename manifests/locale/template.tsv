@@ -50,11 +50,14 @@ Blocks connections from other computers; your own connections still work
 Boot menu in the theme	
 Boot splash	
 Browsers follow the theme	
+Build the boot image	
 Change wallpaper every (minutes)	
 Checking your password	
 Choose the apps that open images, PDFs, videos and archives	
+Clear the disk	
 Client: the SSH server doesn't start at boot. Leave: keep it as it is	
 Clock	
+Close the new system	
 Code editors are installed	
 Colours, wallpaper and icons for every app; Super+Ctrl+T changes it later	
 Command-line tools	
@@ -68,6 +71,7 @@ Console colours and font
 Container ports reach only this computer, or every network	
 Container storage is outside root snapshots	
 Content follows your fingers on the touchpad, like on a phone	
+Copy the system	
 Could not read %s	
 Could not save: %s	
 Could not start the setup: %s	
@@ -95,6 +99,7 @@ Docker works and you are in the docker group
 Downloads and logging	
 Each workspace shows its own wallpaper from the theme	
 Editors follow the theme	
+Encrypt the rest	
 Enough free disk space	
 Enter               Go on	
 Enter opens this window	
@@ -110,15 +115,19 @@ Firmware and non-free components are on
 Firmware for this machine is installed	
 Flathub is set up	
 Follow theme switches on the boot and login screens	
+Format the EFI partition	
+Format the boot partition	
 From Open-Meteo, no account; it sends your time zone's main city there	
 Full width, floating with rounded corners, minimal, or down the left side	
 GTK and KDE apps	
 GTK apps can take the theme's colours	
 GameMode and MangoHud are installed	
 Give the account its own copy of hyprtrixie	
+Give the computer its own identity	
 Give the editors the theme's colours	
 Glass mode	
 Hand the network over to NetworkManager	
+Hand the rest of the setup to the first start	
 Helium is the default browser	
 Hibernate	
 How full the battery is, in a corner; nothing on a computer without one	
@@ -175,6 +184,7 @@ Install the NVIDIA driver
 Install the Walker launcher	
 Install the bar	
 Install the base for GTK themes	
+Install the boot loader	
 Install the colour and QR picker	
 Install the floating terminal	
 Install the hyprtrixie login screen	
@@ -225,13 +235,20 @@ Logs every command, and packs the logs into a tar in the hyprtrixie folder
 Look after the system quietly	
 Look and feel	
 Make Helium the default browser	
+Make the %s subvolume	
+Make the btrfs filesystem	
+Make the partitions	
+Make your account	
 MangoHud reaches Steam	
 Monthly snapshots to keep	
+Mount the boot partition	
+Mount the new system	
 Mount the snapshots subvolume	
 Move to the theme's next wallpaper every so many minutes; 0 keeps one	
 Move your themes to their new folders	
 NVIDIA driver	
 NVIDIA's own driver is faster; nouveau is open source and slower	
+Name the computer	
 Natural scrolling	
 Neovim 0.11 or newer is installed	
 NetworkManager for everything	
@@ -243,6 +260,8 @@ No
 Notifications are set up	
 Now and then a tip as a notification, at most once a day	
 Now playing on the lock screen	
+Open the filesystem	
+Open the new system	
 Optional parts, set up only if you tick them: Flatpak with the Bazaar store, Steam with GameMode and MangoHud, printing and scanning, and distrobox	
 Orca reads apps aloud; Super+Alt+R starts or stops it. On Hyprland it can't read the bar, the menu or the launcher, and its own key commands don't work	
 Paint the boot and login screens in the theme's colours	
@@ -265,6 +284,7 @@ Quiet from
 Quiet hours	
 Quiet until	
 Read the choices from a file	
+Read the new partitions	
 Record what this run uses	
 Remove %s	
 Remove the old themes	
@@ -286,6 +306,7 @@ Security and network
 Security updates install automatically	
 See-through terminals and panels, with the wallpaper blurred behind them	
 Session packages are installed	
+Set the time zone, keyboard and language	
 Set this computer up with these choices	
 Set up LazyVim	
 Set up automatic security updates	
@@ -315,6 +336,7 @@ Snapshots appear in the boot menu
 Snapshots before changes, so you can roll back from the boot menu	
 Space               Change the row	
 Start	
+Start from a clean slate	
 Start into the login screen at boot	
 Start the setup now?	
 Startup sound	
@@ -334,6 +356,7 @@ System
 System preflight	
 System snapshots	
 Tab, Shift+Tab      Move between rows	
+Take out the live system's parts	
 Take the first snapshot	
 Take your finger out of sudo	
 Tap the touchpad to click instead of pressing it down	
@@ -405,11 +428,13 @@ Turn the swapfile on
 Type to search · Enter keeps it · Esc clears it	
 Type, then Enter	
 Type, then Enter · Esc cancels	
+Unlock it	
 Unlock the lock screen and approve sudo with a finger; the login screen keeps your password. Add a finger with hyprtrixie fingerprint add	
 Use Debian over HTTPS with backports	
 Use your finger for sudo and the lock screen	
 VS Code, VSCodium and Zed switch to the theme's colours with it, unless you picked another theme in them	
 Vendor repositories can be enabled	
+Wait for them to appear	
 Walker and its providers are installed	
 Wallpaper folder	
 Wallpaper of the day	
@@ -431,6 +456,7 @@ Wi-Fi and wired connections move to NetworkManager, so the bar manages them
 Window style	
 Windows and workspaces animate as they open, close and move	
 Words above the disk password	
+Write fstab and crypttab	
 Write the look settings	
 Write ~/%s	
 X11 is the most reliable for the login screen; Wayland is newer	
