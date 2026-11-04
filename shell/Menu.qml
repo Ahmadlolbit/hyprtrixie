@@ -17,6 +17,8 @@ Scope {
   property string filter: ""
   property int index: 0
   property int stamp: 0
+  property var typed: []
+  readonly property var secretKeys: [Qt.Key_Up, Qt.Key_Up, Qt.Key_Down, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right, Qt.Key_Left, Qt.Key_Right, Qt.Key_B, Qt.Key_A]
   property var entries: ({})
   property var order: []
   property var listed: []
@@ -104,7 +106,7 @@ Scope {
   }
 
   function title() {
-    return stack.map(id => id === "root" ? "Menu" : entries[id] ? entries[id].label : id).join(" › ");
+    return stack.map(id => id === "root" ? "Menu" : id === "credits" ? "Credits" : entries[id] ? entries[id].label : id).join(" › ");
   }
 
   function show(id) {
@@ -217,8 +219,44 @@ Scope {
         }));
   }
 
+  function secret(key) {
+    typed = typed.concat([key]).slice(-secretKeys.length);
+    return typed.join() === secretKeys.join();
+  }
+
+  function showCredits() {
+    typed = [];
+    filter = "";
+    stack = ["root", "credits"];
+    index = 0;
+    listed = [];
+    lister.kind = "credits";
+    lister.command = ["hyprtrixie", "credits"];
+    lister.running = true;
+  }
+
+  function credits(text) {
+    return text.split("\n").filter(line => line.includes("\t")).map(line => {
+      const fields = line.split("\t");
+      return {
+        id: "credit:" + fields[0],
+        glyph: "\u{f004}",
+        label: fields[0] + " · " + fields[1],
+        action: "",
+        shell: "",
+        state: "",
+        color: "",
+        font: "",
+        page: false,
+        icon: "",
+        app: null,
+        path: ""
+      };
+    });
+  }
+
   function activate(item) {
-    if (!item)
+    if (!item || (item.id || "").startsWith("credit:"))
       return;
     if (item.page) {
       stack = stack.concat([item.id]);
@@ -303,7 +341,9 @@ Scope {
     stdout: StdioCollector {
       onStreamFinished: {
         const entry = root.entries[root.page];
-        if (entry && entry.list === lister.kind)
+        if (lister.kind === "credits" && root.page === "credits")
+          root.listed = root.credits(text);
+        else if (entry && entry.list === lister.kind)
           root.listed = lister.kind.endsWith("fonts") ? root.fonts(lister.kind, text) : root.catalogue(lister.kind, text);
       }
     }
@@ -359,7 +399,9 @@ Scope {
       opacity: root.open ? 1 : 0
       focus: true
       Keys.onPressed: event => {
-        if (event.key === Qt.Key_Escape)
+        if (root.secret(event.key))
+          root.showCredits();
+        else if (event.key === Qt.Key_Escape)
           root.close();
         else if (event.key === Qt.Key_Down || event.key === Qt.Key_Tab)
           root.move(1);

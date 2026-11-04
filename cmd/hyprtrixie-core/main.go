@@ -56,6 +56,7 @@ USAGE
   hyprtrixie dotfiles [REPOSITORY] Apply your dotfiles with chezmoi, which sends what you change back there
                                      (run it without sudo; chezmoi runs that repository's scripts). Without one,
                                      show what chezmoi would change
+  hyprtrixie credits               Who made hyprtrixie, and the projects it builds on with their licences
   hyprtrixie version
   hyprtrixie help
 
@@ -89,6 +90,7 @@ var commands = map[string]func() int{
 	"battery-limit": batteryLimit,
 	"module":        module,
 	"undo":          undoCommand,
+	"credits":       creditsCommand,
 }
 
 func fail(format string, args ...any) int {
