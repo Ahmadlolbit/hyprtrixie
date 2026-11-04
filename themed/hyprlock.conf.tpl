@@ -4,3 +4,4 @@ $accent = rgb({{ accent_strip }})
 $check = rgb({{ green_strip }})
 $fail = rgb({{ red_strip }})
 $field = rgba({{ background_strip }}cc)
+$rounding = {{ rounding }}
