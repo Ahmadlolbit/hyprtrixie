@@ -2,6 +2,7 @@ package osinstall
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -19,9 +20,11 @@ import (
 const hosts = "127.0.0.1\tlocalhost\n127.0.1.1\t%s\n::1\t\tlocalhost ip6-localhost ip6-loopback\nff02::1\t\tip6-allnodes\nff02::2\t\tip6-allrouters\n"
 
 var (
-	bound       = []string{"dev", "dev/pts", "proc", "sys", "sys/firmware/efi/efivars", "run"}
-	wanted      = []string{"sudo", "adm", "audio", "video", "plugdev", "netdev", "users", "lpadmin", "bluetooth"}
-	livePieces  = []string{"live-boot", "live-boot-initramfs-tools", "live-config", "live-config-systemd", "live-tools"}
+	bound      = []string{"dev", "dev/pts", "proc", "sys", "sys/firmware/efi/efivars", "run"}
+	wanted     = []string{"sudo", "adm", "audio", "video", "plugdev", "netdev", "users", "lpadmin", "bluetooth"}
+	livePieces = []string{"live-boot", "live-boot-initramfs-tools", "live-config", "live-config-systemd", "live-tools"}
+	liveFiles  = []string{"etc/sddm.conf.d/zz-hyprtrixie-live.conf", "usr/share/applications/hyprtrixie-installer.desktop",
+		"etc/systemd/system/hyprtrixie-install-console.service", "etc/systemd/system/multi-user.target.wants/hyprtrixie-install-console.service"}
 	windowsMenu = "GRUB_DISABLE_OS_PROBER=false\nGRUB_TIMEOUT_STYLE=menu\nGRUB_TIMEOUT=5\n"
 )
 
@@ -145,7 +148,25 @@ func (work *install) bind(log *runlog.Log) error {
 	return nil
 }
 
+func restoreSkel() error {
+	if !fsutil.IsDir(inTarget("etc/skel.debian")) {
+		return nil
+	}
+	if err := os.RemoveAll(inTarget("etc/skel")); err != nil {
+		return err
+	}
+	return os.Rename(inTarget("etc/skel.debian"), inTarget("etc/skel"))
+}
+
 func (work *install) purgeLive(log *runlog.Log) error {
+	if err := restoreSkel(); err != nil {
+		return err
+	}
+	for _, path := range liveFiles {
+		if err := os.Remove(inTarget(path)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+	}
 	output, _ := run.CaptureQuiet(run.Minute, "chroot", target(), "dpkg-query", "-W", "-f=${Package} ${Status}\n")
 	var present []string
 	for _, line := range run.Lines(output) {

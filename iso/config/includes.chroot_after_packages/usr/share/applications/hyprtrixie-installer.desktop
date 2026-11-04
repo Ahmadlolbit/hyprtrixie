@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Install hyprtrixie
+Comment=Install hyprtrixie on this computer's disk
+Exec=kitty --class hyprtrixie-installer -e sudo --preserve-env=HYPRLAND_INSTANCE_SIGNATURE,XDG_RUNTIME_DIR /opt/hyprtrixie/build/bin/hyprtrixie-installer
+Icon=system-software-install
+Terminal=false
+Categories=System;

@@ -367,6 +367,7 @@ func (flow *wizard) systemStages(machine []string, catalogue []apps.App) []stage
 		&page{wizard: flow, title: "You", rows: flow.youRows, ready: state.youReady},
 	}
 	flow.offset = len(stages) - 1
+	flow.settings.Set(kernelKey, liveKernel)
 	return append(stages, flow.allStages(machine, catalogue)[1:]...)
 }
 

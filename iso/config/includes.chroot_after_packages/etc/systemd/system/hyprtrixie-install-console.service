@@ -1,0 +1,19 @@
+[Unit]
+Description=The hyprtrixie installer on the text console
+ConditionKernelCommandLine=hyprtrixie.install=console
+After=systemd-user-sessions.service
+Conflicts=getty@tty1.service
+
+[Service]
+Type=simple
+ExecStart=/opt/hyprtrixie/build/bin/hyprtrixie-installer
+StandardInput=tty
+StandardOutput=tty
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+Environment=TERM=linux
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

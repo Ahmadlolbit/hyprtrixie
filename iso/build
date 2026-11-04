@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+here="$(cd "$(dirname "$0")" && pwd)"
+root="$(dirname "$here")"
+out="${1:-$root/build/iso}"
+mkdir -p "$out"
+ca=""
+for bundle in /etc/ssl/certs/ca-certificates.crt /etc/ssl/cert.pem /etc/pki/tls/certs/ca-bundle.crt; do
+  if [[ -f $bundle ]]; then
+    ca="$bundle"
+    break
+  fi
+done
+[[ -n $ca ]] || {
+  echo "no certificate bundle on this machine for the build's HTTPS downloads" >&2
+  exit 1
+}
+docker run --rm --privileged --platform linux/amd64 --ulimit nofile=1024:1024 \
+  -v "$root:/src:ro" -v "$out:/out" -v "$ca:/run/host-ca.pem:ro" -v hyprtrixie-iso-cache:/cache \
+  debian:trixie bash /src/iso/inside
+ls -l "$out"

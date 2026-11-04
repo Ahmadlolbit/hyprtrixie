@@ -3,9 +3,12 @@ package service
 import (
 	"io"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
+
+var inChroot = detect.Chroot
 
 func Enabled(unit string) bool {
 	return run.Quiet(run.Minute, "systemctl", "is-enabled", "--quiet", unit) == 0
@@ -45,14 +48,21 @@ func Start(out io.Writer, units ...string) error {
 
 func Disable(out io.Writer, units ...string) error {
 	for _, unit := range units {
-		if !Enabled(unit) && !Active(unit) {
+		if !Enabled(unit) && (inChroot() || !Active(unit)) {
 			continue
 		}
-		if err := run.Logged(out, "systemctl", "disable", "--now", unit); err != nil {
+		if err := run.Logged(out, "systemctl", disabling(unit)...); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func disabling(unit string) []string {
+	if inChroot() {
+		return []string{"disable", unit}
+	}
+	return []string{"disable", "--now", unit}
 }
 
 func Restart(out io.Writer, unit string) error {

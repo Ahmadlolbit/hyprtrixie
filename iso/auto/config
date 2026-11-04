@@ -1,0 +1,25 @@
+#!/bin/sh
+set -e
+
+lb config noauto \
+  --distribution trixie \
+  --archive-areas "main contrib non-free non-free-firmware" \
+  --backports true \
+  --security true \
+  --mirror-bootstrap https://deb.debian.org/debian/ \
+  --mirror-chroot https://deb.debian.org/debian/ \
+  --mirror-chroot-security https://security.debian.org/debian-security/ \
+  --mirror-binary https://deb.debian.org/debian/ \
+  --mirror-binary-security https://security.debian.org/debian-security/ \
+  --apt-source-archives false \
+  --updates true \
+  --binary-images iso-hybrid \
+  --bootloaders grub-efi \
+  --debian-installer none \
+  --firmware-binary true \
+  --firmware-chroot true \
+  --iso-application hyprtrixie \
+  --iso-volume hyprtrixie \
+  --iso-publisher "hyprtrixie; https://github.com/Ahmadlolbit/hyprtrixie" \
+  --bootappend-live "boot=live components quiet splash username=hyprtrixie hostname=hyprtrixie locales=en_US.UTF-8 keyboard-layouts=us live-config.nocomponents=sddm" \
+  "${@}"
