@@ -42,6 +42,8 @@ const usage = `Usage: hyprtrixie-look
        hyprtrixie-look night [on|off|times|toggle]
        hyprtrixie-look night-hours [FROM TO]
        hyprtrixie-look night-warmth [KELVIN]
+       hyprtrixie-look power [on|off|toggle]
+       hyprtrixie-look power-profiles [CHARGER BATTERY]
        hyprtrixie-look get SETTING
 
 Shows and changes how the desktop looks. Your settings are kept in
@@ -69,6 +71,9 @@ prints the location the sun and the weather use. quiet turns do not
 disturb on for the quiet hours (22:00 to 07:00 unless you set others).
 night warms the screen: on, off, or for the night hours (times, 20:00 to
 07:00 unless you set others); night-warmth is how warm, 4500 by default.
+power switches the power profile when you plug in or unplug, to the two
+in power-profiles: balanced on the charger and power-saver on battery unless
+you set others.
 `
 
 const (
@@ -415,6 +420,7 @@ func commands() map[string]func([]string) int {
 		"tick": tick, "remember": remember, "rotate": rotate, "workspaces": workspaces, "bar": barLayout, "position": barPosition, "style": windowStyle, "video": video,
 		"video-battery": videoBattery, "weather": weather, "weather-units": weatherUnits, "coordinates": showCoordinates,
 		"quiet": quiet, "quiet-hours": quietHours, "night": night, "night-hours": nightHours, "night-warmth": nightWarmth, "location": location,
+		"power": powerFollow, "power-profiles": powerProfiles, "power-apply": powerApply,
 		"font":    func(args []string) int { return font("font", arg(args, 0)) },
 		"ui-font": func(args []string) int { return font("ui_font", arg(args, 0)) },
 		"light":   func(args []string) int { return themeChoice("light", arg(args, 0)) },
