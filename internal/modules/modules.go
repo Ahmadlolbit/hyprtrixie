@@ -24,7 +24,7 @@ type Module struct {
 }
 
 var All = []Module{
-	{"00", "Setup screens and logging"},
+	{"00", "Downloads and logging"},
 	{"01", "System preflight"},
 	{"02", "Repositories and base packages"},
 	{"03", "Kernel and drivers"},

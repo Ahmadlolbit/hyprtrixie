@@ -54,7 +54,7 @@ func appChange(action string, change func(apps.App) int) int {
 		return fail("no app named %s (see: hyprtrixie app list)", id)
 	}
 	if os.Getenv("HYPRTRIXIE_ENGINE") == "" {
-		return backToBash()
+		return throughScript()
 	}
 	return asRoot("app-"+action, func() int { return change(app) })
 }

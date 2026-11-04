@@ -43,7 +43,6 @@ func (context *Context) recordRun(log *runlog.Log) error {
 }
 
 func initSteps(context *Context) {
-	context.Run.Step("Install gum for the setup screens", install("gum"))
 	context.Run.Step("Install curl for downloads", install("curl"))
 	context.Run.Step("Record what this run uses", context.recordRun)
 }
@@ -54,6 +53,5 @@ func logsWritable(log *runlog.Log) error {
 
 func initChecks(context *Context) {
 	context.Run.Check("curl is installed", installed("curl"))
-	context.Run.Check("gum is installed", installed("gum"))
 	context.Run.Check("Logs are being written", logsWritable)
 }
