@@ -13,6 +13,8 @@ import (
 
 const DefaultFont = "JetBrainsMono Nerd Font"
 
+var kdeIcons = map[string]string{"dark": "breeze-dark", "light": "breeze"}
+
 var (
 	quoted    = pattern(`^[[:space:]]*([a-z0-9_]+)[[:space:]]*=[[:space:]]*"([^"]*)"`)
 	bare      = pattern(`^[[:space:]]*([a-z0-9_]+)[[:space:]]*=[[:space:]]*([^[:space:]#"]+)`)
@@ -109,6 +111,7 @@ func (colors Colors) Resolve() {
 	if colors["mode"] != "light" {
 		colors["mode"] = "dark"
 	}
+	colors.fallback("kde_icons", "", kdeIcons[colors["mode"]])
 }
 
 func (colors Colors) resolveShades() {

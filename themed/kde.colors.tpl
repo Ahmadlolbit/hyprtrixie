@@ -115,6 +115,9 @@ ColorScheme=Hyprtrixie
 Name=Hyprtrixie
 shadeSortColumn=true
 
+[Icons]
+Theme={{ kde_icons }}
+
 [KDE]
 contrast=4
 
