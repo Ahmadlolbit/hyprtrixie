@@ -259,6 +259,18 @@
       "screen"
     ]
   },
+  "toggle.reader": {
+    "glyph": "\uf29a",
+    "label": "Screen reader",
+    "action": "hyprtrixie-look reader toggle",
+    "state": "pgrep -x orca >/dev/null",
+    "keywords": [
+      "screen reader",
+      "orca",
+      "speech",
+      "accessibility"
+    ]
+  },
   "toggle.weather": {
     "glyph": "\udb81\udd95",
     "label": "Weather",

@@ -51,7 +51,7 @@ var (
 	themeFiles  = []string{"colors.toml", "icons.theme", "preview.png"}
 	themeTools  = []string{"hyprtrixie-look", "hyprtrixie-theme-install", "hyprtrixie-weather", "hyprtrixie-background", themeSetter}
 	lookOptions = [][2]string{
-		{"ACCENT", "ACCENT_COLOR"}, {"GLASS", "GLASS"}, {"CORNERS", "ROUNDED_CORNERS"}, {"STYLE", "WINDOW_STYLE"}, {"TEXT", "TEXT_SIZE"}, {"APPS", "APPS_THEME"}, {"AUTO", "AUTO_THEME"}, {"LIGHT", "LIGHT_THEME"},
+		{"ACCENT", "ACCENT_COLOR"}, {"GLASS", "GLASS"}, {"CORNERS", "ROUNDED_CORNERS"}, {"STYLE", "WINDOW_STYLE"}, {"TEXT", "TEXT_SIZE"}, {"READER", "SCREEN_READER"}, {"APPS", "APPS_THEME"}, {"AUTO", "AUTO_THEME"}, {"LIGHT", "LIGHT_THEME"},
 		{"DARK", "DARK_THEME"}, {"LIGHT_AT", "LIGHT_AT"}, {"DARK_AT", "DARK_AT"}, {"DAILY", "DAILY_THEME"}, {"ROTATE", "WALLPAPER_MINUTES"}, {"WORKSPACES", "WALLPAPER_PER_WORKSPACE"},
 		{"WEATHER", "WEATHER"}, {"WEATHER_UNITS", "WEATHER_UNITS"}, {"QUIET", "QUIET_HOURS"}, {"QUIET_FROM", "QUIET_FROM"}, {"QUIET_TO", "QUIET_TO"},
 		{"NIGHT", "NIGHT_LIGHT"}, {"NIGHT_FROM", "NIGHT_FROM"}, {"NIGHT_TO", "NIGHT_TO"}, {"POWER", "POWER_FOLLOW"},
@@ -394,6 +394,13 @@ func (theme *themeRun) lookInstall(*runlog.Log) error {
 	return removeFiles(theme.Person.Path(".local/state/hyprtrixie/look/period"))
 }
 
+func (theme *themeRun) readerInstall(log *runlog.Log) error {
+	if theme.Config.Get("SCREEN_READER") != "yes" {
+		return nil
+	}
+	return apt.InstallLists(log, "screen-reader")
+}
+
 func (theme *themeRun) nameInUse() string {
 	name, _ := fsutil.Text(theme.Person.Path(themeState + "/theme.name"))
 	return name
@@ -604,6 +611,7 @@ func themeSteps(context *Context) {
 	context.Run.Step("Install the theme switcher", theme.switcherInstall)
 	context.Run.Step("Point btop at the theme", theme.btopSetup)
 	context.Run.Step("Write the look settings", theme.lookInstall)
+	context.Run.Step("Install the screen reader", theme.readerInstall)
 	if context.Run.Step("Apply the "+context.Config.Get("THEME")+" theme", theme.apply) {
 		context.Run.Step("Remove the old themes", theme.oldThemesRemove)
 	}
@@ -625,6 +633,9 @@ func themeChecks(context *Context) {
 		return expect(service.Enabled(followPath), followPath+" isn't enabled")
 	})
 	context.Run.Check("The look settings are written", func(*runlog.Log) error { return fileThere(lookConf()) })
+	if context.Config.Get("SCREEN_READER") == "yes" {
+		context.Run.Check("The screen reader is installed", func(log *runlog.Log) error { return apt.ListsPresent(log, "screen-reader") })
+	}
 	context.Run.Check("GTK apps can take the theme's colours", func(*runlog.Log) error {
 		return expect(gtkBaseInPlace(), gtkBase+" isn't in "+gtkThemes)
 	})

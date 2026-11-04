@@ -20,6 +20,7 @@ const usage = `Usage: hyprtrixie-look
        hyprtrixie-look font [FAMILY|default]
        hyprtrixie-look ui-font [FAMILY|default]
        hyprtrixie-look text [normal|large|larger]
+       hyprtrixie-look reader [on|off|toggle]
        hyprtrixie-look glass [on|off|toggle]
        hyprtrixie-look corners [on|off|toggle]
        hyprtrixie-look apps [follow|off|THEME]
@@ -59,6 +60,9 @@ Shows and changes how the desktop looks. Your settings are kept in
 An accent named after a colour uses that colour of each theme. font is
 the terminal's, the bar's and the lock screen's; ui-font is the apps'.
 text makes the text everywhere a quarter (large) or half (larger) bigger.
+reader turns Orca, the screen reader, on or off, now and at every login.
+It reads apps, but not the bar, the menu or the launcher, and Qt apps for
+sure only after you log in again.
 Glass makes terminals and panels see-through, with blur behind them.
 corners rounds the screen's corners. apps sets what GTK and KDE apps do:
 follow the theme, keep one theme whatever the others are, or stay as they
@@ -447,7 +451,7 @@ func all() int {
 func commands() map[string]func([]string) int {
 	return map[string]func([]string) int{
 		"get": getSetting, "accent": accent, "glass": glass, "corners": corners, "apps": appsTheme, "sun": sun, "auto": auto, "times": times, "daily": daily,
-		"tick": tick, "remember": remember, "rotate": rotate, "workspaces": workspaces, "bar": barLayout, "position": barPosition, "style": windowStyle, "text": textSize, "video": video,
+		"tick": tick, "remember": remember, "rotate": rotate, "workspaces": workspaces, "bar": barLayout, "position": barPosition, "style": windowStyle, "text": textSize, "reader": reader, "video": video,
 		"video-battery": videoBattery, "weather": weather, "weather-units": weatherUnits, "coordinates": showCoordinates,
 		"quiet": quiet, "quiet-hours": quietHours, "night": night, "night-hours": nightHours, "night-warmth": nightWarmth, "location": location,
 		"power": powerFollow, "power-profiles": powerProfiles, "power-apply": powerApply,

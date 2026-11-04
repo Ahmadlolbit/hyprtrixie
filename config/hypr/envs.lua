@@ -1,3 +1,5 @@
+local look = require("hyprtrixie.hypr.look")
+
 hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
@@ -13,6 +15,10 @@ hl.env("XDG_SESSION_TYPE", "wayland")
 hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
 hl.env("XDG_SESSION_DESKTOP", "Hyprland")
 hl.env("XDG_MENU_PREFIX", "hyprtrixie-")
+if look.get("reader") == "yes" then
+  hl.env("QT_ACCESSIBILITY", "1")
+  hl.env("QT_LINUX_ACCESSIBILITY_ALWAYS_ON", "1")
+end
 local data_dirs, seen = {}, {}
 local function data_dir(dir)
   if dir ~= "" and not seen[dir] then

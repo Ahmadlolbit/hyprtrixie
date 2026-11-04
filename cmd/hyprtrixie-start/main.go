@@ -13,7 +13,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
-const usage = `Usage: hyprtrixie-start bar|hypridle|hyprpaper|mako|elephant|walker
+const usage = `Usage: hyprtrixie-start bar|hypridle|hyprpaper|mako|elephant|walker|orca
 
 Starts a program of the desktop session. With verbose logging on
 (hyprtrixie verbose on), it runs with its debug flags and logs to
@@ -32,6 +32,7 @@ var programs = map[string]program{
 	"elephant":  {[]string{"elephant"}, []string{"--debug"}},
 	"mako":      {[]string{"mako"}, nil},
 	"walker":    {[]string{"walker", "--gapplication-service"}, nil},
+	"orca":      {[]string{"orca"}, nil},
 }
 
 func verbose() bool {
