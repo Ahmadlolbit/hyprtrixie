@@ -417,3 +417,39 @@ func EnsureLine(path, line string) error {
 	}
 	return writeLines(path, append(list, line))
 }
+
+func (deployer *Deployer) forgetOne(path string) error {
+	if _, known := deployer.hashes[path]; !known {
+		return nil
+	}
+	delete(deployer.hashes, path)
+	return deployer.writeDatabase()
+}
+
+func restoreOld(path string) (bool, error) {
+	if !fsutil.Exists(path + oldSuffix) {
+		return false, nil
+	}
+	return true, os.Rename(path+oldSuffix, path)
+}
+
+func (deployer *Deployer) Undeploy(path string) (string, error) {
+	if err := os.Remove(path + newSuffix); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return "", err
+	}
+	known, found := deployer.hashes[path], current(path)
+	if found != "" && known != "" && found != known {
+		return "kept", deployer.forgetOne(path)
+	}
+	if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return "", err
+	}
+	restored, err := restoreOld(path)
+	if err != nil {
+		return "", err
+	}
+	if restored {
+		return "restored", deployer.forgetOne(path)
+	}
+	return "removed", deployer.forgetOne(path)
+}

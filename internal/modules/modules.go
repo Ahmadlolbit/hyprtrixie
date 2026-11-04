@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	Undone     = "UNDONE"
 	statusMode = 0o644
 	folderMode = 0o755
 )

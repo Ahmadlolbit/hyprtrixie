@@ -482,3 +482,13 @@ func InstallRelease(log *runlog.Log, name, packageName string) error {
 	}
 	return get(log, "install", file)
 }
+
+func Unneeded(log *runlog.Log, names ...string) error {
+	if len(names) == 0 {
+		return nil
+	}
+	if err := run.Logged(log, "apt-mark", append([]string{"auto"}, names...)...); err != nil {
+		return err
+	}
+	return get(log, "autoremove")
+}

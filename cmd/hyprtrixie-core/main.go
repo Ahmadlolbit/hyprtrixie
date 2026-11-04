@@ -26,6 +26,8 @@ USAGE
                                      --changes FILE     show these update notes in the summary
   hyprtrixie verify [--only ...]   Run every check again
   hyprtrixie modules               List the modules and how they last ended
+  hyprtrixie undo MODULE [--yes]   Take back what module 09, 10, 11 or 16 installed, wrote and turned on
+                                     (run it with sudo); the setup then leaves it out until you run it again
   hyprtrixie config [show|path|edit|reset|export]
                                    export prints your settings as a preset to share, without your Debian mirror
   hyprtrixie config import FILE|URL
@@ -86,6 +88,7 @@ var commands = map[string]func() int{
 	"keyboard":      keyboardCommand,
 	"battery-limit": batteryLimit,
 	"module":        module,
+	"undo":          undoCommand,
 }
 
 func fail(format string, args ...any) int {
