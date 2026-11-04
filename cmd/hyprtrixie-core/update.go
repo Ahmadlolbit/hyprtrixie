@@ -116,26 +116,6 @@ func writeChanges(dir, text string) error {
 	return atomic.Write(filepath.Join(dir, "changes-unseen"), nil, 0o666)
 }
 
-func updateHyprtrixie() int {
-	from := git("rev-parse", "HEAD")
-	fmt.Printf("Updating %s\n", root())
-	if run.Status("git", "-C", root(), "pull", "--ff-only") != 0 {
-		return fail("git pull failed: the folder has local changes, or its branch has no upstream")
-	}
-	to := git("rev-parse", "HEAD")
-	if from == to {
-		fmt.Println("hyprtrixie is already up to date.")
-		return 0
-	}
-	dir := changesDir()
-	text := changesBetween(from, to)
-	if err := writeChanges(dir, text); err != nil {
-		fmt.Fprintln(os.Stderr, "cannot save the update notes:", err)
-	}
-	fmt.Printf("\nWhat changed:\n%s\n", text)
-	return run.Report(run.Exec("sudo", script(), "install", "--changes", filepath.Join(dir, "changes.txt")))
-}
-
 func update() int {
 	part := cmp.Or(env.Arg(2), "all")
 	if !slices.Contains([]string{"all", "system", "apps", "hyprtrixie"}, part) {
