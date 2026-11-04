@@ -113,6 +113,26 @@ func keepKDEGlobals(globals, text string) {
 	}
 }
 
+func appsFont() string {
+	if font := settings.Get("ui_font"); font != "default" {
+		return font
+	}
+	return ""
+}
+
+func writeKDEGlobals(scheme string) {
+	globals := filepath.Join(env.ConfigHome(), "kdeglobals")
+	current := fsutil.Optional(globals)
+	merged := theme.KDEGlobals(current, scheme, appsFont(), theme.TextScale(settings.Get("text")))
+	if strings.TrimSpace(merged) == strings.TrimSpace(current) {
+		return
+	}
+	keepKDEGlobals(globals, current)
+	if err := atomic.Write(globals, []byte(merged), 0o666); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+}
+
 func kdeColors(file string) {
 	scheme, err := os.ReadFile(file)
 	if err != nil {
@@ -120,17 +140,7 @@ func kdeColors(file string) {
 		return
 	}
 	symlink(file, filepath.Join(env.DataHome(), "color-schemes", "Hyprtrixie.colors"))
-	globals := filepath.Join(env.ConfigHome(), "kdeglobals")
-	current := fsutil.Optional(globals)
-	keepKDEGlobals(globals, current)
-	font := settings.Get("ui_font")
-	if font == "default" {
-		font = ""
-	}
-	merged := theme.KDEGlobals(current, string(scheme), font)
-	if err := atomic.Write(globals, []byte(merged), 0o666); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	}
+	writeKDEGlobals(string(scheme))
 }
 
 func unlinkToolkits() {
@@ -139,14 +149,7 @@ func unlinkToolkits() {
 			os.Remove(link)
 		}
 	}
-	globals := filepath.Join(env.ConfigHome(), "kdeglobals")
-	text := fsutil.Optional(globals)
-	if !strings.Contains(text, theme.KDEScheme) {
-		return
-	}
-	if err := atomic.Write(globals, []byte(theme.WithoutKDEScheme(text)), 0o666); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	}
+	writeKDEGlobals("")
 }
 
 func releaseGTK(mode string) {
@@ -163,6 +166,7 @@ func tellKDEApps() {
 		run.Quiet(run.Quick, "gdbus", "emit", "--session", "--object-path", "/KGlobalSettings", "--signal", "org.kde.KGlobalSettings.notifyChange", change, "0")
 	}
 	run.Quiet(run.Quick, "gdbus", "emit", "--session", "--object-path", "/KIconLoader", "--signal", "org.kde.KIconLoader.iconChanged", "0")
+	run.Quiet(run.Quick, "gdbus", "emit", "--session", "--object-path", "/KDEPlatformTheme", "--signal", "org.kde.KDEPlatformTheme.refreshFonts")
 }
 
 func linkToolkits(current string) {

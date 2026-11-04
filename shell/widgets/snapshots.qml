@@ -60,7 +60,7 @@ Label {
     owner: root
 
     Label {
-      Layout.preferredWidth: 280
+      Layout.preferredWidth: Theme.size(280)
       text: "Snapshots"
       font.bold: true
     }

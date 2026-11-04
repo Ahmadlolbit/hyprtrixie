@@ -76,7 +76,7 @@ Label {
     owner: root
 
     Label {
-      Layout.preferredWidth: 300
+      Layout.preferredWidth: Theme.size(300)
       text: "Output"
       font.bold: true
     }
@@ -109,7 +109,7 @@ Label {
       }
 
       Label {
-        Layout.preferredWidth: 36
+        Layout.preferredWidth: Theme.size(36)
         horizontalAlignment: Text.AlignRight
         text: Math.round(root.volume * 100) + "%"
       }
@@ -163,7 +163,7 @@ Label {
         }
 
         Label {
-          Layout.preferredWidth: 90
+          Layout.preferredWidth: Theme.size(90)
           text: root.appName(app.modelData)
           elide: Text.ElideRight
         }
@@ -178,7 +178,7 @@ Label {
         }
 
         Label {
-          Layout.preferredWidth: 36
+          Layout.preferredWidth: Theme.size(36)
           horizontalAlignment: Text.AlignRight
           text: Math.round(app.volume * 100) + "%"
         }
@@ -218,7 +218,7 @@ Label {
       }
 
       Label {
-        Layout.preferredWidth: 36
+        Layout.preferredWidth: Theme.size(36)
         horizontalAlignment: Text.AlignRight
         text: Math.round(root.micVolume * 100) + "%"
       }

@@ -75,7 +75,7 @@ Label {
 
     RowLayout {
       Layout.fillWidth: true
-      Layout.preferredWidth: 300
+      Layout.preferredWidth: Theme.size(300)
       spacing: 10
 
       Label {

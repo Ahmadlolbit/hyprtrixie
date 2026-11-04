@@ -197,7 +197,7 @@ Scope {
 
             Label {
               text: "Keys"
-              font.pixelSize: 20
+              font.pixelSize: Theme.size(20)
               font.bold: true
             }
 
@@ -239,7 +239,7 @@ Scope {
                   spacing: 14
 
                   Label {
-                    Layout.preferredWidth: 230
+                    Layout.preferredWidth: Theme.size(230)
                     text: modelData.keys
                     color: Theme.accent
                     font.bold: true

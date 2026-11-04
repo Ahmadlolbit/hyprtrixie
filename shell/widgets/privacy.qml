@@ -109,7 +109,7 @@ GridLayout {
     owner: root
 
     Label {
-      Layout.preferredWidth: 280
+      Layout.preferredWidth: Theme.size(280)
       text: "In use"
       font.bold: true
     }
