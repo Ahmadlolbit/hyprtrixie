@@ -30,8 +30,8 @@ const usage = `Usage: hyprtrixie-theme-set <theme>
        hyprtrixie-theme-set --editors
 
 Applies a theme to Hyprland, the bar, kitty, the launcher, notifications, the
-lock screen, btop, Neovim, VS Code, VSCodium, GTK and KDE apps, and the
-wallpaper. Themes come from /usr/share/hyprtrixie/themes and
+lock screen, btop, Neovim, VS Code, VSCodium, Zed, GTK and KDE apps, and
+the wallpaper. Themes come from /usr/share/hyprtrixie/themes and
 ~/.config/hyprtrixie/themes. --editors gives the editors the current theme
 again, for one installed since.
 `

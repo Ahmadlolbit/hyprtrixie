@@ -483,8 +483,8 @@ func (context *Context) toolSteps() []toolStep {
 		{[]string{"neovim"}, "Install LazyVim plugins", context.lazyvimPlugins},
 		{[]string{"vscode"}, "Install Visual Studio Code", vendorEditor("vscode", "dev-vscode")},
 		{[]string{"vscodium"}, "Install VSCodium", vendorEditor("vscodium", "dev-vscodium")},
-		{[]string{"vscode", "vscodium"}, "Give the editors the theme's colours", context.editorColours},
 		{[]string{"zed"}, "Install Zed", context.zedInstall},
+		{[]string{"vscode", "vscodium", "zed"}, "Give the editors the theme's colours", context.editorColours},
 		{[]string{"toolbox"}, "Install JetBrains Toolbox", context.toolboxInstall},
 	}
 }

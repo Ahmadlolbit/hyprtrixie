@@ -69,8 +69,8 @@ sure only after you log in again.
 Glass makes terminals and panels see-through, with blur behind them.
 corners rounds the screen's corners. apps sets what GTK and KDE apps do:
 follow the theme, keep one theme whatever the others are, or stay as they
-are (off). editors makes VS Code and VSCodium switch with the theme, unless
-you picked another theme in them.
+are (off). editors makes VS Code, VSCodium and Zed switch with the theme,
+unless you picked another theme in them.
 auto switches to the light theme by day and the dark one at night, at
 sunrise and sunset (sun) or at set times like 07:00 and 19:00 (times).
 While it's on, a theme you pick becomes the light or the dark one.
