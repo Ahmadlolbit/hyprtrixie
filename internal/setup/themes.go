@@ -12,6 +12,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/files"
@@ -533,7 +534,7 @@ func (theme *themeRun) grubSetup(log *runlog.Log) error {
 	}
 	changed, err := theme.Deploy.Content(text, grubSettings())
 	theme.grubUpdate.need(changed)
-	if err != nil {
+	if err != nil || detect.Chroot() {
 		return err
 	}
 	return theme.grubUpdate.do(func() error {

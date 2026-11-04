@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+sed -i 's|http://deb.debian.org|https://deb.debian.org|' /etc/apt/sources.list.d/debian.sources
+apt-get -o Acquire::https::CAInfo=/run/host-ca.pem update
+apt-get -o Acquire::https::CAInfo=/run/host-ca.pem install -y --no-install-recommends live-build git ca-certificates
+git config --global --add safe.directory /src
+work=/work
+downloads=var/cache/hyprtrixie/downloads
+kept=/cache/setup-downloads
+rm -rf "$work"
+mkdir -p "$work/config/bootloaders/grub-pc" "$work/config/includes.chroot_after_packages/opt" "$work/config/includes.chroot_after_packages/$downloads" "$kept"
+cp -a /src/iso/auto /src/iso/config "$work/"
+cp -a /usr/share/live/build/bootloaders/grub-pc/. "$work/config/bootloaders/grub-pc/"
+cp /src/iso/grub.cfg "$work/config/bootloaders/grub-pc/grub.cfg"
+cp -a "$kept/." "$work/config/includes.chroot_after_packages/$downloads/"
+git clone --quiet /src "$work/config/includes.chroot_after_packages/opt/hyprtrixie"
+git -C "$work/config/includes.chroot_after_packages/opt/hyprtrixie" remote set-url origin https://github.com/Ahmadlolbit/hyprtrixie.git
+ln -s /cache "$work/cache"
+cd "$work"
+lb config
+lb bootstrap
+lb chroot
+lb installer
+rm -rf "$kept"
+mv "chroot/$downloads" "$kept"
+[[ ! -f chroot/etc/apt/sources.list.d/debian.sources ]] || rm -f chroot/etc/apt/sources.list
+rm -f chroot/var/cache/apt/*.bin
+lb binary
+cp ./*.iso /out/

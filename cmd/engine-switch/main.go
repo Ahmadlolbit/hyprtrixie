@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
@@ -24,9 +25,11 @@ const usage = `engine-switch - choose which container engine answers to "docker"
 const shimScript = "#!/bin/sh\nexec /usr/bin/podman \"$@\"\n"
 
 var (
-	stateFile = "/var/lib/hyprtrixie/container-engine"
-	shim      = "/usr/local/bin/docker"
-	docker    = "/usr/bin/docker"
+	stateFile    = "/var/lib/hyprtrixie/container-engine"
+	shim         = "/usr/local/bin/docker"
+	docker       = "/usr/bin/docker"
+	globalSocket = "/etc/systemd/user/sockets.target.wants/podman.socket"
+	inChroot     = detect.Chroot
 )
 
 func current() string {
@@ -49,6 +52,13 @@ func asRoot() {
 }
 
 func userSocket(action string) {
+	if inChroot() {
+		run.Quiet(run.Slow, "systemctl", "--global", action, "podman.socket")
+		return
+	}
+	if _, err := os.Lstat(globalSocket); action == "disable" && err == nil {
+		run.Quiet(run.Slow, "systemctl", "--global", "disable", "podman.socket")
+	}
 	user := os.Getenv("SUDO_USER")
 	if user == "" || user == "root" {
 		return
@@ -67,6 +77,13 @@ func userSocket(action string) {
 	run.Quiet(run.Slow, "systemctl", "--user", "--machine="+user+"@", action, "--now", "podman.socket")
 }
 
+func units(action string, names ...string) []string {
+	if inChroot() {
+		return append([]string{action}, names...)
+	}
+	return append([]string{action, "--now"}, names...)
+}
+
 func remember(engine string) {
 	err := os.MkdirAll(filepath.Dir(stateFile), 0o777)
 	if err == nil {
@@ -83,12 +100,12 @@ func useDocker() int {
 		return 1
 	}
 	userSocket("disable")
-	run.Quiet(run.Slow, "systemctl", "disable", "--now", "podman.socket")
+	run.Quiet(run.Slow, "systemctl", units("disable", "podman.socket")...)
 	if err := atomic.Symlink(docker, shim); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	if run.Within(run.Slow, "systemctl", "enable", "--now", "docker.socket", "docker.service") != 0 {
+	if run.Within(run.Slow, "systemctl", units("enable", "docker.socket", "docker.service")...) != 0 {
 		return 1
 	}
 	remember("docker")
@@ -101,12 +118,12 @@ func usePodman() int {
 		fmt.Fprintln(os.Stderr, "Podman is not installed")
 		return 1
 	}
-	run.Quiet(run.Slow, "systemctl", "disable", "--now", "docker.service", "docker.socket")
+	run.Quiet(run.Slow, "systemctl", units("disable", "docker.service", "docker.socket")...)
 	if err := atomic.Install(shim, []byte(shimScript), 0o755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	if run.Within(run.Slow, "systemctl", "enable", "--now", "podman.socket") != 0 {
+	if run.Within(run.Slow, "systemctl", units("enable", "podman.socket")...) != 0 {
 		return 1
 	}
 	userSocket("enable")

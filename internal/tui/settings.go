@@ -12,7 +12,11 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/words"
 )
 
-const twoValues = 2
+const (
+	twoValues  = 2
+	kernelKey  = "KERNEL"
+	liveKernel = "backports"
+)
 
 type section struct {
 	title string
@@ -35,6 +39,9 @@ func digit(character rune) bool {
 }
 
 func (flow *wizard) shown(option options.Option) bool {
+	if flow.system != nil && option.Key == kernelKey {
+		return false
+	}
 	return option.Shows(flow.settings.Facts(flow.nvidia))
 }
 

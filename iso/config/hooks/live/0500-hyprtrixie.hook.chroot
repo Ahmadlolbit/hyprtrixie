@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+useradd -m -s /bin/bash hyprtrixie
+cd /opt/hyprtrixie
+status=0
+HYPRTRIXIE_USER=hyprtrixie ./hyprtrixie install --config /opt/hyprtrixie/iso/live.conf --skip 01,04,05,17 --on-failure continue --yes || status=$?
+mkdir -p /var/log/hyprtrixie-live
+mv /home/hyprtrixie/runbook-logs /home/hyprtrixie/runbook-report.md /var/log/hyprtrixie-live/ 2>/dev/null || true
+[ "$status" = 0 ] || echo "The setup in the image stopped short (exit $status); the image keeps what passed, and its log is in /var/log/hyprtrixie-live" >&2
+rm -rf /home/hyprtrixie/.cache /root/.cache
+mv /etc/skel /etc/skel.debian
+mv /home/hyprtrixie /etc/skel
+chown -R root:root /etc/skel
+userdel hyprtrixie
+systemctl enable hyprtrixie-install-console.service
