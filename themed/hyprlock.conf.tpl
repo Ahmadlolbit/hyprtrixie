@@ -7,3 +7,4 @@ $field = rgba({{ background_strip }}cc)
 $rounding = {{ rounding }}
 $clock_size = {{ size 96 }}
 $date_size = {{ size 20 }}
+$info_size = {{ size 14 }}
