@@ -458,6 +458,15 @@ func (context *Context) toolboxInstall(log *runlog.Log) error {
 	return context.Deploy.File("config/applications/jetbrains-toolbox.desktop", filepath.Join(apps.WebFolder, "jetbrains-toolbox.desktop"))
 }
 
+func (context *Context) editorColours(log *runlog.Log) error {
+	setter := filepath.Join(env.BinDir(), themeSetter)
+	if !fsutil.Runnable(setter) || !fsutil.IsFile(context.Person.Path(themeState+"/theme.name")) {
+		log.Line("info", "no theme is applied yet; module 14 gives the editors its colours")
+		return nil
+	}
+	return context.Person.Run(log, "env", "HYPRTRIXIE_THEME_ROOT="+env.ThemeRoot(), "HYPRTRIXIE_LOOK_SYSTEM="+lookConf(), setter, "--editors")
+}
+
 func (context *Context) toolSteps() []toolStep {
 	docker := dockerSetup{Context: context, restart: followUp{name: "docker-restart"}}
 	return []toolStep{
@@ -474,6 +483,7 @@ func (context *Context) toolSteps() []toolStep {
 		{[]string{"neovim"}, "Install LazyVim plugins", context.lazyvimPlugins},
 		{[]string{"vscode"}, "Install Visual Studio Code", vendorEditor("vscode", "dev-vscode")},
 		{[]string{"vscodium"}, "Install VSCodium", vendorEditor("vscodium", "dev-vscodium")},
+		{[]string{"vscode", "vscodium"}, "Give the editors the theme's colours", context.editorColours},
 		{[]string{"zed"}, "Install Zed", context.zedInstall},
 		{[]string{"toolbox"}, "Install JetBrains Toolbox", context.toolboxInstall},
 	}

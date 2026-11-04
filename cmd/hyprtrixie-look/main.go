@@ -24,6 +24,7 @@ const usage = `Usage: hyprtrixie-look
        hyprtrixie-look glass [on|off|toggle]
        hyprtrixie-look corners [on|off|toggle]
        hyprtrixie-look apps [follow|off|THEME]
+       hyprtrixie-look editors [on|off|toggle]
        hyprtrixie-look auto [off|sun|times|toggle]
        hyprtrixie-look light|dark [THEME]
        hyprtrixie-look times [LIGHT_FROM DARK_FROM]
@@ -68,7 +69,8 @@ sure only after you log in again.
 Glass makes terminals and panels see-through, with blur behind them.
 corners rounds the screen's corners. apps sets what GTK and KDE apps do:
 follow the theme, keep one theme whatever the others are, or stay as they
-are (off).
+are (off). editors makes VS Code and VSCodium switch with the theme, unless
+you picked another theme in them.
 auto switches to the light theme by day and the dark one at night, at
 sunrise and sunset (sun) or at set times like 07:00 and 19:00 (times).
 While it's on, a theme you pick becomes the light or the dark one.
@@ -132,6 +134,14 @@ func arg(args []string, index int) string {
 		return args[index]
 	}
 	return ""
+}
+
+func editorsAgain() int {
+	return run.Within(run.Slow, run.Sibling("hyprtrixie-theme-set"), "--editors")
+}
+
+func editorsFollow(args []string) int {
+	return onOff{"editors", putThen("editors", "yes", editorsAgain), putThen("editors", "no", nothing)}.run(args)
 }
 
 func reapply() int {
@@ -454,7 +464,7 @@ func all() int {
 
 func commands() map[string]func([]string) int {
 	return map[string]func([]string) int{
-		"get": getSetting, "accent": accent, "glass": glass, "corners": corners, "apps": appsTheme, "sun": sun, "auto": auto, "times": times, "daily": daily,
+		"get": getSetting, "accent": accent, "glass": glass, "editors": editorsFollow, "corners": corners, "apps": appsTheme, "sun": sun, "auto": auto, "times": times, "daily": daily,
 		"tick": tick, "remember": remember, "rotate": rotate, "workspaces": workspaces, "bar": barLayout, "position": barPosition, "style": windowStyle, "text": textSize, "reader": reader, "video": video,
 		"video-battery": videoBattery, "weather": weather, "weather-units": weatherUnits, "coordinates": showCoordinates,
 		"quiet": quiet, "quiet-hours": quietHours, "night": night, "night-hours": nightHours, "night-warmth": nightWarmth, "location": location,
