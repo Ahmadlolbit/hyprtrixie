@@ -122,12 +122,31 @@ func (driver *nvidiaDriver) configure(log *runlog.Log) error {
 	return driver.initramfs.do(func() error { return run.Logged(log, rebuild[0], rebuild[1:]...) })
 }
 
+func (context *Context) webcamWanted() bool {
+	return context.Config.Get("WEBCAM") == "auto" && detect.IPU6Camera()
+}
+
+func (context *Context) webcamInstall(log *runlog.Log) error {
+	listed, err := apt.List(log, "webcam")
+	if err != nil {
+		return err
+	}
+	return apt.Install(log, context.kernelSpecs(listed...)...)
+}
+
+func webcamReady(*runlog.Log) error {
+	return apt.Commands("cam", "gst-launch-1.0")
+}
+
 func kernelSteps(context *Context) {
 	driver := nvidiaDriver{Context: context, hardware: detect.ReadHardware(), initramfs: followUp{name: "nvidia-initramfs"}}
 	context.Run.Step("Install the "+context.Config.Get("KERNEL")+" kernel", context.kernelInstall)
 	if driver.wanted() {
 		context.Run.Step("Install the NVIDIA driver", driver.install)
 		context.Run.Step("Configure the NVIDIA driver", driver.configure)
+	}
+	if context.webcamWanted() {
+		context.Run.Step("Set up the IPU6 webcam", context.webcamInstall)
 	}
 }
 
@@ -139,5 +158,8 @@ func kernelChecks(context *Context) {
 	context.Run.Check("The newest kernel is running (or starts after a reboot)", kernelBooted)
 	if driver.wanted() {
 		context.Run.Check("The NVIDIA module is built for the newest kernel", nvidiaBuilt)
+	}
+	if context.webcamWanted() {
+		context.Run.Check("The IPU6 webcam's tools are there", webcamReady)
 	}
 }

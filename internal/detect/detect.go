@@ -391,3 +391,20 @@ func NvidiaOnBus() bool {
 func Summary() string {
 	return all().summary()
 }
+
+var ipu6Devices = []string{"9a19", "4e19", "465d", "462e", "a75d", "7d19"}
+
+func ipu6(lspci string) bool {
+	for _, line := range run.Lines(lspci) {
+		vendor, device := pciIDs(line)
+		if vendor == "8086" && slices.Contains(ipu6Devices, device) {
+			return true
+		}
+	}
+	return false
+}
+
+func IPU6Camera() bool {
+	lspci, _ := run.CaptureQuiet(run.Quick, "lspci", "-nn")
+	return ipu6(lspci)
+}
