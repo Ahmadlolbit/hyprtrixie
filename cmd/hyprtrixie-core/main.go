@@ -63,6 +63,8 @@ USAGE
                                    Unlock the disk at boot with the TPM and a short PIN, the disk password kept
                                      (run it with sudo, in a terminal); moves the boot image to dracut, and tidy
                                      takes away the boot entry kept from before
+  hyprtrixie webcam [relay]        List the IPU6 webcam's cameras, or relay one to /dev/video42 for apps
+                                     that take only a normal webcam, until Ctrl+C (run it without sudo)
   hyprtrixie credits               Who made hyprtrixie, and the projects it builds on with their licences
   hyprtrixie version
   hyprtrixie help
@@ -102,6 +104,7 @@ var commands = map[string]func() int{
 	"tpm":           tpmCommand,
 	"install-os":    installOSCommand,
 	"first-start":   firstStartCommand,
+	"webcam":        webcamCommand,
 }
 
 func fail(format string, args ...any) int {

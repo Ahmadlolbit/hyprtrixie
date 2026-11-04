@@ -128,6 +128,7 @@ Flathub is set up
 Follow theme switches on the boot and login screens	
 For logging in and for sudo	
 For logging in: small letters, digits, - and _	
+For the cameras on newer Intel laptops (IPU6): libcamera, its PipeWire camera for browsers and calls, and hyprtrixie webcam relay for apps that take only a normal webcam; auto sets it up only where that camera is found	
 Format the EFI partition	
 Format the boot partition	
 From Open-Meteo, no account; it sends your time zone's main city there	
@@ -154,6 +155,7 @@ Hyprland 0.55 or newer is installed
 Hyprland accepts the configuration	
 Hyprland desktop	
 Hyprland is offered as a session	
+IPU6 webcam	
 Idle locking and suspend are configured	
 Input and display	
 Install	
@@ -341,6 +343,7 @@ Set up kitty
 Set up notifications	
 Set up power profiles	
 Set up the %s prompt	
+Set up the IPU6 webcam	
 Set up the boot menu	
 Set up the lock screen	
 Set up the wallpaper	
@@ -394,6 +397,7 @@ Terminal and shell
 Testing mode	
 Text size	
 The %s prompt is set up	
+The IPU6 webcam's tools are there	
 The NVIDIA module is built for the newest kernel	
 The SSH server is off	
 The admin account can use sudo	
