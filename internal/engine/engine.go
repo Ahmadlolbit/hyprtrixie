@@ -30,6 +30,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/step"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/term"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/ui"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/words"
 )
 
 const (
@@ -264,7 +265,7 @@ func (work *session) recordEnd(id string, before map[string]bool) {
 
 func (work *session) one(module modules.Module, position, total int, part func(setup.Module, *setup.Context)) bool {
 	work.runner.Begin(module.ID)
-	ui.Rule(fmt.Sprintf("%s  %s  ·  %d of %d", module.ID, module.Title, position, total))
+	ui.Rule(fmt.Sprintf(words.T("%s  %s  ·  %d of %d"), module.ID, words.T(module.Title), position, total))
 	work.log.Line("info", "module "+module.ID+" begin: "+module.Title)
 	context, err := work.context()
 	if err != nil {

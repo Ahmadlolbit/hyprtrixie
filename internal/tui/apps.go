@@ -5,6 +5,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apps"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/options"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/words"
 )
 
 const (
@@ -61,7 +62,7 @@ func (flow *wizard) sourceQuestion(option options.Option) *dialog {
 	box := flow.picker(option)
 	for _, item := range option.Items() {
 		if note, found := sourceNotes[item]; found {
-			box.lines = append(box.lines, note)
+			box.lines = append(box.lines, words.T(note))
 		}
 	}
 	return box

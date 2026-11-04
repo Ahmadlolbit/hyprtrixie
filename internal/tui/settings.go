@@ -9,6 +9,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/options"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/words"
 )
 
 const twoValues = 2
@@ -77,7 +78,7 @@ func (flow *wizard) picker(option options.Option) *dialog {
 		}
 		return nil
 	})
-	box.lines = []string{option.Help}
+	box.lines = []string{words.T(option.Help)}
 	box.cursor = max(slices.Index(option.Items(), flow.settings.Get(option.Key)), 0)
 	return box
 }

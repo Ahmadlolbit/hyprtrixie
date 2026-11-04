@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/Ahmadlolbit/hyprtrixie/internal/words"
 )
 
 const (
@@ -261,12 +263,12 @@ func (view *page) pressEscape() tea.Cmd {
 
 func (view *page) text(line row, focused bool) string {
 	if line.heading {
-		return headingStyle.Render(line.label)
+		return headingStyle.Render(words.T(line.label))
 	}
 	if line.info {
-		return "  " + line.label
+		return "  " + words.T(line.label)
 	}
-	label := strings.TrimSpace(line.mark + " " + line.label)
+	label := strings.TrimSpace(line.mark + " " + words.T(line.label))
 	value := line.value
 	if focused && view.draft != nil {
 		value = view.draft.shown()
@@ -299,13 +301,13 @@ func (view *page) scroll(height, total int) {
 
 func (view *page) help() string {
 	if view.search != nil {
-		return "Search: " + view.search.shown()
+		return words.T("Search: ") + view.search.shown()
 	}
 	if view.filter != "" {
-		return "Search: " + view.filter
+		return words.T("Search: ") + view.filter
 	}
 	if line, found := view.current(); found {
-		return line.help
+		return words.T(line.help)
 	}
 	return ""
 }
