@@ -154,6 +154,9 @@ func settingsFile() string {
 }
 
 func (work *installer) arguments() []string {
+	if work.flow.system != nil {
+		return work.flow.system.arguments(work.path)
+	}
 	args := []string{"install", "--events", "--config", work.path}
 	if work.flow.testing {
 		args = append(args, "--testing")
@@ -170,6 +173,12 @@ func (work *installer) begin() tea.Cmd {
 		work.flow.notice = "Could not write the settings: " + err.Error()
 		return nil
 	}
+	if work.flow.system != nil {
+		if err := work.flow.system.save(work.path); err != nil {
+			work.flow.notice = "Could not write the answers: " + err.Error()
+			return nil
+		}
+	}
 	core := filepath.Join(env.ToolsDir(), "hyprtrixie-core")
 	child, err := privilege.Spawn(work.environment(), core, work.arguments()...)
 	if err != nil {
@@ -178,7 +187,7 @@ func (work *installer) begin() tea.Cmd {
 	}
 	work.child = child
 	work.stream = events.Watch(child.Output)
-	work.flow.jump(installAt)
+	work.flow.jump(installAt + work.flow.offset)
 	return work.next
 }
 
@@ -234,7 +243,7 @@ func (work *installer) refused(done ended) tea.Cmd {
 	work.child = nil
 	work.flow.dialogs = nil
 	work.flow.asking = nil
-	work.flow.jump(reviewAt)
+	work.flow.jump(reviewAt + work.flow.offset)
 	lines := strings.Split(cleanAll(done.text), "\n")
 	work.flow.notice = fmt.Sprintf("The setup didn't start: %s (exit %d)", lines[len(lines)-1], done.code)
 	return nil
@@ -251,7 +260,7 @@ func (work *installer) finish(done ended) tea.Cmd {
 	work.flow.asking = nil
 	work.flow.exit = done.code
 	work.flow.end.lines = work.closing
-	work.flow.jump(installAt + 1)
+	work.flow.jump(installAt + work.flow.offset + 1)
 	return nil
 }
 

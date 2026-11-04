@@ -19,6 +19,7 @@ Add Flathub
 Add MangoHud to Steam	
 Add short names for bat and fd	
 Admin account	
+Again	
 All themes are installed	
 An animated logo on every screen; a key or mouse move ends it; 0 = never	
 Animations	
@@ -35,6 +36,7 @@ Arrows move · Enter picks · Esc cancels
 Arrows or j and k   Move	
 Arrows scroll · Enter or Esc closes	
 Ask what to do, stop the run, or note the failure and carry on	
+At least 8 characters	
 Automatic light and dark	
 Automatic security updates	
 Backports are available	
@@ -46,6 +48,7 @@ Bar position
 Base packages are installed	
 Battery on the lock screen	
 Bazaar is installed	
+Before you go on: save your BitLocker recovery key somewhere off this computer, and turn off Fast Startup in Windows.	
 Blocks connections from other computers; your own connections still work	
 Boot menu in the theme	
 Boot splash	
@@ -64,6 +67,7 @@ Command-line tools
 Command-line tools are available	
 Compress memory with zram	
 Compressed memory that works as fast swap; 0 turns it off	
+Computer's name	
 Configure snapper	
 Configure the NVIDIA driver	
 Configure the login screen	
@@ -75,6 +79,7 @@ Copy the system
 Could not read %s	
 Could not save: %s	
 Could not start the setup: %s	
+Could not write the answers: %s	
 Could not write the settings: %s	
 Create a %s GiB swapfile	
 Ctrl+C              Leave, after asking	
@@ -83,6 +88,7 @@ Dark from
 Dark theme	
 Debian 13 (trixie)	
 Debian 13 with Hyprland, set up properly	
+Debian 13 with Hyprland, set up properly, on this computer's disk.	
 Debian mirror	
 Debian's security fixes install on their own in the background	
 Degrees Celsius and km/h, or Fahrenheit and mph	
@@ -90,6 +96,8 @@ Desktop services are installed
 Desktop session	
 Detect hardware	
 Developer tools	
+Disk	
+Disk password	
 Disk space used as extra memory when RAM runs out; 0 turns it off	
 Display scale	
 Do not disturb every night, for the hours below	
@@ -103,8 +111,11 @@ Encrypt the rest
 Enough free disk space	
 Enter               Go on	
 Enter opens this window	
+Erase %s and install hyprtrixie?	
 Esc                 Go back	
+Every start asks for it first. Without it nothing on the disk can be read, so keep it somewhere safe.	
 Every ticked app is installed	
+Everything on %s is erased.	
 Extras	
 Final checks and report	
 Fingerprint	
@@ -115,6 +126,8 @@ Firmware and non-free components are on
 Firmware for this machine is installed	
 Flathub is set up	
 Follow theme switches on the boot and login screens	
+For logging in and for sudo	
+For logging in: small letters, digits, - and _	
 Format the EFI partition	
 Format the boot partition	
 From Open-Meteo, no account; it sends your time zone's main city there	
@@ -131,6 +144,7 @@ Hand the rest of the setup to the first start
 Helium is the default browser	
 Hibernate	
 How full the battery is, in a corner; nothing on a computer without one	
+How it shows on the network: small letters, digits and -	
 How many daily snapshots to keep	
 How many monthly snapshots to keep	
 How many weekly snapshots to keep	
@@ -167,6 +181,9 @@ Install desktop services
 Install distrobox	
 Install firmware for this machine	
 Install grub-btrfs	
+Install hyprtrixie	
+Install hyprtrixie next to Windows on %s?	
+Install hyprtrixie with these choices	
 Install kubectl, helm, k9s and kind	
 Install lazydocker	
 Install mise	
@@ -203,15 +220,19 @@ Install the tips
 Install the web app maker	
 Install theme packages	
 Internet connection	
+It takes about ten minutes and needs no internet. Nothing changes until you choose Install at the end.	
+Its log	
 Its log is %s	
 JetBrains Mono Nerd Font is installed	
 JetBrains Toolbox is installed	
+Keep Windows	
 Keep container storage out of snapshots	
 Keep the SSH server off	
 Keep the firmware list fresh	
 Keep these choices without installing	
 Kernel	
 Kernel and drivers	
+Keyboard	
 Language toolchains are ready	
 Languages through mise	
 Languages, containers and editors to set up for programming	
@@ -257,6 +278,7 @@ Night light
 Night light from	
 Night light until	
 No	
+No disk here can take it: each is under 40 GB, read-only, or in use.	
 Notifications are set up	
 Now and then a tip as a notification, at most once a day	
 Now playing on the lock screen	
@@ -265,6 +287,9 @@ Open the new system
 Optional parts, set up only if you tick them: Flatpak with the Bazaar store, Steam with GameMode and MangoHud, printing and scanning, and distrobox	
 Orca reads apps aloud; Super+Alt+R starts or stops it. On Hyprland it can't read the bar, the menu or the launcher, and its own key commands don't work	
 Paint the boot and login screens in the theme's colours	
+Password	
+Pick a disk first	
+Pick a disk with Space or Enter.	
 Podman is installed	
 Point btop at the theme	
 Power and security	
@@ -327,6 +352,7 @@ Shell
 Show a boot splash in the theme's colours	
 Show a tip now and then	
 Show snapshots in the boot menu	
+Shown on the login screen	
 Size of everything on screen; auto picks it from the screen's density	
 Snap also installs snapd, a background service nothing else here uses.	
 Snapper is set up for /	
@@ -335,6 +361,7 @@ Snapshots and rollback
 Snapshots appear in the boot menu	
 Snapshots before changes, so you can roll back from the boot menu	
 Space               Change the row	
+Space picks it, Enter picks it and goes on	
 Start	
 Start from a clean slate	
 Start into the login screen at boot	
@@ -345,6 +372,7 @@ Stop hibernating
 Stop the setup?	
 Stopping: what's running has to end first	
 Storage	
+Such as us, de or gb. It changes at once, so the passwords you type next work at every start	
 Summary	
 Suspend after (minutes)	
 Swap and memory	
@@ -376,11 +404,15 @@ The boot menu, where the snapshots are, in your theme's colours
 The boot splash is in the theme's colours	
 The colour and QR picker is installed	
 The computer can hibernate	
+The disk password	
+The disk password needs at least 8 characters	
 The firewall is on	
 The firmware list is refreshed	
+The first start finishes the setup before the login screen, which takes a few minutes.	
 The floating terminal is installed	
 The folder of pictures, or a file that lists them one per line, for the wallpaper of the day	
 The hyprtrixie command points at this folder	
+The install stopped at the step that failed, and nothing after it ran.	
 The kernel comes from backports	
 The lock screen is configured	
 The login screen starts at boot	
@@ -391,6 +423,7 @@ The newest kernel is running (or starts after a reboot)
 The next theme every morning at 6; Super+Ctrl+T still changes it during the day	
 The package picker is installed	
 The quiet system checks are scheduled	
+The same once more	
 The screen reader is installed	
 The screen recorder is installed	
 The screensaver is installed	
@@ -407,6 +440,8 @@ The theme for the day
 The theme for the night	
 The theme's own accent, or another of its colours, for borders and highlights	
 The tips are installed	
+The two disk passwords aren't the same	
+The two passwords aren't the same	
 The wallpaper service is configured	
 The web app maker is installed	
 Theme	
@@ -415,10 +450,13 @@ Theme switches reach the boot screens
 Theme the boot menu	
 Theme the text consoles	
 Themes	
+There's no time zone %s	
+Time zone	
 Tip notifications	
 Tip notifications are scheduled	
 Tips in new terminals	
 Tips on the welcome screen	
+To keep Windows: %s. In Windows, Disk Management's Shrink Volume on C: makes room; then start this again.	
 Tune swappiness	
 Turn on printing and finding printers on the network	
 Turn on the firewall	
@@ -432,6 +470,7 @@ Unlock it
 Unlock the lock screen and approve sudo with a finger; the login screen keeps your password. Add a finger with hyprtrixie fingerprint add	
 Use Debian over HTTPS with backports	
 Use your finger for sudo and the lock screen	
+User name	
 VS Code, VSCodium and Zed switch to the theme's colours with it, unless you picked another theme in them	
 Vendor repositories can be enabled	
 Wait for them to appear	
@@ -441,7 +480,9 @@ Wallpaper of the day
 Weather in the bar	
 Weather units	
 Weekly snapshots to keep	
+Welcome	
 What mise sets up for every terminal: Node.js LTS, Python, Java 25 (Temurin) and Go	
+What the boot splash shows above the disk password, such as Welcome back; empty keeps the system's own words	
 What the boot splash shows above the disk password, such as Welcome back; empty keeps the system's own words, and the TPM's PIN prompt keeps its own	
 When a step fails	
 When both are installed, which engine answers the docker command	
@@ -452,22 +493,30 @@ When the light theme starts
 When the screen goes back to normal	
 When the screen warms up	
 Where Debian packages download from; the default picks a nearby server	
+Where hyprtrixie goes	
 Wi-Fi and wired connections move to NetworkManager, so the bar manages them	
 Window style	
 Windows and workspaces animate as they open, close and move	
+Windows stays. hyprtrixie goes in the free space, and the boot menu offers both for five seconds.	
+Words above it	
 Words above the disk password	
 Write fstab and crypttab	
 Write the look settings	
 Write ~/%s	
 X11 is the most reliable for the login screen; Wayland is newer	
 Yes	
+Yes puts hyprtrixie in the free space next to Windows; no erases the whole disk	
+You	
+You and this computer	
 You can manage printers and scanners	
 Your Hyprland config loads the hyprtrixie defaults	
 Your account can change the brightness	
+Your name	
 Your password, for sudo	
 curl is installed	
 distrobox and Podman are installed	
 engine-switch points docker at %s	
+hyprtrixie is installed. Restart, take the USB stick out, and type your disk password.	
 kitty, zsh and tmux are installed	
 kubectl, helm, k9s and kind are installed	
 lazydocker is installed	
