@@ -28,6 +28,13 @@ type editorPack struct {
 	sum  string
 }
 
+type rendered struct {
+	name  string
+	label string
+	mode  string
+	data  []byte
+}
+
 var codeEditors = []codeEditor{
 	{"code", ".config/Code/User/settings.json", ".vscode/extensions"},
 	{"codium", ".config/VSCodium/User/settings.json", ".vscode-oss/extensions"},
@@ -53,13 +60,13 @@ func themeDir(name string) string {
 	return filepath.Join(systemRoot, "themes", name)
 }
 
-func editorThemes(template string) []editors.Theme {
+func renderEditors(template string) []rendered {
 	data, err := os.ReadFile(template)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return nil
 	}
-	var found []editors.Theme
+	var found []rendered
 	for _, name := range themeNames() {
 		colors, err := themeColors(themeDir(name))
 		if err != nil {
@@ -70,7 +77,7 @@ func editorThemes(template string) []editors.Theme {
 			fmt.Fprintf(os.Stderr, "%s: %s doesn't make valid JSON\n", name, template)
 			continue
 		}
-		found = append(found, editors.NewTheme(editors.Prefix+theme.Pretty(name), colors["mode"], name+".json", []byte(text)))
+		found = append(found, rendered{name, editors.Prefix + theme.Pretty(name), colors["mode"], []byte(text)})
 	}
 	return found
 }
@@ -80,7 +87,10 @@ func buildPack() *editorPack {
 	if template == "" {
 		return nil
 	}
-	found := editorThemes(template)
+	var found []editors.Theme
+	for _, item := range renderEditors(template) {
+		found = append(found, editors.NewTheme(item.label, item.mode, item.name+".json", item.data))
+	}
 	if len(found) == 0 {
 		return nil
 	}
@@ -141,10 +151,7 @@ func followSetting(path, key, value string) {
 	}
 }
 
-func followEditors(name string) {
-	if settings.Get("editors") != "yes" {
-		return
-	}
+func followCode(name string) {
 	var pack *editorPack
 	for _, editor := range codeEditors {
 		if _, err := exec.LookPath(editor.command); err != nil {
@@ -158,6 +165,14 @@ func followEditors(name string) {
 		editor.refresh(pack)
 		followSetting(filepath.Join(env.Home(), editor.settings), "workbench.colorTheme", editors.Prefix+theme.Pretty(name))
 	}
+}
+
+func followEditors(name string) {
+	if settings.Get("editors") != "yes" {
+		return
+	}
+	followCode(name)
+	followZed(name)
 }
 
 func refreshEditors() int {
