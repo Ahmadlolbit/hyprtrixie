@@ -104,7 +104,7 @@ var table = []Option{
 	{"NIGHT_TO", "Night light until", Choice, "07:00", lightAt, "look", "When the screen goes back to normal", nightByTheClock},
 	{"BOOT_SPLASH", "Boot splash", YesNo, "yes", "", "look", "The logo and the disk password prompt in your theme's colours while it boots", nil},
 	{"BOOT_MENU_THEME", "Boot menu in the theme", YesNo, "yes", "", "look", "The boot menu, where the snapshots are, in your theme's colours", nil},
-	{"CONSOLE_THEME", "Console colours and font", YesNo, "no", "", "look", "The text consoles (Ctrl+Alt+F3) in your theme's colours, with a larger font", nil},
+	{"CONSOLE_THEME", "Console colours and font", YesNo, "no", "", "look", "The text consoles (Ctrl+Alt+F3) in your theme's colours, with a larger font and the logo above the login", nil},
 	{"FIREWALL", "Firewall", YesNo, "yes", "", "security", "Blocks connections from other computers; your own connections still work", nil},
 	{"AUTO_UPDATES", "Automatic security updates", YesNo, "yes", "", "security", "Debian's security fixes install on their own in the background", nil},
 	{"SSH_POLICY", "SSH", Choice, "client", "client leave", "security", "Client: the SSH server doesn't start at boot. Leave: keep it as it is", nil},
