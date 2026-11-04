@@ -44,6 +44,9 @@ const usage = `Usage: hyprtrixie-look
        hyprtrixie-look night-warmth [KELVIN]
        hyprtrixie-look power [on|off|toggle]
        hyprtrixie-look power-profiles [CHARGER BATTERY]
+       hyprtrixie-look trackpoint-speed [-1 to 1]
+       hyprtrixie-look trackpoint-accel [adaptive|flat]
+       hyprtrixie-look trackpoint-scroll [on|off|toggle]
        hyprtrixie-look get SETTING
 
 Shows and changes how the desktop looks. Your settings are kept in
@@ -73,7 +76,8 @@ night warms the screen: on, off, or for the night hours (times, 20:00 to
 07:00 unless you set others); night-warmth is how warm, 4500 by default.
 power switches the power profile when you plug in or unplug, to the two
 in power-profiles: balanced on the charger and power-saver on battery unless
-you set others.
+you set others. The trackpoint commands set a TrackPoint's speed, its
+acceleration, and scrolling with the middle button.
 `
 
 const (
@@ -421,6 +425,7 @@ func commands() map[string]func([]string) int {
 		"video-battery": videoBattery, "weather": weather, "weather-units": weatherUnits, "coordinates": showCoordinates,
 		"quiet": quiet, "quiet-hours": quietHours, "night": night, "night-hours": nightHours, "night-warmth": nightWarmth, "location": location,
 		"power": powerFollow, "power-profiles": powerProfiles, "power-apply": powerApply,
+		"trackpoint-speed": trackpointSpeed, "trackpoint-accel": trackpointAccel, "trackpoint-scroll": trackpointScroll,
 		"font":    func(args []string) int { return font("font", arg(args, 0)) },
 		"ui-font": func(args []string) int { return font("ui_font", arg(args, 0)) },
 		"light":   func(args []string) int { return themeChoice("light", arg(args, 0)) },
