@@ -63,6 +63,19 @@ func (disk Disk) Holds(where string) bool {
 	return slices.Contains(disk.Mountpoint, where) || slices.ContainsFunc(disk.Children, func(part Partition) bool { return part.mounted(where) })
 }
 
+func (disk Disk) Mounted() []string {
+	var points []string
+	queue := slices.Clone(disk.Children)
+	for len(queue) > 0 {
+		part := queue[0]
+		queue = append(queue[1:], part.Children...)
+		points = append(points, slices.DeleteFunc(slices.Clone(part.Mountpoints), func(point string) bool { return point == "" || point == "[SWAP]" })...)
+	}
+	slices.Sort(points)
+	slices.Reverse(points)
+	return points
+}
+
 func (disk Disk) Usable() bool {
 	return !disk.ReadOnly && !disk.virtual() && disk.Size >= SmallestUse && !disk.Holds("/run/live/medium") && !disk.Holds("/")
 }
