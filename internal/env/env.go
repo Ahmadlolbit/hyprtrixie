@@ -68,6 +68,10 @@ func Root() string {
 	return os.Getenv("HYPRTRIXIE_ROOT")
 }
 
+func SystemClone() string {
+	return Or("HYPRTRIXIE_SYSTEM_CLONE", "/opt/hyprtrixie")
+}
+
 func BinDir() string {
 	return Or("HYPRTRIXIE_BIN_DIR", "/usr/local/bin")
 }

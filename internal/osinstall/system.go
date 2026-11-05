@@ -164,7 +164,7 @@ func (work *install) bootLoader(log *runlog.Log) error {
 }
 
 func Clone() string {
-	return env.Or("HYPRTRIXIE_ROOT", "/opt/hyprtrixie")
+	return env.Or("HYPRTRIXIE_ROOT", env.SystemClone())
 }
 
 func (work *install) firstBoot(log *runlog.Log) error {

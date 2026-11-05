@@ -231,7 +231,7 @@ func (context *Context) preflightUser() error {
 
 func (context *Context) CloneFor() string {
 	home := context.Person.Home
-	if strings.HasPrefix(env.Root()+"/", home+"/") {
+	if env.Root() == env.SystemClone() || strings.HasPrefix(env.Root()+"/", home+"/") {
 		return env.Root()
 	}
 	return filepath.Join(home, "hyprtrixie")
@@ -243,6 +243,10 @@ func (context *Context) own(log *runlog.Log, path string) error {
 
 func (context *Context) giveClone(log *runlog.Log) error {
 	target := context.CloneFor()
+	if target == env.SystemClone() {
+		fmt.Fprintf(log, "%s stays as it is: the package keeps it up to date\n", target)
+		return nil
+	}
 	if target == env.Root() {
 		return context.own(log, target)
 	}
