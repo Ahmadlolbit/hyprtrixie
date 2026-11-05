@@ -54,6 +54,7 @@ func firstStartCommand() int {
 			fmt.Fprintln(os.Stderr, err)
 		}
 	}
+	os.Setenv("HYPRTRIXIE_FIRST_START", "1")
 	code := run.Status(script(), "install", "--config", config.Path(), "--on-failure", "continue", "--yes")
 	if code == 0 && found {
 		remove(firstStartNotePath(person))

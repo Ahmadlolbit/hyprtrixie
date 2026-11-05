@@ -20,7 +20,7 @@ const (
 	version        = 3
 	versionKey     = "HYPRTRIXIE_CONFIG_VERSION"
 	keyCharacters  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-	safeCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ._:/@+,-"
+	safeCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ._:/@+,-~"
 	newApps        = "imv evince obsidian localsend calculator"
 )
 

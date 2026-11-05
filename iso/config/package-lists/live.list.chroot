@@ -20,3 +20,8 @@ os-prober
 locales
 intel-microcode
 amd64-microcode
+zram-tools
+snapper
+gawk
+inotify-tools
+make

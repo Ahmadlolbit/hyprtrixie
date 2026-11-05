@@ -1,0 +1,6 @@
+bochs
+virtio_gpu
+qxl
+vmwgfx
+vboxvideo
+hyperv_drm

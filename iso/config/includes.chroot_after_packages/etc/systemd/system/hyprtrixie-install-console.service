@@ -6,6 +6,7 @@ Conflicts=getty@tty1.service
 
 [Service]
 Type=simple
+ExecStartPre=-/usr/bin/dmesg --console-off
 ExecStart=/opt/hyprtrixie/build/bin/hyprtrixie-installer
 StandardInput=tty
 StandardOutput=tty

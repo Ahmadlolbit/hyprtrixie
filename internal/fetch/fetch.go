@@ -202,6 +202,34 @@ func GitCached(log *runlog.Log, name string, paths ...string) (string, error) {
 	return target, Git(log, name, target, paths...)
 }
 
+func GitCopy(log *runlog.Log, name, target string) error {
+	source, err := GetSource(log, name)
+	if err != nil {
+		return err
+	}
+	if fsutil.IsDir(filepath.Join(target, ".git")) && head(target) == source.Commit {
+		return nil
+	}
+	cached, err := GitCached(log, name)
+	if err != nil {
+		return err
+	}
+	part := target + ".part"
+	if err := os.RemoveAll(part); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(target), folderMode); err != nil {
+		return err
+	}
+	if err := fsutil.CopyTree(cached, part); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(target); err != nil {
+		return err
+	}
+	return os.Rename(part, target)
+}
+
 func inPlace(target string, mode os.FileMode) bool {
 	return fsutil.Exists(target) && (mode&executableBits == 0 || fsutil.Runnable(target))
 }

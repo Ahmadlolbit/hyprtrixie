@@ -483,7 +483,10 @@ func (theme *themeRun) bootSplashInstall(log *runlog.Log) error {
 	if err := theme.splashFile("plymouth/plymouthd.conf", "/etc/plymouth/plymouthd.conf"); err != nil {
 		return err
 	}
-	return theme.splashFile("initramfs/splash.conf", "/etc/initramfs-tools/conf.d/hyprtrixie-splash")
+	if err := theme.splashFile("initramfs/splash.conf", "/etc/initramfs-tools/conf.d/hyprtrixie-splash"); err != nil {
+		return err
+	}
+	return theme.splashFile("initramfs/drm-modules", "/usr/share/initramfs-tools/modules.d/hyprtrixie-drm")
 }
 
 func (theme *themeRun) grubThemeInstall(log *runlog.Log) error {
