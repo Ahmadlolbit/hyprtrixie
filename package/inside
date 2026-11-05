@@ -31,3 +31,16 @@ fi
 size="$(du -sk --exclude=DEBIAN "$pkg" | cut -f1)"
 sed -e "s|@VERSION@|$version|" -e "s|@SIZE@|$size|" "$work/src/package/control" >"$pkg/DEBIAN/control"
 dpkg-deb --root-owner-group --build "$pkg" "/out/hyprtrixie_${version}_amd64.deb"
+for app in "$work/src"/package/apps/*/; do
+  app="${app%/}"
+  name="${app##*/}"
+  dir="$work/$name"
+  mkdir -p "$dir/DEBIAN" "$dir/usr/bin" "$dir/usr/share/doc/$name"
+  while IFS= read -r program; do
+    [[ -z $program ]] || cp "$lib/bin/$program" "$dir/usr/bin/"
+  done <"$app/programs"
+  cp "$pkg/usr/share/doc/hyprtrixie/copyright" "$dir/usr/share/doc/$name/"
+  size="$(du -sk --exclude=DEBIAN "$dir" | cut -f1)"
+  sed -e "s|@VERSION@|$version|" -e "s|@SIZE@|$size|" "$app/control" >"$dir/DEBIAN/control"
+  dpkg-deb --root-owner-group --build "$dir" "/out/${name}_${version}_amd64.deb"
+done

@@ -1,0 +1,16 @@
+Package: hyprtrixie-screenshot
+Version: @VERSION@
+Architecture: amd64
+Maintainer: Ahmadlolbit <ahmadyassin714@gmail.com>
+Installed-Size: @SIZE@
+Depends: grim, slurp, wl-clipboard, libnotify-bin
+Recommends: swappy
+Suggests: hyprland
+Section: graphics
+Priority: optional
+Homepage: https://github.com/Ahmadlolbit/hyprtrixie
+Description: Screenshots on Hyprland, from Hyprtrixie
+ hyprtrixie-screenshot takes a region, a window or the whole screen on
+ Hyprland, saves it to ~/Pictures/Screenshots, copies it to the clipboard
+ and shows a notification. A click on the notification opens it in swappy
+ to annotate. A region also works on other wlroots desktops.
