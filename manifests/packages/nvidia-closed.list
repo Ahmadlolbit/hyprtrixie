@@ -3,3 +3,4 @@ nvidia-kernel-dkms/backports
 nvidia-driver/backports
 firmware-nvidia-gsp/backports
 nvidia-suspend-common/backports
+nvidia-vaapi-driver

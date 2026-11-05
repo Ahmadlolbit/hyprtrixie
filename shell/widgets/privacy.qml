@@ -17,7 +17,7 @@ GridLayout {
   readonly property bool mic: listening.length > 0
   readonly property bool camera: filming.length > 0 || held.length > 0
   readonly property bool screen: Pipewire.nodes.values.some(node => shared(node))
-  readonly property bool shown: mic || camera || screen
+  readonly property bool shown: mic || camera || screen || Session.recording
 
   function shared(node) {
     return node.type === PwNodeType.VideoSource && (node.name.startsWith("xdg-desktop-portal") || node.name.startsWith("xdph-streaming"));
@@ -89,6 +89,18 @@ GridLayout {
     }
   }
 
+  Label {
+    visible: Session.recording
+    text: "\u{f044a}"
+    color: Theme.critical
+
+    MouseArea {
+      anchors.fill: parent
+      cursorShape: Qt.PointingHandCursor
+      onClicked: Quickshell.execDetached(["hyprtrixie-record", "stop"])
+    }
+  }
+
   BarPopup {
     id: popup
 
@@ -97,7 +109,7 @@ GridLayout {
     owner: root
 
     Label {
-      Layout.preferredWidth: 280
+      Layout.preferredWidth: Theme.size(280)
       text: "In use"
       font.bold: true
     }

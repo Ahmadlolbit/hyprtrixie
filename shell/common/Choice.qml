@@ -14,7 +14,7 @@ Rectangle {
   signal actionClicked
 
   implicitWidth: row.implicitWidth + 16
-  implicitHeight: 30
+  implicitHeight: Theme.size(30)
   radius: Theme.radius
   color: selected ? Theme.overlay : area.containsMouse ? Theme.surface : "transparent"
 

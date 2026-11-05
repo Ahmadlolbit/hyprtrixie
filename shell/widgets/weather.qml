@@ -94,13 +94,13 @@ Label {
     owner: root
 
     RowLayout {
-      Layout.preferredWidth: 300
+      Layout.preferredWidth: Theme.size(300)
       spacing: 14
 
       Label {
         text: root.current ? root.glyph(root.current.weather_code, root.current.is_day) : ""
         color: Theme.accent
-        font.pixelSize: 34
+        font.pixelSize: Theme.size(34)
       }
 
       ColumnLayout {
@@ -145,7 +145,7 @@ Label {
           Label {
             Layout.alignment: Qt.AlignHCenter
             text: root.glyph(root.daily.weather_code[index], 1)
-            font.pixelSize: 20
+            font.pixelSize: Theme.size(20)
           }
 
           Label {

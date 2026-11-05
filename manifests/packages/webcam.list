@@ -1,0 +1,8 @@
+libcamera-tools
+libcamera-ipa
+libcamera-v4l2
+gstreamer1.0-libcamera
+gstreamer1.0-tools
+pipewire-libcamera
+linux-headers-amd64/backports
+v4l2loopback-dkms

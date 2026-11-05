@@ -10,7 +10,9 @@ Singleton {
   readonly property var defaults: ({
       position: "top",
       clock: "24h",
-      style: "sharp",
+      style: "",
+      clockFormat: "",
+      workspaces: [],
       left: ["workspaces", "window"],
       center: ["media", "clock", "focus"],
       right: ["privacy", "indicators", "updates", "snapshots", "weather", "tray", "cpu", "memory", "temperature", "network", "bluetooth", "audio", "brightness", "power-profile", "battery", "notifications"],
@@ -31,6 +33,8 @@ Singleton {
   readonly property string position: value("position")
   readonly property string clock: value("clock")
   readonly property string style: value("style")
+  readonly property string clockFormat: value("clockFormat")
+  readonly property var workspaces: value("workspaces")
   readonly property string preset: value("preset")
   readonly property var left: value("left")
   readonly property var center: value("center")

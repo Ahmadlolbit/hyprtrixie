@@ -75,6 +75,56 @@
       "capture"
     ]
   },
+  "capture.record": {
+    "glyph": "\uf03d",
+    "label": "Record a region",
+    "action": "sleep 0.3; hyprtrixie-record region",
+    "keywords": [
+      "record",
+      "video",
+      "screencast"
+    ]
+  },
+  "capture.recordscreen": {
+    "glyph": "\uf108",
+    "label": "Record the screen",
+    "action": "sleep 0.3; hyprtrixie-record screen",
+    "keywords": [
+      "record",
+      "video",
+      "screencast"
+    ]
+  },
+  "capture.recordstop": {
+    "glyph": "\uf04d",
+    "label": "Stop recording",
+    "action": "hyprtrixie-record stop",
+    "keywords": [
+      "record",
+      "stop"
+    ]
+  },
+  "capture.colour": {
+    "glyph": "\uf1fb",
+    "label": "Colour from the screen",
+    "action": "sleep 0.3; hyprtrixie-pick colour",
+    "keywords": [
+      "colour",
+      "color",
+      "picker",
+      "hex"
+    ]
+  },
+  "capture.qr": {
+    "glyph": "\uf029",
+    "label": "QR code from the screen",
+    "action": "sleep 0.3; hyprtrixie-pick qr",
+    "keywords": [
+      "qr",
+      "code",
+      "scan"
+    ]
+  },
   "toggle": {
     "glyph": "\udb81\udd21",
     "label": "Toggle"
@@ -129,13 +179,61 @@
   "toggle.nightlight": {
     "glyph": "\udb81\udd94",
     "label": "Night light",
-    "action": "pkill -x hyprsunset || setsid -f hyprsunset -t 4500 >/dev/null 2>&1",
-    "state": "pgrep -x hyprsunset >/dev/null",
+    "action": "hyprtrixie-look night toggle",
+    "state": "test \"$(hyprtrixie-look night)\" != off",
     "keywords": [
       "night",
       "light",
       "warm",
       "blue light"
+    ]
+  },
+  "toggle.nighthours": {
+    "glyph": "\udb81\udd94",
+    "label": "Night light at night",
+    "action": "test \"$(hyprtrixie-look night)\" = times && hyprtrixie-look night off || hyprtrixie-look night times",
+    "state": "test \"$(hyprtrixie-look night)\" = times",
+    "keywords": [
+      "night",
+      "light",
+      "warm",
+      "schedule"
+    ]
+  },
+  "toggle.powerfollow": {
+    "glyph": "\udb80\udf29",
+    "label": "Power saver on battery",
+    "action": "hyprtrixie-look power toggle",
+    "state": "test \"$(hyprtrixie-look power)\" = yes",
+    "keywords": [
+      "power",
+      "battery",
+      "charger",
+      "saver"
+    ]
+  },
+  "toggle.zen": {
+    "glyph": "\uf06e",
+    "label": "Zen mode",
+    "action": "hyprtrixie-look zen toggle",
+    "state": "test \"$(hyprtrixie-look zen)\" = yes",
+    "keywords": [
+      "zen",
+      "focus",
+      "bar",
+      "gaps"
+    ]
+  },
+  "toggle.presentation": {
+    "glyph": "\uf26c",
+    "label": "Presentation mode",
+    "action": "hyprtrixie-look presentation toggle",
+    "state": "test \"$(hyprtrixie-look presentation)\" = yes",
+    "keywords": [
+      "presentation",
+      "mirror",
+      "projector",
+      "slides"
     ]
   },
   "toggle.glass": {
@@ -159,6 +257,18 @@
       "corners",
       "rounded",
       "screen"
+    ]
+  },
+  "toggle.reader": {
+    "glyph": "\uf29a",
+    "label": "Screen reader",
+    "action": "hyprtrixie-look reader toggle",
+    "state": "pgrep -x orca >/dev/null",
+    "keywords": [
+      "screen reader",
+      "orca",
+      "speech",
+      "accessibility"
     ]
   },
   "toggle.weather": {
@@ -355,6 +465,80 @@
     "action": "hyprtrixie-look bar vertical",
     "state": "test \"$(hyprtrixie-look bar)\" = vertical"
   },
+  "style.position": {
+    "glyph": "\uf0e2",
+    "label": "Bar position",
+    "keywords": [
+      "bar",
+      "panel",
+      "top",
+      "bottom"
+    ]
+  },
+  "style.position.top": {
+    "glyph": "\uf062",
+    "label": "Top",
+    "action": "hyprtrixie-look position top",
+    "state": "test \"$(hyprtrixie-look position)\" = top"
+  },
+  "style.position.bottom": {
+    "glyph": "\uf063",
+    "label": "Bottom",
+    "action": "hyprtrixie-look position bottom",
+    "state": "test \"$(hyprtrixie-look position)\" = bottom"
+  },
+  "style.window": {
+    "glyph": "\uf2d0",
+    "label": "Window style",
+    "keywords": [
+      "window",
+      "rounded",
+      "sharp",
+      "soft",
+      "gaps"
+    ]
+  },
+  "style.window.sharp": {
+    "glyph": "\uf0c8",
+    "label": "Sharp",
+    "action": "hyprtrixie-look style sharp",
+    "state": "test \"$(hyprtrixie-look style)\" = sharp"
+  },
+  "style.window.soft": {
+    "glyph": "\uf111",
+    "label": "Soft",
+    "action": "hyprtrixie-look style soft",
+    "state": "test \"$(hyprtrixie-look style)\" = soft"
+  },
+  "style.apps": {
+    "glyph": "\uf2d0",
+    "label": "GTK and KDE apps",
+    "keywords": [
+      "gtk",
+      "kde",
+      "qt",
+      "apps",
+      "dolphin"
+    ]
+  },
+  "style.apps.follow": {
+    "glyph": "\uf1fc",
+    "label": "Follow the theme",
+    "action": "hyprtrixie-look apps follow",
+    "state": "test \"$(hyprtrixie-look apps)\" = follow"
+  },
+  "style.apps.catppuccin": {
+    "glyph": "\uf1fb",
+    "label": "Always Catppuccin",
+    "action": "hyprtrixie-look apps catppuccin",
+    "state": "test \"$(hyprtrixie-look apps)\" = catppuccin"
+  },
+  "style.apps.off": {
+    "glyph": "\uf05e",
+    "label": "Keep their own look",
+    "action": "hyprtrixie-look apps off",
+    "state": "test \"$(hyprtrixie-look apps)\" = off"
+  },
   "style.accent": {
     "glyph": "\udb80\udfd8",
     "label": "Accent",
@@ -491,6 +675,51 @@
       "pair"
     ]
   },
+  "setup.keyboard": {
+    "glyph": "\udb80\udf0c",
+    "label": "Keyboard layout",
+    "list": "keyboard",
+    "keywords": [
+      "keyboard",
+      "layout",
+      "language",
+      "typing"
+    ]
+  },
+  "setup.trackpoint": {
+    "glyph": "\uf245",
+    "label": "TrackPoint",
+    "keywords": [
+      "trackpoint",
+      "mouse",
+      "pointer",
+      "speed"
+    ]
+  },
+  "setup.trackpoint.slow": {
+    "glyph": "\uf245",
+    "label": "Slow",
+    "action": "hyprtrixie-look trackpoint-speed -0.5",
+    "state": "test \"$(hyprtrixie-look trackpoint-speed)\" = -0.5"
+  },
+  "setup.trackpoint.medium": {
+    "glyph": "\uf245",
+    "label": "Medium",
+    "action": "hyprtrixie-look trackpoint-speed 0",
+    "state": "test \"$(hyprtrixie-look trackpoint-speed)\" = 0"
+  },
+  "setup.trackpoint.fast": {
+    "glyph": "\uf245",
+    "label": "Fast",
+    "action": "hyprtrixie-look trackpoint-speed 0.5",
+    "state": "test \"$(hyprtrixie-look trackpoint-speed)\" = 0.5"
+  },
+  "setup.trackpoint.scroll": {
+    "glyph": "\uf8cc",
+    "label": "Scroll with the middle button",
+    "action": "hyprtrixie-look trackpoint-scroll toggle",
+    "state": "test \"$(hyprtrixie-look trackpoint-scroll)\" = yes"
+  },
   "setup.power": {
     "glyph": "\udb80\udc79",
     "label": "Power",
@@ -521,6 +750,17 @@
       "apt"
     ]
   },
+  "install.webapp": {
+    "glyph": "\uf0ac",
+    "label": "A website as an app",
+    "action": "hyprtrixie-terminal --wait hyprtrixie-webapp add",
+    "keywords": [
+      "web",
+      "app",
+      "website",
+      "url"
+    ]
+  },
   "remove": {
     "glyph": "\udb82\udf4c",
     "label": "Remove",
@@ -541,6 +781,15 @@
       "apt"
     ]
   },
+  "remove.webapp": {
+    "glyph": "\uf0ac",
+    "label": "A web app",
+    "action": "hyprtrixie-terminal --wait hyprtrixie-webapp remove",
+    "keywords": [
+      "web",
+      "app"
+    ]
+  },
   "update": {
     "glyph": "\uf021",
     "label": "Update"
@@ -559,7 +808,7 @@
   },
   "update.hyprtrixie": {
     "glyph": "\udb81\udeb0",
-    "label": "hyprtrixie",
+    "label": "Hyprtrixie",
     "action": "hyprtrixie-terminal --wait hyprtrixie update hyprtrixie",
     "keywords": [
       "update",
@@ -624,6 +873,18 @@
       "problems"
     ]
   },
+  "system.restore": {
+    "glyph": "\udb80\udeda",
+    "label": "Restore points",
+    "list": "restore",
+    "keywords": [
+      "restore",
+      "rollback",
+      "snapshot",
+      "undo",
+      "back"
+    ]
+  },
   "system.lock": {
     "glyph": "\uf023",
     "label": "Lock",
@@ -647,6 +908,16 @@
     "keywords": [
       "suspend",
       "sleep"
+    ]
+  },
+  "system.hibernate": {
+    "glyph": "\udb82\udc4f",
+    "label": "Hibernate",
+    "action": "systemctl hibernate || notify-send Hibernate 'Turn it on in the setup, under Storage'",
+    "keywords": [
+      "hibernate",
+      "sleep",
+      "disk"
     ]
   },
   "system.logout": {

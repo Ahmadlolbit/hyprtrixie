@@ -28,3 +28,9 @@ invisible=1
 
 [mode=focus]
 invisible=1
+
+[app-name=hyprtrixie-firmware]
+on-button-left=exec makoctl dismiss -n "$id"; hyprtrixie-terminal --wait sh -c 'fwupdmgr refresh --force; fwupdmgr update'
+
+[app-name=hyprtrixie-disk]
+on-button-left=exec makoctl dismiss -n "$id"; hyprtrixie-terminal --wait sudo hyprtrixie cleanup

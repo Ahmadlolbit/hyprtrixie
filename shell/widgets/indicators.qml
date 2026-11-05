@@ -40,6 +40,12 @@ RowLayout {
   }
 
   Label {
+    visible: Session.fnLock
+    text: "\u{f0a7f}"
+    color: Theme.warning
+  }
+
+  Label {
     horizontalAlignment: Text.AlignHCenter
     text: Session.awake ? "\u{f0176}" + (Session.minutesLeft > 0 ? (root.bar && root.bar.vertical ? "\n" : " ") + Session.minutesLeft + "m" : "") : "\u{f06ca}"
     color: Session.awake ? Theme.warning : Theme.subtext
@@ -71,7 +77,7 @@ RowLayout {
     owner: root
 
     Label {
-      Layout.preferredWidth: 220
+      Layout.preferredWidth: Theme.size(220)
       text: "Stay awake"
       font.bold: true
     }

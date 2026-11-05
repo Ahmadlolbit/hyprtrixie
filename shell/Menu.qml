@@ -9,7 +9,7 @@ import qs.common
 Scope {
   id: root
 
-  readonly property int rowHeight: 40
+  readonly property int rowHeight: Theme.size(40)
   readonly property int visibleRows: 11
   property bool open: false
   property var stack: ["root"]
@@ -17,6 +17,8 @@ Scope {
   property string filter: ""
   property int index: 0
   property int stamp: 0
+  property var typed: []
+  readonly property var secretKeys: [Qt.Key_Up, Qt.Key_Up, Qt.Key_Down, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right, Qt.Key_Left, Qt.Key_Right, Qt.Key_B, Qt.Key_A]
   property var entries: ({})
   property var order: []
   property var listed: []
@@ -104,7 +106,7 @@ Scope {
   }
 
   function title() {
-    return stack.map(id => id === "root" ? "Menu" : entries[id] ? entries[id].label : id).join(" › ");
+    return stack.map(id => id === "root" ? "Menu" : id === "credits" ? "Credits" : entries[id] ? entries[id].label : id).join(" › ");
   }
 
   function show(id) {
@@ -135,6 +137,10 @@ Scope {
     lister.kind = kind;
     if (kind === "fonts" || kind === "ui-fonts")
       lister.command = ["fc-list", "--format", "%{family[0]}\n", kind === "fonts" ? ":spacing=100" : ":"];
+    else if (kind === "restore")
+      lister.command = ["hyprtrixie", "restore", "list"];
+    else if (kind === "keyboard")
+      lister.command = ["hyprtrixie", "keyboard", "list"];
     else
       lister.command = ["hyprtrixie", "app", "list", kind === "install" ? "available" : "installed"];
     lister.running = true;
@@ -159,23 +165,35 @@ Scope {
   }
 
   function catalogue(kind, text) {
-    return text.split("\n").filter(line => line.includes("\t")).map(line => {
+    const glyphs = {
+      install: "\u{f01da}",
+      remove: "\u{f0b4c}",
+      restore: "\u{f02da}",
+      keyboard: "\u{f030c}"
+    };
+    const command = kind === "restore" ? "hyprtrixie restore" : "sudo hyprtrixie app " + kind;
+    const words = (id) => kind === "keyboard" ? "sh -c 'sudo hyprtrixie keyboard " + id + " && hyprctl reload'" : command + " " + id;
+    const row = (id, label, words) => ({
+          id: kind + ":" + id,
+          glyph: glyphs[kind],
+          label: label,
+          action: "hyprtrixie-terminal --wait " + words,
+          shell: "",
+          state: "",
+          color: "",
+          font: "",
+          page: false,
+          icon: "",
+          app: null,
+          path: ""
+        });
+    const rows = text.split("\n").filter(line => line.includes("\t")).map(line => {
       const fields = line.split("\t");
-      return {
-        id: kind + ":" + fields[0],
-        glyph: kind === "install" ? "\u{f01da}" : "\u{f0b4c}",
-        label: fields[1],
-        action: "hyprtrixie-terminal --wait sudo hyprtrixie app " + kind + " " + fields[0],
-        shell: "",
-        state: "",
-        color: "",
-        font: "",
-        page: false,
-        icon: "",
-        app: null,
-        path: ""
-      };
+      return row(fields[0], fields[1], words(fields[0]));
     });
+    if (kind === "restore" && rows.length === 0)
+      return [row("terminal", "Open restore points in a terminal", command)];
+    return rows;
   }
 
   function quote(text) {
@@ -201,8 +219,44 @@ Scope {
         }));
   }
 
+  function secret(key) {
+    typed = typed.concat([key]).slice(-secretKeys.length);
+    return typed.join() === secretKeys.join();
+  }
+
+  function showCredits() {
+    typed = [];
+    filter = "";
+    stack = ["root", "credits"];
+    index = 0;
+    listed = [];
+    lister.kind = "credits";
+    lister.command = ["hyprtrixie", "credits"];
+    lister.running = true;
+  }
+
+  function credits(text) {
+    return text.split("\n").filter(line => line.includes("\t")).map(line => {
+      const fields = line.split("\t");
+      return {
+        id: "credit:" + fields[0],
+        glyph: "\u{f004}",
+        label: fields[0] + " · " + fields[1],
+        action: "",
+        shell: "",
+        state: "",
+        color: "",
+        font: "",
+        page: false,
+        icon: "",
+        app: null,
+        path: ""
+      };
+    });
+  }
+
   function activate(item) {
-    if (!item)
+    if (!item || (item.id || "").startsWith("credit:"))
       return;
     if (item.page) {
       stack = stack.concat([item.id]);
@@ -287,7 +341,9 @@ Scope {
     stdout: StdioCollector {
       onStreamFinished: {
         const entry = root.entries[root.page];
-        if (entry && entry.list === lister.kind)
+        if (lister.kind === "credits" && root.page === "credits")
+          root.listed = root.credits(text);
+        else if (entry && entry.list === lister.kind)
           root.listed = lister.kind.endsWith("fonts") ? root.fonts(lister.kind, text) : root.catalogue(lister.kind, text);
       }
     }
@@ -343,7 +399,9 @@ Scope {
       opacity: root.open ? 1 : 0
       focus: true
       Keys.onPressed: event => {
-        if (event.key === Qt.Key_Escape)
+        if (root.secret(event.key))
+          root.showCredits();
+        else if (event.key === Qt.Key_Escape)
           root.close();
         else if (event.key === Qt.Key_Down || event.key === Qt.Key_Tab)
           root.move(1);
@@ -378,7 +436,7 @@ Scope {
 
       Rectangle {
         anchors.centerIn: parent
-        width: 480
+        width: Theme.size(480)
         height: header.height + list.height + 36
         color: Theme.panel
         border.color: Theme.accent
@@ -396,7 +454,7 @@ Scope {
           anchors.left: parent.left
           anchors.right: parent.right
           anchors.margins: 18
-          height: 28
+          height: Theme.size(28)
 
           Label {
             Layout.fillWidth: true
@@ -482,7 +540,7 @@ Scope {
                   visible: !icon.visible
                   text: item.modelData.glyph
                   color: Theme.palette[item.modelData.color] || Theme.accent
-                  font.pixelSize: 18
+                  font.pixelSize: Theme.size(18)
                 }
               }
 
@@ -503,7 +561,7 @@ Scope {
                 visible: item.modelData.page || !!item.modelData.state || item.modelData.shell === "awake"
                 text: item.modelData.page ? "\u{f0142}" : (item.modelData.shell === "awake" ? Session.awake : item.on) ? "\u{f0765}" : "\u{f0766}"
                 color: item.modelData.page ? Theme.subtext : (item.modelData.shell === "awake" ? Session.awake : item.on) ? Theme.accent : Theme.subtext
-                font.pixelSize: 16
+                font.pixelSize: Theme.size(16)
               }
             }
 

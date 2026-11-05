@@ -1,0 +1,535 @@
+# The installer's words. Copy this file to <language>.tsv, such as fr.tsv or pt_BR.tsv, and write each translation after the tab. Keep each %s and %d, in the same order: a translation with others, or in another order, is left out.
+"%s" failed. What now?	
+%s  %s  ·  %d of %d	
+%s can use sudo	
+%s · %d of %d	
+24-hour or 12-hour time in the bar and on the lock screen	
+64-bit PC (amd64)	
+A light theme by day and a dark one at night: by the sun or at set times	
+A new wallpaper every day: drawn in the theme's colours, NASA's picture of the day (needs the internet), or one from your folder	
+A notification when new firmware is ready, or when the disk is nearly full	
+A short chime when you log in, lower for dark themes and higher for light ones; a sound of your own in ~/.config/hyprtrixie/startup.ogg plays instead	
+A short tip under the prompt in every new terminal	
+A theme is applied	
+A tip at the bottom of the welcome screen	
+A wallpaper per workspace	
+A warmer screen: never, always, or at night	
+Accent colour	
+Add Flathub	
+Add MangoHud to Steam	
+Add short names for bat and fd	
+Admin account	
+Again	
+All themes are installed	
+An animated logo on every screen; a key or mouse move ends it; 0 = never	
+Animations	
+Any key closes this	
+Any key closes this.	
+Applications	
+Apply display and input settings	
+Apply the %s theme	
+Apply the bar settings	
+Apps follow the theme, stay Catppuccin whatever the theme is, or keep their own look	
+Apps to install, by category; untick any you don't want	
+Arrows move · Enter picks	
+Arrows move · Enter picks · Esc cancels	
+Arrows or j and k   Move	
+Arrows scroll · Enter or Esc closes	
+Ask what to do, stop the run, or note the failure and carry on	
+At least 8 characters	
+Automatic light and dark	
+Automatic security updates	
+Backports are available	
+Backports has a newer kernel for recent laptops; stable is Debian's own	
+Backups	
+Bar	
+Bar layout	
+Bar position	
+Base packages are installed	
+Battery on the lock screen	
+Bazaar is installed	
+Before you go on: save your BitLocker recovery key somewhere off this computer, and turn off Fast Startup in Windows.	
+Blocks connections from other computers; your own connections still work	
+Boot menu in the theme	
+Boot splash	
+Browsers follow the theme	
+Build the boot image	
+Change wallpaper every (minutes)	
+Checking your password	
+Choose the apps that open images, PDFs, videos and archives	
+Clear the disk	
+Client: the SSH server doesn't start at boot. Leave: keep it as it is	
+Clock	
+Close the new system	
+Code editors are installed	
+Colours, wallpaper and icons for every app; Super+Ctrl+T changes it later	
+Command-line tools	
+Command-line tools are available	
+Compress memory with zram	
+Compressed memory that works as fast swap; 0 turns it off	
+Computer's name	
+Configure snapper	
+Configure the NVIDIA driver	
+Configure the login screen	
+Console colours and font	
+Container ports reach only this computer, or every network	
+Container storage is outside root snapshots	
+Content follows your fingers on the touchpad, like on a phone	
+Copy the system	
+Could not read %s	
+Could not save: %s	
+Could not start the setup: %s	
+Could not write the answers: %s	
+Could not write the settings: %s	
+Create a %s GiB swapfile	
+Ctrl+C              Leave, after asking	
+Daily snapshots to keep	
+Dark from	
+Dark theme	
+Debian 13 (trixie)	
+Debian 13 with Hyprland, set up properly	
+Debian 13 with Hyprland, set up properly.	
+Debian mirror	
+Debian's security fixes install on their own in the background	
+Degrees Celsius and km/h, or Fahrenheit and mph	
+Desktop services are installed	
+Desktop session	
+Detect hardware	
+Developer tools	
+Disk	
+Disk password	
+Disk space used as extra memory when RAM runs out; 0 turns it off	
+Display scale	
+Do not disturb every night, for the hours below	
+Docker command uses	
+Docker publishes ports on	
+Docker works and you are in the docker group	
+Downloads and logging	
+Each workspace shows its own wallpaper from the theme	
+Editors follow the theme	
+Encrypt the rest	
+Enough free disk space	
+Enter               Go on	
+Enter opens this window	
+Erase %s and install Hyprtrixie?	
+Esc                 Go back	
+Every start asks for it first. Without it nothing on the disk can be read, so keep it somewhere safe.	
+Every ticked app is installed	
+Everything on %s is erased.	
+Extras	
+Final checks and report	
+Fingerprint	
+Firefox, LibreWolf, Helium, Chromium, Chrome and Brave take the theme's colours; the Chromium ones then say they're managed by your organization, which is this	
+Firewall	
+Firmware and disk warnings	
+Firmware and non-free components are on	
+Firmware for this machine is installed	
+Flathub is set up	
+Follow theme switches on the boot and login screens	
+For logging in and for sudo	
+For logging in: small letters, digits, - and _	
+For the cameras on newer Intel laptops (IPU6): libcamera, its PipeWire camera for browsers and calls, and hyprtrixie webcam relay for apps that take only a normal webcam; auto sets it up only where that camera is found	
+Format the EFI partition	
+Format the boot partition	
+From Open-Meteo, no account; it sends your time zone's main city there	
+Full width, floating with rounded corners, minimal, or down the left side	
+GTK and KDE apps	
+GTK apps can take the theme's colours	
+GameMode and MangoHud are installed	
+Give the account its own copy of Hyprtrixie	
+Give the computer its own identity	
+Give the editors the theme's colours	
+Glass mode	
+Hand the network over to NetworkManager	
+Hand the rest of the setup to the first start	
+Helium is the default browser	
+Hibernate	
+How full the battery is, in a corner; nothing on a computer without one	
+How it shows on the network: small letters, digits and -	
+How many daily snapshots to keep	
+How many monthly snapshots to keep	
+How many weekly snapshots to keep	
+How readily memory moves to swap; a high value suits zram	
+How the terminal prompt looks: Starship or Powerlevel10k	
+Hyprland 0.55 or newer is installed	
+Hyprland accepts the configuration	
+Hyprland desktop	
+Hyprland is offered as a session	
+Hyprtrixie is installed. Restart, take the USB stick out, and type your disk password.	
+IPU6 webcam	
+Idle locking and suspend are configured	
+Input and display	
+Install	
+Install %s	
+Install Docker	
+Install Flatpak	
+Install GameMode and MangoHud	
+Install Go	
+Install Hyprland from backports	
+Install Hyprtrixie	
+Install Hyprtrixie next to Windows on %s?	
+Install Hyprtrixie with these choices	
+Install JetBrains Mono Nerd Font	
+Install JetBrains Toolbox	
+Install LazyVim plugins	
+Install Neovim	
+Install Podman	
+Install Rust (stable)	
+Install Steam	
+Install Teams from	
+Install VSCodium	
+Install Visual Studio Code	
+Install Zed	
+Install base packages	
+Install command-line tools	
+Install curl for downloads	
+Install desktop services	
+Install distrobox	
+Install firmware for this machine	
+Install grub-btrfs	
+Install kubectl, helm, k9s and kind	
+Install lazydocker	
+Install mise	
+Install mise with %s	
+Install printing and scanning	
+Install pyenv	
+Install session packages	
+Install snapper	
+Install snapper-rollback	
+Install terminal packages	
+Install the %s kernel	
+Install the Bazaar store	
+Install the Hyprland defaults	
+Install the Hyprtrixie login screen	
+Install the NVIDIA driver	
+Install the Walker launcher	
+Install the bar	
+Install the base for GTK themes	
+Install the boot loader	
+Install the colour and QR picker	
+Install the floating terminal	
+Install the login screen	
+Install the package picker	
+Install the restic-backup helper	
+Install the screen reader	
+Install the screen recorder	
+Install the screensaver	
+Install the screenshot command	
+Install the session starter	
+Install the theme follower	
+Install the theme switcher	
+Install the themes	
+Install the tips	
+Install the web app maker	
+Install theme packages	
+Internet connection	
+It takes about ten minutes and needs no internet.	
+Its log	
+Its log is %s	
+JetBrains Mono Nerd Font is installed	
+JetBrains Toolbox is installed	
+Keep Windows	
+Keep container storage out of snapshots	
+Keep the SSH server off	
+Keep the firmware list fresh	
+Keep these choices without installing	
+Kernel	
+Kernel and drivers	
+Keyboard	
+Language toolchains are ready	
+Languages through mise	
+Languages, containers and editors to set up for programming	
+Larger text in the bar, terminals, notifications, the lock screen and apps: large is a quarter bigger, larger half	
+Leave without installing?	
+Let Podman run boxes as you	
+Let the computer hibernate	
+Let you change the brightness	
+Let you manage printers and scanners	
+Light from	
+Light theme	
+Load a configuration file	
+Load configuration	
+Loaded %s	
+Lock after (minutes)	
+Lock the screen when you're away; it turns off 30 s later; 0 = never	
+Login screen	
+Login screen runs on	
+Logs are being written	
+Logs every command, and packs the logs into a tar in the hyprtrixie folder	
+Look after the system quietly	
+Look and feel	
+Make Helium the default browser	
+Make the %s subvolume	
+Make the btrfs filesystem	
+Make the partitions	
+Make your account	
+MangoHud reaches Steam	
+Monthly snapshots to keep	
+Mount the boot partition	
+Mount the new system	
+Mount the snapshots subvolume	
+Move to the theme's next wallpaper every so many minutes; 0 keeps one	
+Move your themes to their new folders	
+NVIDIA driver	
+NVIDIA's own driver is faster; nouveau is open source and slower	
+Name the computer	
+Natural scrolling	
+Neovim 0.11 or newer is installed	
+NetworkManager for everything	
+NetworkManager manages every connection	
+Night light	
+Night light from	
+Night light until	
+No	
+No disk here can take it: each is under 40 GB, read-only, or in use.	
+Nothing changes until you choose Install at the end.	
+Notifications are set up	
+Now and then a tip as a notification, at most once a day	
+Now playing on the lock screen	
+Open the filesystem	
+Open the new system	
+Optional parts, set up only if you tick them: Flatpak with the Bazaar store, Steam with GameMode and MangoHud, printing and scanning, and distrobox	
+Orca reads apps aloud; Super+Alt+R starts or stops it. On Hyprland it can't read the bar, the menu or the launcher, and its own key commands don't work	
+Paint the boot and login screens in the theme's colours	
+Password	
+Pick a disk first	
+Pick a disk with Space or Enter.	
+Podman is installed	
+Point btop at the theme	
+Power and security	
+Power profiles are available	
+Power saver on battery	
+Prepare a place for the swapfile	
+Prepare vendor repositories	
+Presets for apps and tools: minimal, everyday, or developer (everything)	
+Printing and finding printers are on	
+Printing and scanning tools are installed	
+Profile	
+Prompt	
+Put the hyprtrixie command on the PATH	
+Put the laptop to sleep when you're away; 0 = never	
+Quickshell runs	
+Quiet from	
+Quiet hours	
+Quiet until	
+Read the choices from a file	
+Read the new partitions	
+Record what this run uses	
+Remove %s	
+Remove the old themes	
+Repositories and base packages	
+Reset applications and tools to the %s preset?	
+Review	
+Round the corners of the screen, like a phone's	
+Rounded screen corners	
+Running on Debian 13 (trixie)	
+SSH	
+Save configuration	
+Save everything to disk and power off; the swapfile grows to the size of your memory	
+Saved to %s	
+Screen reader	
+Screensaver after (minutes)	
+Search: 	
+Secure Boot is off	
+Security and network	
+Security updates install automatically	
+See-through terminals and panels, with the wallpaper blurred behind them	
+Session packages are installed	
+Set the time zone, keyboard and language	
+Set this computer up with these choices	
+Set up LazyVim	
+Set up automatic security updates	
+Set up engine-switch	
+Set up idle locking and suspend	
+Set up kitty	
+Set up notifications	
+Set up power profiles	
+Set up the %s prompt	
+Set up the IPU6 webcam	
+Set up the boot menu	
+Set up the lock screen	
+Set up the wallpaper	
+Set up tmux	
+Set up your Hyprland config	
+Set up zsh with Oh My Zsh	
+Sharp corners with thin gaps, or soft rounded corners	
+Shell	
+Show a boot splash in the theme's colours	
+Show a tip now and then	
+Show snapshots in the boot menu	
+Shown on the login screen	
+Size of everything on screen; auto picks it from the screen's density	
+Snap also installs snapd, a background service nothing else here uses.	
+Snapper is set up for /	
+Snapshot timers are running	
+Snapshots and rollback	
+Snapshots appear in the boot menu	
+Snapshots before changes, so you can roll back from the boot menu	
+Space               Change the row	
+Space picks it, Enter picks it and goes on	
+Start	
+Start from a clean slate	
+Start into the login screen at boot	
+Start the setup now?	
+Startup sound	
+Steam is installed	
+Stop hibernating	
+Stop the setup?	
+Stopping: what's running has to end first	
+Storage	
+Such as us, de or gb. It changes at once, so the passwords you type next work at every start	
+Summary	
+Suspend after (minutes)	
+Swap and memory	
+Swapfile size (GiB)	
+Swappiness	
+Swappiness is %s	
+Switch to power saver when you unplug, and back when you plug in	
+System	
+System preflight	
+System snapshots	
+Tab, Shift+Tab      Move between rows	
+Take out the live system's parts	
+Take the first snapshot	
+Take your finger out of sudo	
+Tap the touchpad to click instead of pressing it down	
+Tap to click	
+Teams for Linux from its apt repository or from the Snap Store	
+Terminal and shell	
+Testing mode	
+Text size	
+The %s prompt is set up	
+The IPU6 webcam's tools are there	
+The NVIDIA module is built for the newest kernel	
+The SSH server is off	
+The admin account can use sudo	
+The bar at the top or the bottom of the screen	
+The bar is installed	
+The boot menu is in the theme's colours	
+The boot menu, where the snapshots are, in your theme's colours	
+The boot splash is in the theme's colours	
+The colour and QR picker is installed	
+The computer can hibernate	
+The disk password	
+The disk password needs at least 8 characters	
+The firewall is on	
+The firmware list is refreshed	
+The first start finishes the setup before the login screen, which takes a few minutes.	
+The floating terminal is installed	
+The folder of pictures, or a file that lists them one per line, for the wallpaper of the day	
+The hyprtrixie command points at this folder	
+The install stopped at the step that failed, and nothing after it ran.	
+The kernel comes from backports	
+The lock screen is configured	
+The login screen starts at boot	
+The login screen uses the Hyprtrixie theme	
+The logo and the disk password prompt in your theme's colours while it boots	
+The look settings are written	
+The newest kernel is running (or starts after a reboot)	
+The next theme every morning at 6; Super+Ctrl+T still changes it during the day	
+The package picker is installed	
+The quiet system checks are scheduled	
+The same once more	
+The screen reader is installed	
+The screen recorder is installed	
+The screensaver is installed	
+The screenshot command is installed	
+The session starter is installed	
+The setup didn't start: %s (exit %d)	
+The setup is running · Ctrl+C stops it	
+The setup stopped before it could show a summary.	
+The song or video that's playing, under the password field	
+The swapfile is not copy-on-write	
+The swapfile is on	
+The text consoles (Ctrl+Alt+F3) in your theme's colours, with a larger font and the logo above the login	
+The theme for the day	
+The theme for the night	
+The theme's own accent, or another of its colours, for borders and highlights	
+The tips are installed	
+The two disk passwords aren't the same	
+The two passwords aren't the same	
+The wallpaper service is configured	
+The web app maker is installed	
+Theme	
+Theme of the day	
+Theme switches reach the boot screens	
+Theme the boot menu	
+Theme the text consoles	
+Themes	
+There's no time zone %s	
+Time zone	
+Tip notifications	
+Tip notifications are scheduled	
+Tips in new terminals	
+Tips on the welcome screen	
+To keep Windows: %s. In Windows, Disk Management's Shrink Volume on C: makes room; then start this again.	
+Tune swappiness	
+Turn on printing and finding printers on the network	
+Turn on the firewall	
+Turn on the snapshot timers	
+Turn the swapfile off	
+Turn the swapfile on	
+Type to change · Arrows move · Enter goes on · Esc back	
+Type to search · Enter keeps it · Esc clears it	
+Type, then Enter	
+Type, then Enter · Esc cancels	
+Unlock it	
+Unlock the lock screen and approve sudo with a finger; the login screen keeps your password. Add a finger with hyprtrixie fingerprint add	
+Use Debian over HTTPS with backports	
+Use your finger for sudo and the lock screen	
+User name	
+VS Code, VSCodium and Zed switch to the theme's colours with it, unless you picked another theme in them	
+Vendor repositories can be enabled	
+Wait for them to appear	
+Walker and its providers are installed	
+Wallpaper folder	
+Wallpaper of the day	
+Weather in the bar	
+Weather units	
+Weekly snapshots to keep	
+Welcome	
+What mise sets up for every terminal: Node.js LTS, Python, Java 25 (Temurin) and Go	
+What the boot splash shows above the disk password, such as Welcome back; empty keeps the system's own words	
+What the boot splash shows above the disk password, such as Welcome back; empty keeps the system's own words, and the TPM's PIN prompt keeps its own	
+When a step fails	
+When both are installed, which engine answers the docker command	
+When notifications come back	
+When notifications go quiet	
+When the dark theme starts	
+When the light theme starts	
+When the screen goes back to normal	
+When the screen warms up	
+Where Debian packages download from; the default picks a nearby server	
+Where Hyprtrixie goes	
+Wi-Fi and wired connections move to NetworkManager, so the bar manages them	
+Window style	
+Windows and workspaces animate as they open, close and move	
+Windows stays. Hyprtrixie goes in the free space, and the boot menu offers both for five seconds.	
+Words above it	
+Words above the disk password	
+Write fstab and crypttab	
+Write the look settings	
+Write ~/%s	
+X11 is the most reliable for the login screen; Wayland is newer	
+Yes	
+Yes puts Hyprtrixie in the free space next to Windows; no erases the whole disk	
+You	
+You and this computer	
+You can manage printers and scanners	
+Your Hyprland config loads the Hyprtrixie defaults	
+Your account can change the brightness	
+Your name	
+Your password, for sudo	
+curl is installed	
+distrobox and Podman are installed	
+engine-switch points docker at %s	
+kitty, zsh and tmux are installed	
+kubectl, helm, k9s and kind are installed	
+lazydocker is installed	
+restic-backup is in ~/bin	
+snapper-rollback works	
+sudo takes your finger	
+tmux is set up with its plugins	
+zram size (% of memory)	
+zram swap is on	
+zsh is the login shell	

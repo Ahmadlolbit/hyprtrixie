@@ -1,3 +1,7 @@
+local look = require("hyprtrixie.hypr.look")
+
+local bar_height = math.floor(30 * (({ large = 1.25, larger = 1.5 })[look.get("text")] or 1) + 0.5)
+
 hl.window_rule({
   name = "suppress-maximize",
   match = { class = ".*" },
@@ -48,4 +52,13 @@ hl.window_rule({
   float = true,
   center = true,
   size = { "(monitor_w*0.66)", "(monitor_h*0.66)" },
+})
+
+hl.window_rule({
+  name = "dropdown-terminal",
+  match = { class = "^hyprtrixie-dropdown$" },
+  float = true,
+  size = "monitor_w monitor_h*0.45",
+  move = "0 " .. bar_height,
+  workspace = "special:dropdown silent",
 })

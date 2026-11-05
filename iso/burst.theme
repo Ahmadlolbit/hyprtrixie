@@ -1,0 +1,5 @@
++ image {
+        top = 10%
+        left = 50%-64
+        file = "burst.png"
+}

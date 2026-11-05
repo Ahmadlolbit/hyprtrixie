@@ -56,7 +56,7 @@ Label {
     owner: root
 
     Label {
-      Layout.preferredWidth: 240
+      Layout.preferredWidth: Theme.size(240)
       text: "Temperatures"
       font.bold: true
     }

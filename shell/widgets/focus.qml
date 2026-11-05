@@ -26,7 +26,7 @@ Label {
     owner: root
 
     Label {
-      Layout.preferredWidth: 220
+      Layout.preferredWidth: Theme.size(220)
       text: root.resting ? "Break" : "Focus"
       font.bold: true
     }

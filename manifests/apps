@@ -55,4 +55,5 @@ baobab system offered debian baobab Disk usage
 camera system offered debian gnome-snapshot Camera
 scanner system offered debian simple-scan Scanner
 remmina system offered debian remmina Remmina (remote desktop)
+chezmoi system offered release:chezmoi chezmoi chezmoi (dotfiles)
 lutris games offered debian lutris Lutris

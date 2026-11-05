@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+rm -f /etc/apt/apt.conf.d/docker-clean
+sed -i 's|http://deb.debian.org|https://deb.debian.org|' /etc/apt/sources.list.d/debian.sources
+apt-get -o Acquire::https::CAInfo=/run/host-ca.pem update
+apt-get -o Acquire::https::CAInfo=/run/host-ca.pem install -y --no-install-recommends golang-go git ca-certificates
+git config --global --add safe.directory /src
+work=/work
+pkg="$work/hyprtrixie"
+lib="$pkg/usr/lib/hyprtrixie"
+version="${TAG#v}"
+git clone --quiet --no-checkout /src "$work/src"
+git -C "$work/src" checkout --quiet --detach "refs/tags/$TAG"
+mkdir -p "$pkg/DEBIAN" "$pkg/usr/bin" "$lib/bin" "$pkg/usr/share/doc/hyprtrixie"
+(cd "$work/src" && CGO_ENABLED=0 go build -buildvcs=false -trimpath -ldflags='-s -w' -o "$lib/bin/" ./cmd/...)
+for tool in "$work/src"/cmd/hyprtrixie-core/tools/*/; do
+  tool="${tool%/}"
+  ln -s hyprtrixie-core "$lib/bin/${tool##*/}"
+done
+git -C "$work/src" bundle create --quiet "$lib/hyprtrixie.bundle" "refs/tags/$TAG"
+printf '%s\n' "$TAG" >"$lib/tag"
+ln -s /opt/hyprtrixie/hyprtrixie "$pkg/usr/bin/hyprtrixie"
+cat "$work/src/LICENSE" "$work/src/THIRD-PARTY-LICENSES" >"$pkg/usr/share/doc/hyprtrixie/copyright"
+cp "$work/src/package/postinst" "$work/src/package/postrm" "$pkg/DEBIAN/"
+if [[ -f $work/src/package/hyprtrixie.pgp ]]; then
+  install -D -m 644 "$work/src/package/hyprtrixie.pgp" "$pkg/usr/share/keyrings/hyprtrixie.pgp"
+  install -D -m 644 "$work/src/package/hyprtrixie.sources" "$pkg/etc/apt/sources.list.d/hyprtrixie.sources"
+  printf '%s\n' /etc/apt/sources.list.d/hyprtrixie.sources >"$pkg/DEBIAN/conffiles"
+fi
+size="$(du -sk --exclude=DEBIAN "$pkg" | cut -f1)"
+sed -e "s|@VERSION@|$version|" -e "s|@SIZE@|$size|" "$work/src/package/control" >"$pkg/DEBIAN/control"
+dpkg-deb --root-owner-group --build "$pkg" "/out/hyprtrixie_${version}_amd64.deb"
+for app in "$work/src"/package/apps/*/; do
+  app="${app%/}"
+  name="${app##*/}"
+  dir="$work/$name"
+  mkdir -p "$dir/DEBIAN" "$dir/usr/bin" "$dir/usr/share/doc/$name"
+  while IFS= read -r program; do
+    [[ -z $program ]] || cp "$lib/bin/$program" "$dir/usr/bin/"
+  done <"$app/programs"
+  cp "$pkg/usr/share/doc/hyprtrixie/copyright" "$dir/usr/share/doc/$name/"
+  size="$(du -sk --exclude=DEBIAN "$dir" | cut -f1)"
+  sed -e "s|@VERSION@|$version|" -e "s|@SIZE@|$size|" "$app/control" >"$dir/DEBIAN/control"
+  dpkg-deb --root-owner-group --build "$dir" "/out/${name}_${version}_amd64.deb"
+done

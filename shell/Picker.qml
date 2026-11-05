@@ -30,7 +30,7 @@ Scope {
     if (kind === "themes") {
       themeName.reload();
       selected = themeName.text().trim();
-      list.command = ["omarchy-theme-set", "--previews"];
+      list.command = ["hyprtrixie-theme-set", "--previews"];
       list.running = true;
     } else {
       background.running = true;
@@ -51,7 +51,7 @@ Scope {
     if (!item || busy)
       return;
     busy = true;
-    applying.command = mode === "themes" ? ["omarchy-theme-set", item.value] : ["hyprtrixie-background", item.value];
+    applying.command = mode === "themes" ? ["hyprtrixie-theme-set", item.value] : ["hyprtrixie-background", item.value];
     applying.running = true;
   }
 
@@ -76,7 +76,7 @@ Scope {
   FileView {
     id: themeName
 
-    path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/omarchy/current/theme.name"
+    path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/hyprtrixie/current/theme.name"
     blockLoading: true
     printErrors: false
   }
@@ -278,7 +278,7 @@ Scope {
         anchors.topMargin: 24
         anchors.horizontalCenter: parent.horizontalCenter
         text: root.shown.length ? (root.busy ? "Applying " : "") + root.shown[root.index].label : root.items.length ? "Nothing matches " + root.filter : ""
-        font.pixelSize: 22
+        font.pixelSize: Theme.size(22)
         font.bold: true
       }
 

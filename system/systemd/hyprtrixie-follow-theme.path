@@ -2,7 +2,7 @@
 Description=Follow theme switches on the boot and login screens
 
 [Path]
-PathModified={{ HOME }}/.local/state/omarchy/current
+PathModified={{ HOME }}/.local/state/hyprtrixie/current
 
 [Install]
 WantedBy=multi-user.target

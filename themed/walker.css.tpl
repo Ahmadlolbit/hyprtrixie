@@ -57,8 +57,8 @@ row:selected .item-box {
 }
 
 .item-subtext {
-  font-size: 12px;
-  opacity: 0.6;
+  font-size: {{ size 12 }}px;
+  color: {{ subtext }};
 }
 
 .item-quick-activation {

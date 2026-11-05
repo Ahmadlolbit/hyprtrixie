@@ -1,0 +1,71 @@
+package cleanup
+
+import (
+	"os"
+	"os/signal"
+	"syscall"
+)
+
+func catch(channel chan<- os.Signal, watched ...os.Signal) {
+	for _, one := range watched {
+		if !signal.Ignored(one) {
+			signal.Notify(channel, one)
+		}
+	}
+}
+
+func Notify(channel chan<- os.Signal) {
+	catch(channel, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+}
+
+func SurviveBrokenPipes() {
+	signal.Notify(make(chan os.Signal, 1), syscall.SIGPIPE)
+}
+
+func NotifyInterrupt(channel chan<- os.Signal) {
+	catch(channel, syscall.SIGINT)
+}
+
+func IgnoreQuit() func() {
+	ignored := make(chan os.Signal, 1)
+	catch(ignored, syscall.SIGQUIT)
+	return func() { signal.Stop(ignored) }
+}
+
+func OnSignal(action func()) func() {
+	received := make(chan os.Signal, 1)
+	Notify(received)
+	go watch(received, action)
+	return func() {
+		signal.Stop(received)
+		close(received)
+	}
+}
+
+func watch(received chan os.Signal, action func()) {
+	if caught, ok := <-received; ok {
+		action()
+		signal.Stop(received)
+		Raise(caught)
+	}
+}
+
+func OwnGroup() {
+	if _, err := syscall.Setsid(); err == nil {
+		return
+	}
+	if tty, err := os.Open("/dev/tty"); err == nil {
+		syscall.Syscall(syscall.SYS_IOCTL, tty.Fd(), syscall.TIOCNOTTY, 0)
+		tty.Close()
+	}
+}
+
+func StopGroup() {
+	syscall.Kill(0, syscall.SIGINT)
+}
+
+func Raise(caught os.Signal) {
+	if number, ok := caught.(syscall.Signal); ok {
+		syscall.Tgkill(syscall.Getpid(), syscall.Gettid(), number)
+	}
+}

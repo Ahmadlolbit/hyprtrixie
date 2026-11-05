@@ -1,0 +1,149 @@
+package setup
+
+import (
+	"errors"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
+
+	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/step"
+)
+
+const (
+	programMode = 0o755
+	plainMode   = 0o644
+	blanks      = " \t\v\f\r"
+)
+
+type followUp struct {
+	name string
+	owed bool
+}
+
+func (follow *followUp) marker() string {
+	return filepath.Join(env.StateDir(), "owed", follow.name)
+}
+
+func (follow *followUp) need(changed bool) {
+	if !changed {
+		return
+	}
+	follow.owed = true
+	if os.MkdirAll(filepath.Dir(follow.marker()), programMode) == nil {
+		atomic.Install(follow.marker(), nil, plainMode)
+	}
+}
+
+func (follow *followUp) due() bool {
+	return follow.owed || fsutil.Exists(follow.marker())
+}
+
+func (follow *followUp) do(work func() error) error {
+	if !follow.due() {
+		return nil
+	}
+	if err := work(); err != nil {
+		return err
+	}
+	follow.owed = false
+	if !fsutil.Exists(follow.marker()) {
+		return nil
+	}
+	return removeFiles(follow.marker())
+}
+
+func packages(lists ...string) step.Work {
+	return func(log *runlog.Log) error { return apt.InstallLists(log, lists...) }
+}
+
+func commands(names ...string) step.Work {
+	return func(*runlog.Log) error { return apt.Commands(names...) }
+}
+
+func lineHasPrefix(text, prefix string) bool {
+	return slices.ContainsFunc(strings.Split(text, "\n"), func(line string) bool { return strings.HasPrefix(line, prefix) })
+}
+
+func fileLineHasPrefix(path, prefix string) bool {
+	text, err := fsutil.Text(path)
+	return err == nil && lineHasPrefix(text, prefix)
+}
+
+func mentions(path, text string) bool {
+	found, err := fsutil.Text(path)
+	return err == nil && strings.Contains(found, text)
+}
+
+func quietly(what string, name string, args ...string) error {
+	if run.Quiet(run.Minute, name, args...) != 0 {
+		return errors.New(what)
+	}
+	return nil
+}
+
+func expect(ok bool, what string) error {
+	if !ok {
+		return errors.New(what)
+	}
+	return nil
+}
+
+func holds(ok bool) error {
+	if !ok {
+		return run.Reported("")
+	}
+	return nil
+}
+
+func fileThere(path string) error {
+	return expect(fsutil.IsFile(path), path+" is missing")
+}
+
+func filesCheck(path string) step.Work {
+	return func(*runlog.Log) error { return fileThere(path) }
+}
+
+func keepOld(log *runlog.Log, path string) error {
+	if fsutil.Exists(path + ".hyprtrixie-old") {
+		return nil
+	}
+	return run.Logged(log, "cp", "-a", path, path+".hyprtrixie-old")
+}
+
+func unpackedRelease(log *runlog.Log, name string) (string, error) {
+	file, err := fetch.FetchRelease(log, name)
+	if err != nil {
+		return "", err
+	}
+	dir, err := os.MkdirTemp("", "hyprtrixie")
+	if err != nil {
+		return "", err
+	}
+	if err := run.Logged(log, "tar", "-xzf", file, "-C", dir); err != nil {
+		os.RemoveAll(dir)
+		return "", err
+	}
+	return dir, nil
+}
+
+func removeFiles(paths ...string) error {
+	for _, path := range paths {
+		if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+	}
+	return nil
+}
+
+func give(log *runlog.Log, person, path string) error {
+	return run.Logged(log, "chown", "-R", person+":", path)
+}

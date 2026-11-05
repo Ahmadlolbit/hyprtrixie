@@ -20,10 +20,13 @@ bind("SUPER + Space", "Launcher", "walker")
 bind("SUPER + ALT + Space", "Menu", "qs -p /usr/share/hyprtrixie/shell ipc call menu toggle root")
 bind("SUPER + Escape", "System menu", "qs -p /usr/share/hyprtrixie/shell ipc call menu toggle system")
 bind("SUPER + CTRL + T", "Theme", "qs -p /usr/share/hyprtrixie/shell ipc call picker themes")
+bind("SUPER + CTRL + B", "Next background", "hyprtrixie-background next")
 bind("SUPER + K", "Key bindings", "qs -p /usr/share/hyprtrixie/shell ipc call keys toggle")
+bind("SUPER + ALT + R", "Screen reader on or off", "hyprtrixie-look reader toggle")
 bind("Print", "Screenshot of a region", "hyprtrixie-screenshot region")
 bind("SHIFT + Print", "Screenshot of the window", "hyprtrixie-screenshot window")
 bind("CTRL + Print", "Screenshot of the screen", "hyprtrixie-screenshot screen")
+bind("SUPER + Print", "Record a region, or stop", "hyprtrixie-record toggle")
 
 local arrows = {
   { "LEFT", "left", -50, 0 },
@@ -45,6 +48,7 @@ for workspace = 1, 10 do
 end
 
 bind("SUPER + S", "Scratchpad", hl.dsp.workspace.toggle_special("scratchpad"))
+bind("SUPER + grave", "Drop-down terminal", [[sh -c 'pgrep -fx "kitty --class hyprtrixie-dropdown" >/dev/null || setsid -f kitty --class hyprtrixie-dropdown; exec hyprctl dispatch "hl.dsp.workspace.toggle_special(\"dropdown\")"']])
 bind("SUPER + ALT + S", "Move window to scratchpad", hl.dsp.window.move({ workspace = "special:scratchpad", follow = false }))
 bind("SUPER + TAB", "Next workspace", hl.dsp.focus({ workspace = "e+1" }))
 bind("SUPER + SHIFT + TAB", "Previous workspace", hl.dsp.focus({ workspace = "e-1" }))

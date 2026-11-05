@@ -1,4 +1,5 @@
 font_family {{ font }}
+{{ larger }}font_size {{ size 11 }}
 background_opacity {{ opacity }}
 
 foreground {{ foreground }}

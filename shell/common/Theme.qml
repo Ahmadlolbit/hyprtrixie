@@ -12,7 +12,7 @@ Singleton {
   readonly property color surface: palette.lighter_background || "#313244"
   readonly property color overlay: palette.selection || "#45475a"
   readonly property color text: palette.foreground || "#cdd6f4"
-  readonly property color subtext: Qt.tint(text, Qt.alpha(base, 0.3))
+  readonly property color subtext: palette.subtext || Qt.tint(text, Qt.alpha(base, 0.3))
   readonly property color accent: palette.accent || "#89b4fa"
   readonly property color good: palette.green || "#a6e3a1"
   readonly property color warning: palette.yellow || "#f9e2af"
@@ -23,13 +23,19 @@ Singleton {
   readonly property color panel: Qt.alpha(base, glass ? 0.8 : 1)
   readonly property var looks: Object.assign({}, lines(systemLook.text()), lines(userLook.text()))
   readonly property bool corners: looks.corners === "yes"
+  readonly property bool zen: looks.zen === "yes"
   readonly property string video: looks.video && looks.video !== "off" ? looks.video : ""
   readonly property bool videoOnBattery: looks.video_battery === "play"
-  readonly property int fontSize: 13
-  readonly property int barHeight: 30
-  readonly property int barWidth: 60
+  readonly property real textScale: looks.text === "larger" ? 1.5 : looks.text === "large" ? 1.25 : 1
+  readonly property int fontSize: size(13)
+  readonly property int barHeight: size(30)
+  readonly property int barWidth: size(60)
   readonly property int spacing: 14
-  readonly property int radius: Config.style === "soft" ? 10 : 0
+  readonly property int radius: (Config.style || looks.style) === "soft" ? 10 : 0
+
+  function size(pixels) {
+    return Math.round(pixels * textScale);
+  }
 
   function parse(text) {
     const colors = {};
@@ -54,7 +60,7 @@ Singleton {
   FileView {
     id: file
 
-    path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/omarchy/current/theme/colors.toml"
+    path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/hyprtrixie/current/theme/colors.toml"
     watchChanges: true
     printErrors: false
     onFileChanged: reload()
@@ -91,7 +97,7 @@ Singleton {
   FileView {
     id: lookFile
 
-    path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/omarchy/current/theme/look.toml"
+    path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/hyprtrixie/current/theme/look.toml"
     watchChanges: true
     printErrors: false
     onFileChanged: reload()

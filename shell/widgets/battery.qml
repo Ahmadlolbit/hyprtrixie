@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.UPower
 import qs.common
 
@@ -9,6 +10,7 @@ Label {
 
   property var bar
   readonly property var device: UPower.displayDevice
+  property string chargeLimit: ""
   readonly property bool shown: device !== null && device.isLaptopBattery && device.isPresent
   readonly property real level: shown ? (device.percentage > 1 ? device.percentage / 100 : device.percentage) : 0
   readonly property bool charging: shown && (device.state === UPowerDeviceState.Charging || device.state === UPowerDeviceState.FullyCharged)
@@ -75,13 +77,13 @@ Label {
     owner: root
 
     RowLayout {
-      Layout.preferredWidth: 260
+      Layout.preferredWidth: Theme.size(260)
       spacing: 12
 
       Label {
         text: root.icon()
         color: root.color
-        font.pixelSize: 26
+        font.pixelSize: Theme.size(26)
       }
 
       ColumnLayout {
@@ -131,6 +133,43 @@ Label {
         selected: PowerProfiles.profile === modelData.profile
         onClicked: Quickshell.execDetached(["powerprofilesctl", "set", modelData.value])
       }
+    }
+
+    Label {
+      visible: root.chargeLimit !== ""
+      text: "Stop charging at"
+      font.bold: true
+    }
+
+    Repeater {
+      model: root.chargeLimit !== "" ? ["80", "90", "100"] : []
+
+      Choice {
+        required property string modelData
+
+        Layout.fillWidth: true
+        label: modelData + "%"
+        selected: root.chargeLimit === modelData
+        onClicked: Quickshell.execDetached(["hyprtrixie-terminal", "--wait", "sudo", "hyprtrixie", "battery-limit", modelData])
+      }
+    }
+  }
+
+  Process {
+    id: limit
+
+    command: ["hyprtrixie", "battery-limit"]
+    stdout: StdioCollector {
+      onStreamFinished: root.chargeLimit = text.trim()
+    }
+  }
+
+  Connections {
+    target: popup
+
+    function onVisibleChanged() {
+      if (popup.visible)
+        limit.running = true;
     }
   }
 }
