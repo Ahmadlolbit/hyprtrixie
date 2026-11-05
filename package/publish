@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+here="$(cd "$(dirname "$0")" && pwd)"
+root="$(dirname "$here")"
+debs="${1:-}"
+apt_repo="${2:-}"
+key="${HYPRTRIXIE_APT_KEY:-}"
+[[ -d $debs && -d $apt_repo/.git && -n $key ]] || {
+  echo "usage: HYPRTRIXIE_APT_KEY=KEY package/publish FOLDER_WITH_DEBS HYPRTRIXIE_APT_CLONE" >&2
+  echo "KEY is your OpenPGP key's fingerprint; the clone is your clone of hyprtrixie-apt" >&2
+  exit 1
+}
+ca=""
+for bundle in /etc/ssl/certs/ca-certificates.crt /etc/ssl/cert.pem /etc/pki/tls/certs/ca-bundle.crt; do
+  if [[ -f $bundle ]]; then
+    ca="$bundle"
+    break
+  fi
+done
+[[ -n $ca ]] || {
+  echo "no certificate bundle on this machine for the HTTPS download" >&2
+  exit 1
+}
+command -v gpg >/dev/null || {
+  echo "signing needs gpg on this machine" >&2
+  exit 1
+}
+shopt -s nullglob
+found=("$debs"/*.deb)
+((${#found[@]})) || {
+  echo "no .deb files in $debs" >&2
+  exit 1
+}
+for deb in "${found[@]}"; do
+  name="${deb##*/}"
+  mkdir -p "$apt_repo/pool/main/${name:0:1}/${name%%_*}"
+  cp "$deb" "$apt_repo/pool/main/${name:0:1}/${name%%_*}/"
+done
+rm -f "$apt_repo/dists/trixie/InRelease" "$apt_repo/dists/trixie/Release.gpg"
+docker run --rm --platform linux/amd64 -v "$apt_repo:/repo" -v "$root/package/archive.conf:/archive.conf:ro" -v "$ca:/run/host-ca.pem:ro" \
+  -v "$root/package/index:/index:ro" debian:trixie bash /index
+gpg --local-user "$key" --clearsign -o "$apt_repo/dists/trixie/InRelease" "$apt_repo/dists/trixie/Release"
+gpg --local-user "$key" --armor --detach-sign -o "$apt_repo/dists/trixie/Release.gpg" "$apt_repo/dists/trixie/Release"
+gpg --export "$key" >"$apt_repo/hyprtrixie.pgp"
+: >"$apt_repo/.nojekyll"
+git -C "$apt_repo" add -A pool dists hyprtrixie.pgp .nojekyll
+git -C "$apt_repo" commit -q -m "Publish $(printf '%s ' "${found[@]##*/}")"
+git -C "$apt_repo" push -q
+echo "published: ${found[*]##*/}"
