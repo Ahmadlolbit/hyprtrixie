@@ -82,7 +82,12 @@ func preflightSecureBoot(log *runlog.Log) error {
 }
 
 func preflightNetwork(log *runlog.Log) error {
-	return run.Logged(log, "curl", "-fsS", "--max-time", "20", "-o", "/dev/null", "https://deb.debian.org/debian/dists/trixie/InRelease")
+	err := run.Logged(log, "curl", "-fsS", "--max-time", "20", "-o", "/dev/null", "https://deb.debian.org/debian/dists/trixie/InRelease")
+	if err != nil && env.Or("HYPRTRIXIE_FIRST_START", "") != "" {
+		fmt.Fprintln(log, "No internet yet: the first start carries on with what the install put on the disk")
+		return nil
+	}
+	return err
 }
 
 func freeSpace() string {

@@ -146,7 +146,7 @@ func (context *Context) tmuxSetup(log *runlog.Log) error {
 	}
 	for _, plugin := range []string{"tpm", "tmux-resurrect", "tmux-continuum"} {
 		dir := context.Person.Path(".config/tmux/plugins/" + plugin)
-		if err := fetch.Git(log, plugin, dir); err != nil {
+		if err := fetch.GitCopy(log, plugin, dir); err != nil {
 			return err
 		}
 		if err := give(log, context.Person.Name, dir); err != nil {
