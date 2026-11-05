@@ -282,7 +282,9 @@ func (state *system) installRow(flow *wizard) row {
 		if state.answers.Beside {
 			question = "Install Hyprtrixie next to Windows on " + disk.Name() + "?"
 		}
-		return flow.open(confirmation(question, flow.install.begin))
+		box := confirmation(question, flow.install.begin)
+		box.cursor = 1
+		return flow.open(box)
 	}}
 }
 

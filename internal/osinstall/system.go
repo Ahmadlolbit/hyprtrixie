@@ -163,13 +163,13 @@ func (work *install) bootLoader(log *runlog.Log) error {
 	return chroot(log, "update-grub")
 }
 
-func clone() string {
+func Clone() string {
 	return env.Or("HYPRTRIXIE_ROOT", "/opt/hyprtrixie")
 }
 
 func (work *install) firstBoot(log *runlog.Log) error {
 	home := filepath.Join("/home", work.answers.User, "hyprtrixie")
-	if err := run.Logged(log, "mv", inTarget(clone()), inTarget(home)); err != nil {
+	if err := run.Logged(log, "mv", inTarget(Clone()), inTarget(home)); err != nil {
 		return err
 	}
 	if err := chroot(log, "chown", "-R", work.answers.User+":"+work.answers.User, home); err != nil {
