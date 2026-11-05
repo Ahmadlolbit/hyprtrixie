@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+sed -i 's|http://deb.debian.org|https://deb.debian.org|' /etc/apt/sources.list.d/debian.sources
+apt-get -o Acquire::https::CAInfo=/run/host-ca.pem update -q
+apt-get -o Acquire::https::CAInfo=/run/host-ca.pem install -y -q --no-install-recommends apt-utils >/dev/null
+cd /repo
+mkdir -p dists/trixie/main/binary-amd64
+apt-ftparchive packages pool >dists/trixie/main/binary-amd64/Packages
+gzip -9kf dists/trixie/main/binary-amd64/Packages
+apt-ftparchive -c /archive.conf release dists/trixie >/tmp/Release
+mv /tmp/Release dists/trixie/Release
