@@ -45,8 +45,14 @@ func moduleTitle(id string) string {
 func planUndo(id string) undoPlan {
 	record := ledger.Load(id)
 	elsewhere := ledger.WantedElsewhere(id)
+	shared := ledger.Elsewhere(id, ledger.File)
 	installed := apt.Installed()
-	plan := undoPlan{id: id, services: record.Values(ledger.Service), files: record.Values(ledger.File)}
+	plan := undoPlan{id: id, services: record.Values(ledger.Service)}
+	for _, path := range record.Values(ledger.File) {
+		if !shared[path] {
+			plan.files = append(plan.files, path)
+		}
+	}
 	for _, name := range record.Values(ledger.Package) {
 		if installed[name] && !elsewhere[name] {
 			plan.packages = append(plan.packages, name)
@@ -80,7 +86,7 @@ func named(noun string, names []string) string {
 func (plan undoPlan) describe() string {
 	text := fmt.Sprintf("Undoing module %s, %s, takes back:\n", plan.id, moduleTitle(plan.id))
 	text += named("packages", plan.packages) + named("services", plan.services) + named("files", plan.files) + named("unpacked", plan.made)
-	return text + "Packages another module asked for stay, and so do files you've changed since. apt also removes\n" +
+	return text + "Packages and files another module also uses stay, and so do files you've changed since. apt also removes\n" +
 		"other packages nothing needs any more, as apt autoremove does.\n"
 }
 

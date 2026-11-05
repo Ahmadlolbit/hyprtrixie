@@ -265,7 +265,7 @@ func (context *Context) rollbackInstall(*runlog.Log) error {
 	if err := removeFiles(rollbackTool); err != nil {
 		return err
 	}
-	if err := context.Deploy.Program(filepath.Join(env.ToolsDir(), "snapper-rollback"), rollbackTool); err != nil {
+	if err := context.Deploy.ToolAt("snapper-rollback", rollbackTool); err != nil {
 		return err
 	}
 	if err := context.Deploy.File("system/snapper-rollback.conf", "/etc/snapper-rollback.conf", "SUBVOL="+btrfs.RootSubvolume(), "DEVICE="+btrfs.RootDevice()); err != nil {

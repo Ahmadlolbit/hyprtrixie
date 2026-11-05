@@ -102,18 +102,22 @@ func End(module string, before, after map[string]bool) error {
 }
 
 func WantedElsewhere(module string) map[string]bool {
-	wanted := map[string]bool{}
+	return Elsewhere(module, Wants)
+}
+
+func Elsewhere(module, kind string) map[string]bool {
+	found := map[string]bool{}
 	files, _ := filepath.Glob(filepath.Join(Folder(), "*.record"))
 	for _, file := range files {
 		other := strings.TrimSuffix(filepath.Base(file), ".record")
 		if other == module {
 			continue
 		}
-		for _, name := range Load(other).Values(Wants) {
-			wanted[name] = true
+		for _, value := range Load(other).Values(kind) {
+			found[value] = true
 		}
 	}
-	return wanted
+	return found
 }
 
 func Drop(module string) error {

@@ -41,6 +41,11 @@ build() {
   fi
   printf 'Building the Hyprtrixie tools\n' >&2
   (cd "$root" && CGO_ENABLED=0 go build -buildvcs=false -trimpath -ldflags='-s -w' -o "$tools/" ./cmd/...)
+  local tool
+  for tool in "$root"/cmd/hyprtrixie-core/tools/*/; do
+    tool="${tool%/}"
+    ln -sfn hyprtrixie-core "$tools/${tool##*/}"
+  done
 }
 
 fresh() {
@@ -60,6 +65,7 @@ case "${1:-} ${2:-}" in
       exit 1
     fi
     build
+    unset HYPRTRIXIE_ENGINE
     exec "$tools/hyprtrixie"
     ;;
   install\ *)
