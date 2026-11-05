@@ -1,0 +1,47 @@
+#!/bin/sh
+set -e
+
+root=/opt/hyprtrixie
+lib=/usr/lib/hyprtrixie
+tag="$(cat "$lib/tag")"
+
+at_tag() {
+  [ "$(git -C "$root" rev-parse HEAD)" = "$(git -C "$root" rev-parse "$tag^{commit}")" ] && [ -z "$(git -C "$root" status --porcelain)" ]
+}
+
+forward() {
+  git -C "$root" fetch --quiet "$lib/hyprtrixie.bundle" "refs/tags/$tag:refs/tags/$tag"
+  if git -C "$root" merge-base --is-ancestor "$tag" HEAD; then
+    return 0
+  fi
+  if [ -n "$(git -C "$root" status --porcelain)" ]; then
+    echo "hyprtrixie: $root has changes of its own, so it stays where it is" >&2
+  elif git -C "$root" merge-base --is-ancestor HEAD "$tag"; then
+    git -C "$root" merge --quiet --ff-only "$tag"
+  else
+    echo "hyprtrixie: $root has commits that $tag doesn't, so it stays where it is" >&2
+  fi
+}
+
+[ "$1" = configure ] || exit 0
+if [ ! -e "$root" ]; then
+  rm -rf "$root.part"
+  git -c init.defaultBranch=release clone --quiet --no-checkout "$lib/hyprtrixie.bundle" "$root.part"
+  git -C "$root.part" checkout --quiet --detach "refs/tags/$tag"
+  git -C "$root.part" remote set-url origin https://github.com/Ahmadlolbit/hyprtrixie.git
+  mv "$root.part" "$root"
+elif [ -d "$root/.git" ]; then
+  forward
+else
+  echo "hyprtrixie: $root isn't a git clone, so it's left alone" >&2
+  exit 0
+fi
+if at_tag; then
+  mkdir -p "$root/build/bin"
+  for program in "$lib/bin"/*; do
+    name="${program##*/}"
+    cp -a "$program" "$root/build/bin/.$name.new"
+    mv -f "$root/build/bin/.$name.new" "$root/build/bin/$name"
+  done
+  touch "$root/build/bin/hyprtrixie-core"
+fi

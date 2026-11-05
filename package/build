@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+here="$(cd "$(dirname "$0")" && pwd)"
+root="$(dirname "$here")"
+tag="${1:-}"
+out="${2:-$root/build/package}"
+[[ -n $tag ]] || {
+  echo "usage: package/build TAG [FOLDER]" >&2
+  exit 1
+}
+git -C "$root" rev-parse -q --verify "refs/tags/$tag" >/dev/null || {
+  echo "there's no tag $tag in $root" >&2
+  exit 1
+}
+ca=""
+for bundle in /etc/ssl/certs/ca-certificates.crt /etc/ssl/cert.pem /etc/pki/tls/certs/ca-bundle.crt; do
+  if [[ -f $bundle ]]; then
+    ca="$bundle"
+    break
+  fi
+done
+[[ -n $ca ]] || {
+  echo "no certificate bundle on this machine for the build's HTTPS downloads" >&2
+  exit 1
+}
+mkdir -p "$out"
+docker run --rm --platform linux/amd64 -e TAG="$tag" \
+  -v "$root:/src:ro" -v "$out:/out" -v "$ca:/run/host-ca.pem:ro" -v hyprtrixie-package-cache:/var/cache/apt/archives \
+  debian:trixie bash /src/package/inside
+ls -l "$out"

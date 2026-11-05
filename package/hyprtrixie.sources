@@ -1,0 +1,5 @@
+Types: deb
+URIs: https://ahmadlolbit.github.io/hyprtrixie-apt
+Suites: trixie
+Components: main
+Signed-By: /usr/share/keyrings/hyprtrixie.pgp
