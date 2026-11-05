@@ -5,6 +5,10 @@ root="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 tools="${HYPRTRIXIE_TOOLS_DIR:-$root/build/bin}"
 core="${HYPRTRIXIE_CORE:-/usr/local/bin/hyprtrixie-core}"
 export HYPRTRIXIE_ROOT="$root"
+if [[ ! -O $root ]]; then
+  count="${GIT_CONFIG_COUNT:-0}"
+  export "GIT_CONFIG_KEY_$count=safe.directory" "GIT_CONFIG_VALUE_$count=$root" GIT_CONFIG_COUNT=$((count + 1))
+fi
 
 as_root() {
   if ((EUID == 0)); then

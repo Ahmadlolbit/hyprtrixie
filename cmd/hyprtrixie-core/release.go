@@ -7,13 +7,17 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"syscall"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
-const releaseSigners = "manifests/release-signers"
+const (
+	releaseSigners = "manifests/release-signers"
+	writeAccess    = 2
+)
 
 var errNoReleaseKey = errors.New("no release key")
 
@@ -65,7 +69,10 @@ func releaseTarget() (string, string, error) {
 	if apt.Commands("ssh-keygen") != nil {
 		return "", "", errors.New("checking a release's signature needs ssh-keygen: sudo apt install openssh-client")
 	}
-	if run.Status("git", "-C", root(), "fetch", "--tags", "origin") != 0 {
+	if gitWrite("fetch", "--tags", "origin") != 0 {
+		if !writable() {
+			return "", "", errors.New("git fetch failed: " + root() + " is root's, so an account that can use sudo has to run hyprtrixie update, or there's no network")
+		}
 		return "", "", errors.New("git fetch failed: no network, the clone has no origin, or a release tag was moved")
 	}
 	tag, skipped := newestSigned(signers)
@@ -88,6 +95,18 @@ func afterUpdate(from, to string) int {
 	return run.Report(run.Exec("sudo", script(), "install", "--changes", filepath.Join(dir, "changes.txt")))
 }
 
+func writable() bool {
+	return syscall.Access(filepath.Join(root(), ".git"), writeAccess) == nil
+}
+
+func gitWrite(args ...string) int {
+	command := append([]string{"git", "-C", root()}, args...)
+	if !writable() {
+		return run.Status("sudo", command...)
+	}
+	return run.Status(command[0], command[1:]...)
+}
+
 func updateHyprtrixie() int {
 	fmt.Printf("Updating %s\n", root())
 	tag, target, err := releaseTarget()
@@ -101,7 +120,7 @@ func updateHyprtrixie() int {
 		return say("Hyprtrixie is up to date (" + tag + ").\n")
 	}
 	from := git("rev-parse", "HEAD")
-	if run.Status("git", "-C", root(), "merge", "--ff-only", target) != 0 {
+	if gitWrite("merge", "--ff-only", target) != 0 {
 		return fail("moving to %s failed: the folder has local changes, or its branch has gone its own way", tag)
 	}
 	return afterUpdate(from, git("rev-parse", "HEAD"))
