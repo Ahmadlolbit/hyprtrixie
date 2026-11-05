@@ -325,5 +325,8 @@ func (view *page) keys() string {
 	if view.search != nil {
 		return "Type to search · Enter keeps it · Esc clears it"
 	}
+	if view.typing() {
+		return "Type to change · Arrows move · Enter goes on · Esc back"
+	}
 	return "Arrows move · Space changes · Enter goes on · Esc back · / search · ? keys"
 }
