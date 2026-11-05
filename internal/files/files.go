@@ -35,6 +35,7 @@ type Deployer struct {
 	Log    *runlog.Log
 	Person account.Account
 	hashes map[string]string
+	placed map[string]bool
 }
 
 func New(log *runlog.Log, person account.Account) (*Deployer, error) {
@@ -361,11 +362,62 @@ func Render(text string, pairs ...string) string {
 }
 
 func (deployer *Deployer) Tool(name string) error {
-	target := filepath.Join(env.BinDir(), name)
-	if err := os.Remove(target); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	return deployer.ToolAt(name, filepath.Join(env.BinDir(), name))
+}
+
+func (deployer *Deployer) ToolAt(name, target string) error {
+	source := filepath.Join(env.ToolsDir(), name)
+	program, err := os.Readlink(source)
+	if err == nil {
+		if err := deployer.placeOnce(program); err != nil {
+			return err
+		}
+		return deployer.link(filepath.Join(env.BinDir(), program), target)
+	}
+	if !unchanged(source, target) {
+		if err := os.Remove(target); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+	}
+	return deployer.Program(source, target)
+}
+
+func (deployer *Deployer) placeOnce(program string) error {
+	if deployer.placed[program] {
+		return nil
+	}
+	if err := deployer.Tool(program); err != nil {
 		return err
 	}
-	return deployer.Program(filepath.Join(env.ToolsDir(), name), target)
+	if deployer.placed == nil {
+		deployer.placed = map[string]bool{}
+	}
+	deployer.placed[program] = true
+	return nil
+}
+
+func unchanged(source, target string) bool {
+	info, err := os.Lstat(target)
+	if err != nil || !info.Mode().IsRegular() {
+		return false
+	}
+	hash := current(source)
+	return hash != "" && hash == current(target)
+}
+
+func (deployer *Deployer) link(program, target string) error {
+	ledger.Note(ledger.File, target)
+	if current, err := os.Readlink(target); err == nil && current == program {
+		return nil
+	}
+	if fsutil.IsDir(target) {
+		return fmt.Errorf("a folder is in the way of %s", target)
+	}
+	if err := atomic.Symlink(program, target); err != nil {
+		return err
+	}
+	deployer.Log.Line("info", "deployed "+target+" as a link to "+program)
+	return nil
 }
 
 func writeLines(path string, list []string) error {

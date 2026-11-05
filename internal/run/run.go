@@ -282,6 +282,20 @@ func UserDir(kind, fallback string) string {
 	return fallback
 }
 
+func Self() string {
+	name := os.Args[0]
+	if strings.Contains(name, "/") {
+		if path, err := filepath.Abs(name); err == nil {
+			return path
+		}
+		return name
+	}
+	if path, err := exec.LookPath(name); err == nil {
+		return path
+	}
+	return name
+}
+
 func Sibling(name string) string {
 	self, err := os.Executable()
 	if err != nil {

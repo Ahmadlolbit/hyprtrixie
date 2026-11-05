@@ -157,6 +157,7 @@ func throughScript() int {
 }
 
 func main() {
+	runTool()
 	if root() == "" {
 		os.Exit(run.Report(run.Exec("hyprtrixie", os.Args[1:]...)))
 	}

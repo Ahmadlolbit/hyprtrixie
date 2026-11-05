@@ -21,4 +21,4 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-cmd/snapper-rollback is a Go rewrite of snapper-rollback by jrabinow (https://github.com/jrabinow/snapper-rollback), GPL-3.0.
+cmd/hyprtrixie-core/tools/snapper-rollback is a Go rewrite of snapper-rollback by jrabinow (https://github.com/jrabinow/snapper-rollback), GPL-3.0.
