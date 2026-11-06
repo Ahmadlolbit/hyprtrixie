@@ -420,5 +420,8 @@ func tpmCommand() int {
 	if !known || env.Arg(3) != "" {
 		return fail("usage: hyprtrixie tpm on|off|tidy|status")
 	}
-	return asRoot("tpm "+env.Arg(2), command)
+	if env.Arg(2) == "" || env.Arg(2) == "status" {
+		return asRoot("tpm "+env.Arg(2), command)
+	}
+	return asRoot("tpm "+env.Arg(2), alone(command))
 }

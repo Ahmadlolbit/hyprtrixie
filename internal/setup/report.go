@@ -73,11 +73,21 @@ func WriteReport(context *Context) error {
 	return atomic.InstallAs(context.Person.Path(ReportName), []byte(report(context)), plainMode, uid, gid)
 }
 
-func reportSteps(context *Context) {
+func checkedModules() []string {
+	status := fsutil.Optional(modules.StatusFile())
+	var ids []string
 	for _, module := range modules.All {
-		if body, known := Modules[module.ID]; known && module.ID != lastModule {
-			body.Checks(context)
+		result, _ := modules.StatusOf(status, module.ID)
+		if _, known := Modules[module.ID]; known && module.ID != lastModule && result != modules.Undone {
+			ids = append(ids, module.ID)
 		}
+	}
+	return ids
+}
+
+func reportSteps(context *Context) {
+	for _, id := range checkedModules() {
+		Modules[id].Checks(context)
 	}
 	context.Run.Step("Write ~/"+ReportName, func(*runlog.Log) error { return WriteReport(context) })
 }

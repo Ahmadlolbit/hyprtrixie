@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
@@ -34,7 +33,6 @@ import (
 )
 
 const (
-	lockMode     = 0o644
 	askMode      = "ask"
 	continueMode = "continue"
 	installMode  = "install"
@@ -150,19 +148,6 @@ func listed(list, id string) bool {
 
 func (options Options) wants(id string) bool {
 	return (options.Only == "" || listed(options.Only, id)) && (options.Skip == "" || !listed(options.Skip, id))
-}
-
-func takeLock() (*os.File, error) {
-	path := lock.Path()
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, lockMode)
-	if err != nil {
-		return nil, errors.New("cannot create " + path)
-	}
-	if err := syscall.Flock(int(file.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
-		file.Close()
-		return nil, errors.New("another Hyprtrixie run is still going")
-	}
-	return file, nil
 }
 
 func packages() []string {
@@ -421,7 +406,7 @@ func (work *session) finish(code int) int {
 }
 
 func entered(mode string, options Options, args []string, body func(*session) int) int {
-	held, err := takeLock()
+	held, err := lock.Take()
 	if err != nil {
 		return run.Report(err)
 	}
