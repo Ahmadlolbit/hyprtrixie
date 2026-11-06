@@ -83,7 +83,7 @@ func shoot(mode string) int {
 	if rest, ok := strings.CutPrefix(file, env.Home()); ok {
 		shown = "~" + rest
 	}
-	action := notify.Ask("--app-name=Screenshot", "--icon="+file, "--action=default=Edit", "Screenshot saved", shown+". Click to edit it.")
+	action := notify.Ask([]string{"--app-name=Screenshot", "--icon=" + file, "--action=default=Edit"}, "Screenshot saved", shown+". Click to edit it.")
 	if action == "default" {
 		return run.Status("swappy", "-f", file, "-o", file)
 	}

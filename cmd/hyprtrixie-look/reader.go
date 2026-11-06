@@ -17,7 +17,7 @@ func readerRunning() bool {
 }
 
 func readerSaid(text string) {
-	notify.Post("--app-name=Screen reader", text)
+	notify.Post([]string{"--app-name=Screen reader"}, text, "")
 }
 
 func readerOn() int {

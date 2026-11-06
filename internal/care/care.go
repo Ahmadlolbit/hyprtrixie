@@ -7,8 +7,6 @@ import (
 	"unicode"
 )
 
-var markup = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
-
 func clean(text string) string {
 	return strings.Join(strings.FieldsFunc(text, func(letter rune) bool {
 		return unicode.IsSpace(letter) || unicode.IsControl(letter)
@@ -34,10 +32,6 @@ func Updates(data []byte) []string {
 		}
 	}
 	return waiting
-}
-
-func Markup(text string) string {
-	return markup.Replace(text)
 }
 
 func Unseen(waiting []string, seen string) []string {

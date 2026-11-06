@@ -20,7 +20,7 @@ notification with what was copied.
 `
 
 func tell(title, text string) int {
-	return notify.Post("--app-name=Pick", title, text)
+	return notify.Post([]string{"--app-name=Pick"}, title, text)
 }
 
 func copied(text string) {

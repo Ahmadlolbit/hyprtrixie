@@ -87,7 +87,7 @@ func stop() int {
 		return 1
 	}
 	run.Quiet(settle, "pidwait", "-x", recorder)
-	return notify.Post("--app-name=Recording", "Recording saved", saved())
+	return notify.Post([]string{"--app-name=Recording"}, "Recording saved", saved())
 }
 
 func toggle() int {

@@ -180,7 +180,7 @@ func toggle() int {
 		if err := os.Remove(offFile()); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
-		return notify.Post("--app-name=Screensaver", "Screensaver on")
+		return notify.Post([]string{"--app-name=Screensaver"}, "Screensaver on", "")
 	}
 	err := os.MkdirAll(configDir(), 0o777)
 	if err == nil {
@@ -189,7 +189,7 @@ func toggle() int {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
-	return notify.Post("--app-name=Screensaver", "Screensaver off")
+	return notify.Post([]string{"--app-name=Screensaver"}, "Screensaver off", "")
 }
 
 func Main() {

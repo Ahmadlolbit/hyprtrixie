@@ -22,7 +22,7 @@ func notifyFirstStart(dir string) {
 		return
 	}
 	remove(note)
-	action := notify.Ask("--app-name=hyprtrixie", "--action=default=Read", "The setup isn't finished",
+	action := notify.Ask([]string{"--app-name=hyprtrixie", "--action=default=Read"}, "The setup isn't finished",
 		"The first start couldn't do all of it. Connect to the internet, then run: sudo hyprtrixie install --yes")
 	if action == "default" {
 		run.Status("hyprtrixie-terminal", "--wait", "less", filepath.Join(os.Getenv("HOME"), "runbook-report.md"))
@@ -41,7 +41,7 @@ func notifyChanges(dir string) int {
 	}
 	remove(unseen)
 	count := strings.Count("\n"+text, "\n  - ")
-	action := notify.Ask("--app-name=hyprtrixie", "--action=default=Read", "Hyprtrixie was updated",
+	action := notify.Ask([]string{"--app-name=hyprtrixie", "--action=default=Read"}, "Hyprtrixie was updated",
 		fmt.Sprintf("%d changes since the last update. Click to read them, or open Menu › Update › What changed.", count))
 	if action == "default" {
 		return run.Report(run.Exec("hyprtrixie-terminal", "--wait", script(), "changes"))

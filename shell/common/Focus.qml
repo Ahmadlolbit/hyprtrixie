@@ -37,7 +37,7 @@ Singleton {
   }
 
   function announce(title, body, loud) {
-    Quickshell.execDetached(["sh", "-c", (loud ? "makoctl mode -r focus >/dev/null 2>&1; " : "") + "notify-send -a Focus \"$1\" \"$2\"; pw-play \"$3\"", "focus", title, body, chime]);
+    Quickshell.execDetached(["sh", "-c", (loud ? "makoctl mode -r focus >/dev/null 2>&1; " : "") + "notify-send -a Focus -- \"$1\" \"$2\"; pw-play \"$3\"", "focus", title, body, chime]);
   }
 
   function tick() {

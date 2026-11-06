@@ -913,7 +913,7 @@
   "system.hibernate": {
     "glyph": "\udb82\udc4f",
     "label": "Hibernate",
-    "action": "systemctl hibernate || notify-send Hibernate 'Turn it on in the setup, under Storage'",
+    "action": "systemctl hibernate || notify-send -- Hibernate 'Turn it on in the setup, under Storage'",
     "keywords": [
       "hibernate",
       "sleep",

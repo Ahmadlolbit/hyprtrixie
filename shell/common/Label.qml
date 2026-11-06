@@ -5,4 +5,5 @@ Text {
   font.family: Theme.font
   font.pixelSize: Theme.fontSize
   verticalAlignment: Text.AlignVCenter
+  textFormat: Text.PlainText
 }
