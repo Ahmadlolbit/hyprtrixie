@@ -28,6 +28,9 @@ const (
 	toolboxDir   = "/opt/jetbrains-toolbox"
 	toolboxTool  = "jetbrains-toolbox"
 	zedDesktop   = "share/applications/dev.zed.Zed.desktop"
+
+	gitLowSpeedLimit = "GIT_HTTP_LOW_SPEED_LIMIT=1024"
+	gitLowSpeedTime  = "GIT_HTTP_LOW_SPEED_TIME=60"
 )
 
 type toolStep struct {
@@ -181,7 +184,7 @@ func (context *Context) miseInstall(log *runlog.Log) error {
 	if len(specs) == 0 {
 		return nil
 	}
-	return context.Person.Run(log, append([]string{"mise", "use", "--global"}, specs...)...)
+	return context.Person.RunWithin(downloadLimit, log, append([]string{"mise", "use", "--global"}, specs...)...)
 }
 
 func (context *Context) miseReady() error {
@@ -197,7 +200,7 @@ func (context *Context) rustInstall(log *runlog.Log) error {
 	if err := apt.InstallLists(log, "dev-rust"); err != nil {
 		return err
 	}
-	return context.Person.Run(log, "rustup", "default", "stable")
+	return context.Person.RunWithin(downloadLimit, log, "rustup", "default", "stable")
 }
 
 func (context *Context) toolchainsReady(*runlog.Log) error {
@@ -331,7 +334,7 @@ func lazyvimScheme(config string) error {
 }
 
 func (context *Context) lazyvimPlugins(log *runlog.Log) error {
-	return context.Person.Run(log, filepath.Join(env.BinDir(), "nvim"), "--headless", "+Lazy! sync", "+qa")
+	return context.Person.RunWithin(downloadLimit, log, "env", gitLowSpeedLimit, gitLowSpeedTime, filepath.Join(env.BinDir(), "nvim"), "--headless", "+Lazy! sync", "+qa")
 }
 
 func recentVersion(version string) bool {

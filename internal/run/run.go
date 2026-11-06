@@ -143,11 +143,17 @@ func (writer *serial) Write(data []byte) (int, error) {
 }
 
 func LoggedWithin(limit time.Duration, output io.Writer, name string, args ...string) error {
+	if stopped.Load() {
+		return ErrStopped
+	}
 	trace(name, args)
 	return loggedWithin(limit, output, name, args)
 }
 
 func LoggedPrivately(limit time.Duration, output io.Writer, name string, args ...string) error {
+	if stopped.Load() {
+		return ErrStopped
+	}
 	trace(name, []string{"(arguments hidden)"})
 	return loggedWithin(limit, output, name, args)
 }
