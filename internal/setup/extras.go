@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/service"
@@ -75,6 +76,10 @@ func steamMangoHud(log *runlog.Log) error {
 	return flatpakInstall(mangohudLayer + "//" + branch)(log)
 }
 
+func steamDevices(*runlog.Log) error {
+	return apt.Present("steam-devices")
+}
+
 func printServices(log *runlog.Log) error {
 	return service.Start(log, printUnits...)
 }
@@ -134,6 +139,7 @@ func extrasChecks(context *Context) {
 	}
 	if context.extra("gaming") {
 		context.Run.Check("GameMode and MangoHud are installed", commands("gamemoded", "mangohud"))
+		context.Run.Check("Steam can use game controllers", steamDevices)
 		context.Run.Check("Steam is installed", flatpakApps(steamApp))
 		context.Run.Check("MangoHud reaches Steam", flatpakApps(mangohudLayer))
 	}
