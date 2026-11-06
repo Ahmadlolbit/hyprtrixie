@@ -11,6 +11,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/hypr"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/look"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/notify"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
@@ -70,7 +71,11 @@ func start(mode string) int {
 	}
 	remember(file)
 	args := append([]string{"-f", recorder, "-y", "-f", file}, where...)
-	return run.Quiet(run.Quick, "setsid", args...)
+	code := run.Quiet(run.Quick, "setsid", args...)
+	if code == 0 {
+		look.CallShell("recording", "started")
+	}
+	return code
 }
 
 func saved() string {
@@ -87,6 +92,7 @@ func stop() int {
 		return 1
 	}
 	run.Quiet(settle, "pidwait", "-x", recorder)
+	look.CallShell("recording", "stopped")
 	return notify.Post([]string{"--app-name=Recording"}, "Recording saved", saved())
 }
 

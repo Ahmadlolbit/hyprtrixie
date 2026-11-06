@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Io
 import Quickshell.Services.Pipewire
 import qs.common
 
@@ -9,7 +8,7 @@ GridLayout {
   id: root
 
   property var bar
-  property var held: []
+  readonly property var held: Cameras.held
   readonly property var links: Pipewire.linkGroups.values.filter(link => link.source && link.target)
   readonly property var listening: links.filter(link => link.source.type === PwNodeType.AudioSource && link.target.isStream)
   readonly property var filming: links.filter(link => link.source.type === PwNodeType.VideoSource && !shared(link.source))
@@ -34,23 +33,6 @@ GridLayout {
 
   PwObjectTracker {
     objects: root.listening.concat(root.filming, root.watching).map(link => link.target)
-  }
-
-  Process {
-    id: devices
-
-    command: ["sh", "-c", "ls /dev/video* >/dev/null 2>&1 || exit 0; find /proc/[0-9]*/fd -lname '/dev/video*' -printf '%h\\n' 2>/dev/null | sort -u | while read -r fd; do cat \"${fd%/fd}/comm\"; done 2>/dev/null | sort -u"]
-    stdout: StdioCollector {
-      onStreamFinished: root.held = text.split("\n").filter(name => name !== "" && name !== "pipewire" && name !== "wireplumber")
-    }
-  }
-
-  Timer {
-    interval: 3000
-    running: true
-    repeat: true
-    triggeredOnStart: true
-    onTriggered: devices.running = true
   }
 
   Label {
