@@ -129,15 +129,28 @@ func noteUpdate() error {
 	return atomic.Write(stamp(), nil, configMode)
 }
 
-func Installed() map[string]bool {
-	output, _ := run.CaptureQuiet(run.Slow, "dpkg-query", "-W", "-f", "${Package}\t${Status}\n")
-	found := map[string]bool{}
+func packageStates() (map[string]bool, map[string]bool, error) {
+	output, err := run.CaptureQuiet(run.Slow, "dpkg-query", "-W", "-f", "${Package}\t${Status}\n")
+	installed, held := map[string]bool{}, map[string]bool{}
 	for _, line := range run.Lines(output) {
-		if name, status, _ := strings.Cut(line, "\t"); status == "install ok installed" {
-			found[name] = true
+		name, status, _ := strings.Cut(line, "\t")
+		words := strings.Fields(status)
+		if len(words) != 3 {
+			continue
+		}
+		if words[2] == "installed" {
+			installed[name] = true
+		}
+		if words[0] == "hold" {
+			held[name] = true
 		}
 	}
-	return found
+	return installed, held, err
+}
+
+func Installed() (map[string]bool, error) {
+	installed, _, err := packageStates()
+	return installed, err
 }
 
 func Version(name string) string {
@@ -242,11 +255,25 @@ func sorted(specs []string, installed map[string]bool) ([]string, []string) {
 	return stable, backports
 }
 
+func unheld(log *runlog.Log, names []string, held map[string]bool) []string {
+	return slices.DeleteFunc(names, func(name string) bool {
+		if held[name] {
+			log.Line("warn", name+" is held, so it stays as it is")
+		}
+		return held[name]
+	})
+}
+
 func Install(log *runlog.Log, specs ...string) error {
 	for _, spec := range specs {
 		ledger.Note(ledger.Wants, strings.TrimSuffix(spec, backportsMark))
 	}
-	stable, backports := sorted(specs, Installed())
+	installed, held, err := packageStates()
+	if err != nil {
+		return err
+	}
+	stable, backports := sorted(specs, installed)
+	stable, backports = unheld(log, stable, held), unheld(log, backports, held)
 	if len(stable)+len(backports) == 0 {
 		log.Line("info", "already installed: "+strings.Join(specs, " "))
 		return nil
@@ -297,7 +324,10 @@ func InstallLists(log *runlog.Log, lists ...string) error {
 }
 
 func Present(specs ...string) error {
-	installed := Installed()
+	installed, err := Installed()
+	if err != nil {
+		return err
+	}
 	for _, spec := range specs {
 		if name := strings.TrimSuffix(spec, backportsMark); !installed[name] {
 			return errors.New(name + " is not installed")
@@ -481,7 +511,7 @@ func InstallRelease(log *runlog.Log, name, packageName string) error {
 	if err != nil {
 		return err
 	}
-	if Installed()[packageName] && strings.HasPrefix(Version(packageName), release.Version) {
+	if installed, _ := Installed(); installed[packageName] && strings.HasPrefix(Version(packageName), release.Version) {
 		log.Line("info", packageName+" "+release.Version+" already installed")
 		return nil
 	}

@@ -92,7 +92,7 @@ func autoUpdatesReady(*runlog.Log) error {
 }
 
 func sshServerOff(log *runlog.Log) error {
-	if !apt.Installed()["openssh-server"] {
+	if installed, _ := apt.Installed(); !installed["openssh-server"] {
 		return nil
 	}
 	for _, unit := range []string{"ssh.socket", "ssh.service"} {

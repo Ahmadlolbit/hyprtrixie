@@ -65,7 +65,7 @@ func (context *Context) installBrowser(log *runlog.Log) error {
 }
 
 func (context *Context) webappInstall(log *runlog.Log, app apps.App) error {
-	if !apt.Installed()["helium-bin"] {
+	if installed, _ := apt.Installed(); !installed["helium-bin"] {
 		if err := context.installBrowser(log); err != nil {
 			return err
 		}
@@ -113,7 +113,10 @@ func (context *Context) appInstall(log *runlog.Log, app apps.App) error {
 }
 
 func (context *Context) repositoryInUse(repository, skip string) bool {
-	installed := apt.Installed()
+	installed, err := apt.Installed()
+	if err != nil {
+		return true
+	}
 	for _, app := range apps.All() {
 		if app.ID != skip && app.Source == "extrepo:"+repository && app.Present(installed, context.Config.Get("TEAMS_SOURCE")) {
 			return true
@@ -142,7 +145,10 @@ func removeSnap(log *runlog.Log, name string) error {
 
 func removePackages(log *runlog.Log, app apps.App) error {
 	var present []string
-	installed := apt.Installed()
+	installed, err := apt.Installed()
+	if err != nil {
+		return err
+	}
 	for _, spec := range app.Packages {
 		if name := apt.Bare(spec); installed[name] {
 			present = append(present, name)
@@ -220,7 +226,10 @@ func (context *Context) defaultApps(log *runlog.Log) error {
 }
 
 func (context *Context) appsMissing(*runlog.Log) error {
-	installed := apt.Installed()
+	installed, err := apt.Installed()
+	if err != nil {
+		return err
+	}
 	source := context.Config.Get("TEAMS_SOURCE")
 	var missing []string
 	for _, app := range context.wantedApps() {

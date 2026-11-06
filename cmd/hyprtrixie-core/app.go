@@ -72,7 +72,10 @@ func appCommand() int {
 }
 
 func appList() int {
-	packages := apt.Installed()
+	packages, err := apt.Installed()
+	if err != nil {
+		return fail("the installed packages can't be read: %v", err)
+	}
 	teamsSource := config.Read(config.Path()).Get("TEAMS_SOURCE")
 	present := func(app apps.App) bool { return app.Present(packages, teamsSource) }
 	catalogue := apps.All()
