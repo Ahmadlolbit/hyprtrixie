@@ -31,6 +31,11 @@ func Enable(out io.Writer, units ...string) error {
 	return nil
 }
 
+func Replace(out io.Writer, unit string) error {
+	ledger.Note(ledger.Service, unit)
+	return run.Logged(out, "systemctl", "enable", "--force", unit)
+}
+
 func Start(out io.Writer, units ...string) error {
 	for _, unit := range units {
 		if err := Enable(out, unit); err != nil {
