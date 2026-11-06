@@ -246,19 +246,37 @@ func (work *session) guarded(part func(setup.Module, *setup.Context), body setup
 	part(body, context)
 }
 
-func (work *session) recordStart() map[string]bool {
-	if !work.changesFiles() {
-		return nil
-	}
-	ledger.Begin()
-	return apt.Installed()
+type recording struct {
+	on     bool
+	before map[string]bool
 }
 
-func (work *session) recordEnd(id string, before map[string]bool) {
-	if before == nil {
+func (work *session) packagesNow(id string) map[string]bool {
+	installed, err := apt.Installed()
+	if err != nil {
+		work.log.Line("warn", "cannot list the installed packages, so module "+id+" records none: "+err.Error())
+		return nil
+	}
+	return installed
+}
+
+func (work *session) recordStart(id string) recording {
+	if !work.changesFiles() {
+		return recording{}
+	}
+	ledger.Begin()
+	return recording{true, work.packagesNow(id)}
+}
+
+func (work *session) recordEnd(id string, record recording) {
+	if !record.on {
 		return
 	}
-	if err := ledger.End(id, before, apt.Installed()); err != nil {
+	var after map[string]bool
+	if record.before != nil {
+		after = work.packagesNow(id)
+	}
+	if err := ledger.End(id, record.before, after); err != nil {
 		work.log.Line("warn", "cannot record what module "+id+" did: "+err.Error())
 	}
 }
@@ -272,9 +290,9 @@ func (work *session) one(module modules.Module, position, total int, part func(s
 		work.runner.Broke("step", "cannot read what's installed: "+err.Error())
 		return false
 	}
-	before := work.recordStart()
+	record := work.recordStart(module.ID)
 	work.guarded(part, setup.Modules[module.ID], context)
-	work.recordEnd(module.ID, before)
+	work.recordEnd(module.ID, record)
 	work.person = context.Person
 	if work.runner.Ended() {
 		return false

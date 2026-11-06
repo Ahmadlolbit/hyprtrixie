@@ -42,11 +42,14 @@ func moduleTitle(id string) string {
 	return id
 }
 
-func planUndo(id string) undoPlan {
+func planUndo(id string) (undoPlan, error) {
+	installed, err := apt.Installed()
+	if err != nil {
+		return undoPlan{}, err
+	}
 	record := ledger.Load(id)
 	elsewhere := ledger.WantedElsewhere(id)
 	shared := ledger.Elsewhere(id, ledger.File)
-	installed := apt.Installed()
 	plan := undoPlan{id: id, services: record.Values(ledger.Service)}
 	for _, path := range record.Values(ledger.File) {
 		if !shared[path] {
@@ -63,7 +66,7 @@ func planUndo(id string) undoPlan {
 			plan.made = append(plan.made, path)
 		}
 	}
-	return plan
+	return plan, nil
 }
 
 func removable(path string) bool {
@@ -151,7 +154,10 @@ func undo(id string, yes bool) int {
 	if !ledger.Known(id) {
 		return fail("There's no record of module %s yet. Run the setup once (sudo hyprtrixie install), then undo it.", id)
 	}
-	plan := planUndo(id)
+	plan, err := planUndo(id)
+	if err != nil {
+		return fail("The installed packages can't be read, so nothing was changed: %v", err)
+	}
 	fmt.Print(plan.describe())
 	if !yes && !ui.Confirm("Undo module "+id+"?") {
 		return fail("Nothing was changed.")

@@ -66,7 +66,12 @@ func dropPolicy(dir string) bool {
 }
 
 func paintBrowsers(current theme) bool {
-	wanted, all := policyDirs(apt.Installed())
+	installed, err := apt.Installed()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return false
+	}
+	wanted, all := policyDirs(installed)
 	if follow.Setting(current.settings, "browsers") != "yes" {
 		wanted = nil
 	}

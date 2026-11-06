@@ -88,7 +88,7 @@ func End(module string, before, after map[string]bool) error {
 	done := active
 	active = nil
 	for name := range after {
-		if !before[name] {
+		if before != nil && !before[name] {
 			done[Package] = append(done[Package], name)
 		}
 	}

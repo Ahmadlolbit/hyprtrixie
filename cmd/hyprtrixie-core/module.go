@@ -85,9 +85,14 @@ func recorded(id string, steps bool, work func()) {
 		return
 	}
 	ledger.Begin()
-	before := apt.Installed()
+	before, failed := apt.Installed()
 	work()
-	if err := ledger.End(id, before, apt.Installed()); err != nil {
+	after, err := apt.Installed()
+	if err != nil || failed != nil {
+		fmt.Fprintf(os.Stderr, "cannot list the installed packages, so module %s records none\n", id)
+		before, after = nil, nil
+	}
+	if err := ledger.End(id, before, after); err != nil {
 		fmt.Fprintf(os.Stderr, "cannot record what module %s did: %v\n", id, err)
 	}
 }
