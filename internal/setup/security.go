@@ -1,8 +1,10 @@
 package setup
 
 import (
+	"errors"
 	"io"
 	"maps"
+	"os"
 	"slices"
 	"strings"
 
@@ -136,7 +138,7 @@ func wifiNetworks(lines []string) []wifiNetwork {
 		case "wpa-ssid":
 			names[device] = networkName(line)
 		case "wpa-psk":
-			keys[device] = words[1]
+			keys[device] = networkKey(line)
 		}
 	}
 	var found []wifiNetwork
@@ -151,15 +153,29 @@ func connectionKnown(name string) bool {
 	return slices.Contains(run.Lines(output), name)
 }
 
-func addConnection(log *runlog.Log, network wifiNetwork) error {
+func addConnection(network wifiNetwork) (bool, error) {
 	if network.name == "" || connectionKnown(network.name) {
+		return false, nil
+	}
+	if err := os.MkdirAll(connectionsFolder(), folderOfSecrets); err != nil {
+		return false, err
+	}
+	return true, atomic.Install(connectionFile(network.device), []byte(keyfile(network)), connectionsMode)
+}
+
+func addConnections(log *runlog.Log, networks []wifiNetwork) error {
+	added := false
+	for _, network := range networks {
+		wrote, err := addConnection(network)
+		if err != nil {
+			return err
+		}
+		added = added || wrote
+	}
+	if !added {
 		return nil
 	}
-	args := []string{"connection", "add", "type", "wifi", "ifname", network.device, "con-name", network.name, "ssid", network.name}
-	if network.key != "" {
-		args = append(args, "wifi-sec.key-mgmt", "wpa-psk", "wifi-sec.psk", network.key)
-	}
-	return run.Logged(log, "nmcli", args...)
+	return run.LoggedWithin(run.Minute, log, "nmcli", "connection", "reload")
 }
 
 func networkHandover(log *runlog.Log) error {
@@ -168,15 +184,17 @@ func networkHandover(log *runlog.Log) error {
 	if err != nil || !beyondLoopback(lines) {
 		return err
 	}
+	if reasons := unconvertible(lines); len(reasons) > 0 {
+		log.Line("warn", "NetworkManager doesn't take over, because "+path+" has what it can't convert: "+strings.Join(reasons, "; "))
+		return nil
+	}
 	if !service.Active(networkManager) {
 		if err := run.Logged(log, "systemctl", "start", networkManager); err != nil {
 			return err
 		}
 	}
-	for _, network := range wifiNetworks(lines) {
-		if err := addConnection(log, network); err != nil {
-			return err
-		}
+	if err := addConnections(log, wifiNetworks(lines)); err != nil {
+		return err
 	}
 	if err := keepOld(log, path); err != nil {
 		return err
@@ -190,10 +208,13 @@ func networkHandover(log *runlog.Log) error {
 
 func networkReady(*runlog.Log) error {
 	lines, err := fsutil.Lines(interfacesFile())
-	if err != nil {
+	if err != nil || !beyondLoopback(lines) {
 		return err
 	}
-	return expect(!beyondLoopback(lines), interfacesFile()+" still has connections")
+	if reasons := unconvertible(lines); len(reasons) > 0 {
+		return errors.New(interfacesFile() + " keeps what NetworkManager can't take over: " + strings.Join(reasons, "; "))
+	}
+	return errors.New(interfacesFile() + " still has connections")
 }
 
 func securitySteps(context *Context) {
