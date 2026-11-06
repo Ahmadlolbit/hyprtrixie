@@ -395,7 +395,7 @@ func prepare(name, next string) (theme.Colors, theme.Colors, bool) {
 }
 
 func apply(name string) bool {
-	next := filepath.Join(state(), "next-theme")
+	next := filepath.Join(filepath.Dir(state()), "next-theme")
 	defer cleanup.OnSignal(func() { os.RemoveAll(next) })()
 	previous, _ := fsutil.Text(filepath.Join(state(), "theme.name"))
 	colors, apps, ok := prepare(name, next)
@@ -452,7 +452,7 @@ func lock() (*os.File, error) {
 	if err := os.MkdirAll(state(), 0o777); err != nil {
 		return nil, err
 	}
-	file, err := os.OpenFile(filepath.Join(state(), ".lock"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
+	file, err := os.OpenFile(filepath.Join(filepath.Dir(state()), "theme.lock"), os.O_RDONLY|os.O_CREATE, 0o666)
 	if err != nil {
 		return nil, err
 	}
