@@ -29,15 +29,15 @@ Singleton {
   Process {
     id: recorder
 
+    running: true
     command: ["pgrep", "-x", "wf-recorder"]
     onExited: code => root.recording = code === 0
   }
 
   Timer {
     interval: 3000
-    running: true
+    running: root.recording
     repeat: true
-    triggeredOnStart: true
     onTriggered: recorder.running = true
   }
 
@@ -72,6 +72,18 @@ Singleton {
       root.now = Date.now();
       if (root.now >= root.until)
         root.awake = false;
+    }
+  }
+
+  IpcHandler {
+    target: "recording"
+
+    function started(): void {
+      root.recording = true;
+    }
+
+    function stopped(): void {
+      root.recording = false;
     }
   }
 

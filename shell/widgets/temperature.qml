@@ -1,15 +1,13 @@
 import QtQuick
 import QtQuick.Layouts
-import Quickshell
-import Quickshell.Io
 import qs.common
 
 Label {
   id: root
 
   property var bar
-  property var sensors: ({})
-  readonly property var cpu: typeof sensors.cpu === "number" ? sensors.cpu : null
+  readonly property var sensors: Sensors.report
+  readonly property var cpu: Sensors.cpu
   readonly property bool shown: cpu !== null
 
   function tint(value) {
@@ -18,29 +16,6 @@ Label {
 
   text: "\u{f050f} " + cpu + "°"
   color: tint(cpu)
-
-  Process {
-    id: probe
-
-    command: ["hyprtrixie-sensors"]
-    stdout: StdioCollector {
-      onStreamFinished: {
-        try {
-          root.sensors = JSON.parse(text);
-        } catch (error) {
-          root.sensors = {};
-        }
-      }
-    }
-  }
-
-  Timer {
-    interval: 5000
-    running: true
-    repeat: true
-    triggeredOnStart: true
-    onTriggered: probe.running = true
-  }
 
   MouseArea {
     anchors.fill: parent

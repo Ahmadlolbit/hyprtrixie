@@ -70,8 +70,10 @@ Singleton {
   FileView {
     id: now
 
-    path: root.device ? "/sys/class/backlight/" + root.device + "/brightness" : ""
+    path: root.device ? "/sys/class/backlight/" + root.device + "/actual_brightness" : ""
+    watchChanges: true
     printErrors: false
+    onFileChanged: reload()
     onLoaded: root.current = parseInt(text())
   }
 
@@ -90,14 +92,17 @@ Singleton {
   }
 
   Timer {
-    interval: 500
-    running: root.device !== "" || root.keyboard !== ""
+    interval: 5000
+    running: root.device !== ""
     repeat: true
-    onTriggered: {
-      if (root.device)
-        now.reload();
-      if (root.keyboard)
-        keys.reload();
-    }
+    onTriggered: now.reload()
+  }
+
+  Timer {
+    interval: 500
+    running: root.keyboard !== "" && Popups.open !== null && Popups.open.name === "brightness"
+    repeat: true
+    triggeredOnStart: true
+    onTriggered: keys.reload()
   }
 }

@@ -44,26 +44,38 @@ type scan struct {
 }
 
 func Read(root string) Report {
+	return read(root, true)
+}
+
+func ReadCPU(root string) Report {
+	return read(root, false)
+}
+
+func read(root string, all bool) Report {
 	current := scan{report: Report{Temps: []Temp{}, Fans: []Fan{}}, rank: len(cpuSensors)}
 	for _, dir := range entries(root+"/sys/class/hwmon", "hwmon", "") {
-		current.add(dir)
+		current.add(dir, all)
 	}
 	if cpu := current.report.CPU; cpu != nil {
 		current.report.Temps = append(current.report.Temps, Temp{"CPU", *cpu})
 	}
 	current.report.Temps = append(current.report.Temps, current.others...)
-	current.report.Level = fanLevel(root + "/proc/acpi/ibm/fan")
+	if all {
+		current.report.Level = fanLevel(root + "/proc/acpi/ibm/fan")
+	}
 	return current.report
 }
 
-func (current *scan) add(dir string) {
+func (current *scan) add(dir string, all bool) {
 	name, ok := text(filepath.Join(dir, "name"))
 	if !ok {
 		return
 	}
 	current.addCPU(dir, name)
-	current.addTemp(dir, name)
-	current.report.Fans = append(current.report.Fans, fans(dir, name)...)
+	if all {
+		current.addTemp(dir, name)
+		current.report.Fans = append(current.report.Fans, fans(dir, name)...)
+	}
 }
 
 func (current *scan) addCPU(dir, name string) {
