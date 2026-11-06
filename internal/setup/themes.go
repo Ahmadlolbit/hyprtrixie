@@ -340,7 +340,7 @@ func (theme *themeRun) switcherInstall(*runlog.Log) error {
 			return err
 		}
 	}
-	return removeFiles(filepath.Join(env.BinDir(), "hyprtrixie-theme-picker"), filepath.Join(env.BinDir(), oldName+"-theme-set"), filepath.Join(env.BinDir(), oldName+"-theme-install"))
+	return theme.Deploy.Remove(filepath.Join(env.BinDir(), "hyprtrixie-theme-picker"), filepath.Join(env.BinDir(), oldName+"-theme-set"), filepath.Join(env.BinDir(), oldName+"-theme-install"))
 }
 
 func gtkBaseInPlace() bool {
@@ -550,7 +550,7 @@ func (theme *themeRun) grubSetup(log *runlog.Log) error {
 
 func (theme *themeRun) consoleInstall(log *runlog.Log) error {
 	if theme.Config.Get("CONSOLE_THEME") != "yes" {
-		if err := removeFiles(consoleBanner); err != nil {
+		if err := theme.Deploy.Remove(consoleBanner); err != nil {
 			return err
 		}
 		return service.Disable(log, consoleService)

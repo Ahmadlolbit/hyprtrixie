@@ -136,7 +136,7 @@ func (context *Context) sddmThemeInstall(log *runlog.Log) error {
 	if err := context.Deploy.Tree("system/sddm/hyprtrixie", filepath.Join(sddmThemes(), sddmTheme)); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(sddmThemes(), oldSddmTheme)); err != nil {
+	if err := context.Deploy.RemoveTree(filepath.Join(sddmThemes(), oldSddmTheme)); err != nil {
 		return err
 	}
 	return os.RemoveAll(filepath.Join(env.StateDir(), "releases", "catppuccin-sddm"))

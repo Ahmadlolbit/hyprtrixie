@@ -229,11 +229,11 @@ func (context *Context) walkerInstall(log *runlog.Log) error {
 		}
 	}
 	for _, old := range []string{"/etc/xdg/walker/themes/hyprtrixie", "/etc/xdg/elephant/menus"} {
-		if err := os.RemoveAll(old); err != nil {
+		if err := context.Deploy.RemoveTree(old); err != nil {
 			return err
 		}
 	}
-	if err := removeFiles(filepath.Join(env.BinDir(), "hyprtrixie-power-menu"), filepath.Join(elephantLib, "menus.so")); err != nil {
+	if err := context.Deploy.Remove(filepath.Join(env.BinDir(), "hyprtrixie-power-menu"), filepath.Join(elephantLib, "menus.so")); err != nil {
 		return err
 	}
 	return context.Deploy.File("system/walker/config.toml", "/etc/xdg/walker/config.toml")

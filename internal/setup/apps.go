@@ -172,7 +172,7 @@ func removePackages(log *runlog.Log, app apps.App) error {
 func (context *Context) appRemove(log *runlog.Log, app apps.App) error {
 	switch {
 	case app.Source == "webapp":
-		return removeFiles(filepath.Join(apps.WebFolder, app.ID+"-web.desktop"), filepath.Join(env.ShareDir(), "icons", app.ID+"-web.svg"))
+		return context.Deploy.Remove(filepath.Join(apps.WebFolder, app.ID+"-web.desktop"), filepath.Join(env.ShareDir(), "icons", app.ID+"-web.svg"))
 	case app.Source == "teams" && context.Config.Get("TEAMS_SOURCE") == "snap":
 		return removeSnap(log, apps.TeamsApp)
 	}

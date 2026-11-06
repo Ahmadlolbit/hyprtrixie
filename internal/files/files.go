@@ -485,6 +485,27 @@ func restoreOld(path string) (bool, error) {
 	return true, os.Rename(path+oldSuffix, path)
 }
 
+func (deployer *Deployer) Remove(paths ...string) error {
+	before := len(deployer.hashes)
+	for _, path := range paths {
+		if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+		delete(deployer.hashes, path)
+	}
+	if len(deployer.hashes) == before {
+		return nil
+	}
+	return deployer.writeDatabase()
+}
+
+func (deployer *Deployer) RemoveTree(dir string) error {
+	if err := os.RemoveAll(dir); err != nil {
+		return err
+	}
+	return deployer.Forget(strings.TrimSuffix(dir, "/") + "/")
+}
+
 func (deployer *Deployer) Undeploy(path string) (string, error) {
 	if err := os.Remove(path + newSuffix); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return "", err
