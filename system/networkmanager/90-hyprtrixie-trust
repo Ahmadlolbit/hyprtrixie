@@ -1,0 +1,9 @@
+#!/bin/sh
+case "$2" in
+  up | down | reapply) ;;
+  *) exit 0 ;;
+esac
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+[ -x /usr/local/bin/hyprtrixie-core ] || exit 0
+exec /usr/local/bin/hyprtrixie-core trust apply "$1" "$2"

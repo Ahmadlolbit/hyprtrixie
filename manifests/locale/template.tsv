@@ -250,6 +250,7 @@ Light theme
 Load a configuration file	
 Load configuration	
 Loaded %s	
+LocalSend opens only on networks you trust	
 Lock after (minutes)	
 Lock the screen when you're away; it turns off 30 s later; 0 = never	
 Login screen	
@@ -286,6 +287,7 @@ Nothing changes until you choose Install at the end.
 Notifications are set up	
 Now and then a tip as a notification, at most once a day	
 Now playing on the lock screen	
+Open LocalSend only on networks you trust	
 Open the filesystem	
 Open the new system	
 Optional parts, set up only if you tick them: Flatpak with the Bazaar store, Steam with GameMode and MangoHud, printing and scanning, and distrobox	

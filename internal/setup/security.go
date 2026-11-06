@@ -7,6 +7,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"syscall"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
@@ -24,6 +25,8 @@ const (
 	autoUpgrades   = "/etc/apt/apt.conf.d/52hyprtrixie-auto-upgrades"
 	networkManager = "NetworkManager"
 	loopbackOnly   = "source /etc/network/interfaces.d/*\n\nauto lo\niface lo inet loopback\n"
+	trustScript    = "90-hyprtrixie-trust"
+	trustTarget    = "/etc/NetworkManager/dispatcher.d/" + trustScript
 )
 
 type wifiNetwork struct {
@@ -73,6 +76,21 @@ func firewallSetup(log *runlog.Log) error {
 func firewallReady(*runlog.Log) error {
 	output, _ := run.CaptureQuiet(run.Minute, "ufw", "status")
 	return holds(lineHasPrefix(output, "Status: active"))
+}
+
+func (context *Context) trustSetup(*runlog.Log) error {
+	return context.Deploy.Program("system/networkmanager/"+trustScript, trustTarget)
+}
+
+func trustReady(*runlog.Log) error {
+	info, err := os.Stat(trustTarget)
+	if err != nil {
+		return errors.New(trustTarget + " is missing")
+	}
+	owner, ok := info.Sys().(*syscall.Stat_t)
+	mode := info.Mode()
+	runnable := mode.IsRegular() && mode&0o100 != 0 && mode&(0o022|os.ModeSetuid) == 0
+	return expect(runnable && ok && owner.Uid == 0, trustTarget+" isn't a program that only root can change")
 }
 
 func (context *Context) autoUpdatesSetup(*runlog.Log) error {
@@ -222,6 +240,7 @@ func securitySteps(context *Context) {
 	context.Run.Step("Set up power profiles", context.powerInstall)
 	if settings.Get("FIREWALL") == "yes" {
 		context.Run.Step("Turn on the firewall", firewallSetup)
+		context.Run.Step("Open LocalSend only on networks you trust", context.trustSetup)
 	}
 	context.Run.Step("Set up automatic security updates", context.autoUpdatesSetup)
 	if settings.Get("SSH_POLICY") == "client" {
@@ -241,6 +260,7 @@ func securityChecks(context *Context) {
 	settings := context.Config
 	if settings.Get("FIREWALL") == "yes" {
 		context.Run.Check("The firewall is on", firewallReady)
+		context.Run.Check("LocalSend opens only on networks you trust", trustReady)
 	}
 	if settings.Get("NM_HANDOVER") == "yes" {
 		context.Run.Check("NetworkManager manages every connection", networkReady)

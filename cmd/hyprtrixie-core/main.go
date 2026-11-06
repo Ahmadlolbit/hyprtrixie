@@ -40,6 +40,8 @@ USAGE
   hyprtrixie guide                 Read the guide in the terminal
   hyprtrixie keyboard [LAYOUT]     Show the keyboard layout, list them (list), or set one (run it with sudo)
   hyprtrixie battery-limit [N|off] Show or set where charging stops, 50 to 100 (run it with sudo to set it)
+  hyprtrixie trust [on|off]        Show or set whether you trust the network you're on (run it without sudo);
+                                     LocalSend can receive files only on networks you trust
   hyprtrixie update [PART]         Update everything (run it without sudo): a snapshot, Debian, the apps,
                                      then Hyprtrixie and its installer; PART is system, apps or hyprtrixie
   hyprtrixie changes               Show what the last hyprtrixie update changed
@@ -98,6 +100,7 @@ var commands = map[string]func() int{
 	"guide":         guide,
 	"keyboard":      keyboardCommand,
 	"battery-limit": batteryLimit,
+	"trust":         trustCommand,
 	"module":        module,
 	"undo":          undoCommand,
 	"credits":       creditsCommand,
@@ -170,6 +173,9 @@ func throughScript() int {
 
 func main() {
 	runTool()
+	if env.Arg(1) == "trust" && env.Arg(2) == "apply" {
+		os.Exit(asRoot("trust apply", trustApply))
+	}
 	if root() == "" {
 		os.Exit(run.Report(run.Exec("hyprtrixie", os.Args[1:]...)))
 	}

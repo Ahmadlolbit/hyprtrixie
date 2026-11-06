@@ -210,6 +210,10 @@ func SecureBoot() string {
 	return "unknown"
 }
 
+func Laptop() bool {
+	return laptop()
+}
+
 func laptop() bool {
 	chassis, _ := fsutil.Text(at("/sys/class/dmi/id/chassis_type"))
 	if slices.Contains(laptopish, chassis) {
