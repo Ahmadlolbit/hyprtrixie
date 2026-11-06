@@ -143,8 +143,18 @@ func (writer *serial) Write(data []byte) (int, error) {
 }
 
 func LoggedWithin(limit time.Duration, output io.Writer, name string, args ...string) error {
+	trace(name, args)
+	return loggedWithin(limit, output, name, args)
+}
+
+func LoggedPrivately(limit time.Duration, output io.Writer, name string, args ...string) error {
+	trace(name, []string{"(arguments hidden)"})
+	return loggedWithin(limit, output, name, args)
+}
+
+func loggedWithin(limit time.Duration, output io.Writer, name string, args []string) error {
 	shared := &serial{output: output}
-	command, finish := bounded(limit, shared, name, args)
+	command, finish := limited(limit, shared, name, args)
 	command.Stdout = shared
 	command.Stderr = shared
 	return finish(command.Run())
@@ -257,6 +267,10 @@ func inherit(command *exec.Cmd) {
 
 func bounded(limit time.Duration, messages io.Writer, name string, args []string) (*exec.Cmd, func(error) error) {
 	trace(name, args)
+	return limited(limit, messages, name, args)
+}
+
+func limited(limit time.Duration, messages io.Writer, name string, args []string) (*exec.Cmd, func(error) error) {
 	ctx, cancel := context.WithTimeout(context.Background(), limit)
 	command := exec.CommandContext(ctx, name, args...)
 	command.Cancel = func() error {
