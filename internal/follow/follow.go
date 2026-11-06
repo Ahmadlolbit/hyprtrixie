@@ -20,11 +20,26 @@ func Setting(text, key string) string {
 }
 
 func Color(text, key string) string {
-	found := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(key) + ` *= *"(#[0-9a-fA-F]{6})"`).FindStringSubmatch(text)
+	found := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(key) + ` *= *"(#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3}))"`).FindStringSubmatch(text)
 	if found == nil {
 		return ""
 	}
-	return found[1]
+	color, _ := Hex(found[1])
+	return color
+}
+
+func Hex(value string) (string, bool) {
+	digits, found := strings.CutPrefix(value, "#")
+	if !found || strings.Trim(digits, "0123456789abcdefABCDEF") != "" {
+		return "", false
+	}
+	switch len(digits) {
+	case 3:
+		return string([]byte{'#', digits[0], digits[0], digits[1], digits[1], digits[2], digits[2]}), true
+	case 6, 8:
+		return "#" + digits[:6], true
+	}
+	return "", false
 }
 
 func Channels(color string) [3]int {
