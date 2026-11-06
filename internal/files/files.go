@@ -151,6 +151,9 @@ func place(path string, data []byte, mode os.FileMode, owner string) error {
 }
 
 func (deployer *Deployer) settle(target, hash string, mode os.FileMode, owner string) error {
+	if fsutil.IsLink(target) {
+		return deployer.record(target, hash)
+	}
 	uid, gid, err := ids(owner)
 	if err != nil {
 		return err
@@ -198,11 +201,15 @@ func (deployer *Deployer) existing(target string, data []byte, mode os.FileMode,
 }
 
 func (deployer *Deployer) deploy(data []byte, target string, mode os.FileMode, owner string) (bool, error) {
+	return deployer.put(data, target, mode, owner, true)
+}
+
+func (deployer *Deployer) put(data []byte, target string, mode os.FileMode, owner string, keepEdits bool) (bool, error) {
 	ledger.Note(ledger.File, target)
 	if fsutil.IsDir(target) {
 		return false, fmt.Errorf("a folder is in the way of %s", target)
 	}
-	if fsutil.Exists(target) {
+	if keepEdits && fsutil.Exists(target) {
 		if done, err := deployer.existing(target, data, mode, owner); done || err != nil {
 			return false, err
 		}
@@ -374,12 +381,15 @@ func (deployer *Deployer) ToolAt(name, target string) error {
 		}
 		return deployer.link(filepath.Join(env.BinDir(), program), target)
 	}
-	if !unchanged(source, target) {
-		if err := os.Remove(target); err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return err
-		}
+	if unchanged(source, target) {
+		return deployer.Program(source, target)
 	}
-	return deployer.Program(source, target)
+	data, err := deployer.read(source)
+	if err != nil {
+		return err
+	}
+	_, err = deployer.put(data, target, programMode, systemOwner, false)
+	return err
 }
 
 func (deployer *Deployer) placeOnce(program string) error {
