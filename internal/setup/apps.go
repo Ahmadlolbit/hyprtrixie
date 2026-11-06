@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apps"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
@@ -20,7 +21,11 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 )
 
-const heliumEntry = "helium.desktop"
+const (
+	heliumEntry   = "helium.desktop"
+	snapLimit     = 20 * time.Minute
+	downloadLimit = 30 * time.Minute
+)
 
 var (
 	webTypes     = []string{"x-scheme-handler/http", "x-scheme-handler/https", "text/html", "application/xhtml+xml"}
@@ -81,13 +86,13 @@ func (context *Context) teamsInstall(log *runlog.Log) error {
 		if err := apt.Install(log, "snapd"); err != nil {
 			return err
 		}
-		if err := run.Logged(log, "snap", "wait", "system", "seed.loaded"); err != nil {
+		if err := run.LoggedWithin(snapLimit, log, "snap", "wait", "system", "seed.loaded"); err != nil {
 			return err
 		}
 		if run.Quiet(run.Minute, "snap", "list", apps.TeamsApp) == 0 {
 			return nil
 		}
-		return run.Logged(log, "snap", "install", apps.TeamsApp)
+		return run.LoggedWithin(downloadLimit, log, "snap", "install", apps.TeamsApp)
 	}
 	if err := apt.ExtrepoTry(log, apps.TeamsApp); err != nil {
 		return err

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
@@ -13,6 +14,7 @@ import (
 
 const (
 	flathubURL    = "https://dl.flathub.org/repo/flathub.flatpakrepo"
+	flatpakLimit  = time.Hour
 	bazaarApp     = "io.github.kolunmi.Bazaar"
 	steamApp      = "com.valvesoftware.Steam"
 	mangohudLayer = "org.freedesktop.Platform.VulkanLayer.MangoHud"
@@ -32,12 +34,12 @@ func (context *Context) flathubWanted() bool {
 }
 
 func flathubAdd(log *runlog.Log) error {
-	return run.Logged(log, "flatpak", "remote-add", "--system", "--if-not-exists", "flathub", flathubURL)
+	return run.LoggedWithin(run.Slow, log, "flatpak", "remote-add", "--system", "--if-not-exists", "flathub", flathubURL)
 }
 
 func flatpakInstall(apps ...string) step.Work {
 	return func(log *runlog.Log) error {
-		return run.Logged(log, "flatpak", append([]string{"install", "--system", "--noninteractive", "-y", "flathub"}, apps...)...)
+		return run.LoggedWithin(flatpakLimit, log, "flatpak", append([]string{"install", "--system", "--noninteractive", "-y", "flathub"}, apps...)...)
 	}
 }
 

@@ -32,6 +32,10 @@ const (
 	backportsSuite = "trixie-backports"
 	backportsMark  = "/backports"
 	updateMaxAge   = time.Hour
+	aptLimit       = 2 * time.Hour
+	repairLimit    = 30 * time.Minute
+	extrepoLimit   = 5 * time.Minute
+	lockWait       = "DPkg::Lock::Timeout=600"
 	attempts       = 5
 	folderMode     = 0o755
 	configMode     = 0o644
@@ -78,7 +82,7 @@ func repair(out io.Writer) error {
 		return nil
 	}
 	fmt.Fprintln(out, "dpkg was interrupted, finishing what it left")
-	return run.Logged(out, "dpkg", "--force-confdef", "--force-confold", "--configure", "-a")
+	return run.LoggedWithin(repairLimit, out, "dpkg", "--force-confdef", "--force-confold", "--configure", "-a")
 }
 
 func get(out io.Writer, args ...string) error {
@@ -93,8 +97,8 @@ func get(out io.Writer, args ...string) error {
 	if simulating() {
 		command = append(command, "-s")
 	}
-	command = append(command, "-o", "Dpkg::Use-Pty=0", "-o", "Dpkg::Options::=--force-confdef", "-o", "Dpkg::Options::=--force-confold")
-	return run.Logged(out, "apt-get", append(command, args...)...)
+	command = append(command, "-o", "Dpkg::Use-Pty=0", "-o", lockWait, "-o", "Dpkg::Options::=--force-confdef", "-o", "Dpkg::Options::=--force-confold")
+	return run.LoggedWithin(aptLimit, out, "apt-get", append(command, args...)...)
 }
 
 func fresh() bool {
@@ -396,7 +400,7 @@ func InstallCached(log *runlog.Log, names ...string) error {
 }
 
 func ExtrepoDisable(log *runlog.Log, name string) error {
-	if err := run.Logged(log, "extrepo", "disable", name); err != nil {
+	if err := run.LoggedWithin(extrepoLimit, log, "extrepo", "disable", name); err != nil {
 		return err
 	}
 	if err := os.Remove(stamp()); err != nil && !errors.Is(err, fs.ErrNotExist) {
@@ -409,7 +413,7 @@ func extrepoEnable(log *runlog.Log, name string) error {
 	if err := Install(log, "extrepo"); err != nil || ExtrepoEnabled(name) {
 		return err
 	}
-	return run.Logged(log, "extrepo", "enable", name)
+	return run.LoggedWithin(extrepoLimit, log, "extrepo", "enable", name)
 }
 
 func ExtrepoAllows(policy string) (bool, error) {
@@ -499,7 +503,7 @@ func ExtrepoTry(log *runlog.Log, name string) error {
 		return failure
 	}
 	log.Line("warn", "the "+name+" repository can't be reached from here, turning it off")
-	run.Logged(log, "extrepo", "disable", name)
+	run.LoggedWithin(extrepoLimit, log, "extrepo", "disable", name)
 	if err := ForceUpdate(log); err != nil {
 		return err
 	}
@@ -529,7 +533,7 @@ func Unneeded(log *runlog.Log, names ...string) error {
 	if len(names) == 0 {
 		return nil
 	}
-	if err := run.Logged(log, "apt-mark", append([]string{"auto"}, names...)...); err != nil {
+	if err := mark(log, "auto", names); err != nil {
 		return err
 	}
 	return get(log, "autoremove")
