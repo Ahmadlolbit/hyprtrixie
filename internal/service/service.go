@@ -20,10 +20,10 @@ func Active(unit string) bool {
 
 func Enable(out io.Writer, units ...string) error {
 	for _, unit := range units {
-		ledger.Note(ledger.Service, unit)
 		if Enabled(unit) {
 			continue
 		}
+		ledger.Note(ledger.Service, unit)
 		if err := run.Logged(out, "systemctl", "enable", unit); err != nil {
 			return err
 		}

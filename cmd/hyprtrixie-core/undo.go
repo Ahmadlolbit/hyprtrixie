@@ -182,5 +182,5 @@ func undoCommand() int {
 	if !slices.Contains(undoable, id) {
 		return fail("Module %s can't be undone: only 09, 10, 11 and 16 can, because the others hold up the desktop or the boot.", id)
 	}
-	return asRoot("undo "+id, func() int { return undo(id, yes) })
+	return asRoot("undo "+id, alone(func() int { return undo(id, yes) }))
 }

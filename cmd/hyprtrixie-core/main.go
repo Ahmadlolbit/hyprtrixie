@@ -10,6 +10,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/lock"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
@@ -118,6 +119,17 @@ func asRoot(mode string, command func() int) int {
 	}
 	defer cleanup.IgnoreQuit()()
 	return command()
+}
+
+func alone(command func() int) func() int {
+	return func() int {
+		held, err := lock.Take()
+		if err != nil {
+			return fail("%v", err)
+		}
+		defer held.Close()
+		return command()
+	}
 }
 
 func say(text string) int {

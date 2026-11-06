@@ -49,6 +49,6 @@ func keyboardCommand() int {
 	case "list":
 		return listLayouts()
 	default:
-		return asRoot("keyboard "+id, func() int { return setLayout(id) })
+		return asRoot("keyboard "+id, alone(func() int { return setLayout(id) }))
 	}
 }
