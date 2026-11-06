@@ -64,19 +64,23 @@ func Mounted(path string) bool {
 	return run.Quiet(run.Quick, "mountpoint", "-q", path) == 0
 }
 
-func mountTop(log *runlog.Log) error {
+func mountTop(log *runlog.Log) (bool, error) {
 	if Mounted(top()) {
-		return nil
+		return false, nil
 	}
 	if err := os.MkdirAll(top(), folderMode); err != nil {
-		return err
+		return false, err
 	}
-	return run.Logged(log, "mount", "-o", "subvolid=5", RootDevice(), top())
+	return true, run.Logged(log, "mount", "-o", "subvolid=5", RootDevice(), top())
 }
 
 func ensureSubvolume(log *runlog.Log, name string) error {
-	if err := mountTop(log); err != nil {
+	mounted, err := mountTop(log)
+	if err != nil {
 		return err
+	}
+	if mounted {
+		defer run.Quiet(run.Minute, "umount", top())
 	}
 	path := top() + "/" + name
 	if fsutil.IsDir(path) {

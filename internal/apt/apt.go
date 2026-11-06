@@ -409,11 +409,11 @@ func ExtrepoDisable(log *runlog.Log, name string) error {
 	return nil
 }
 
-func extrepoEnable(log *runlog.Log, name string) error {
+func extrepoEnable(log *runlog.Log, name string) (bool, error) {
 	if err := Install(log, "extrepo"); err != nil || ExtrepoEnabled(name) {
-		return err
+		return false, err
 	}
-	return run.LoggedWithin(extrepoLimit, log, "extrepo", "enable", name)
+	return true, run.LoggedWithin(extrepoLimit, log, "extrepo", "enable", name)
 }
 
 func ExtrepoAllows(policy string) (bool, error) {
@@ -488,10 +488,15 @@ func releaseAddress(name string) (string, error) {
 }
 
 func ExtrepoTry(log *runlog.Log, name string) error {
-	if err := extrepoEnable(log, name); err != nil {
+	enabled, err := extrepoEnable(log, name)
+	if err != nil {
 		return err
 	}
-	failure := ForceUpdate(log)
+	update := Update
+	if enabled {
+		update = ForceUpdate
+	}
+	failure := update(log)
 	if failure == nil || errors.Is(failure, run.ErrStopped) {
 		return failure
 	}

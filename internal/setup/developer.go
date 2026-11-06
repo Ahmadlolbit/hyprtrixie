@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apps"
@@ -29,6 +30,8 @@ const (
 	toolboxTool  = "jetbrains-toolbox"
 	zedDesktop   = "share/applications/dev.zed.Zed.desktop"
 
+	firstSubordinate = 100000
+	subordinateCount = 65536
 	gitLowSpeedLimit = "GIT_HTTP_LOW_SPEED_LIMIT=1024"
 	gitLowSpeedTime  = "GIT_HTTP_LOW_SPEED_TIME=60"
 )
@@ -87,11 +90,40 @@ func (context *Context) podmanInstall(log *runlog.Log) error {
 	if err := apt.InstallLists(log, "dev-podman"); err != nil {
 		return err
 	}
-	entry := context.Person.Name + ":"
-	if fileLineHasPrefix("/etc/subuid", entry) && fileLineHasPrefix("/etc/subgid", entry) {
+	var args []string
+	for _, ids := range [][2]string{{"--add-subuids", subordinateFile("SUBUID", "/etc/subuid")}, {"--add-subgids", subordinateFile("SUBGID", "/etc/subgid")}} {
+		if span, missing := freeRange(ids[1], context.Person.Name); missing {
+			args = append(args, ids[0], span)
+		}
+	}
+	if len(args) == 0 {
 		return nil
 	}
-	return run.Logged(log, "usermod", "--add-subuids", "100000-165535", "--add-subgids", "100000-165535", context.Person.Name)
+	return run.Logged(log, "usermod", append(args, context.Person.Name)...)
+}
+
+func subordinateFile(kind, path string) string {
+	return env.Or("HYPRTRIXIE_"+kind, path)
+}
+
+func freeRange(path, name string) (string, bool) {
+	lines, _ := fsutil.Lines(path)
+	next := firstSubordinate
+	for _, line := range lines {
+		fields := strings.Split(line, ":")
+		if len(fields) != 3 {
+			continue
+		}
+		if fields[0] == name {
+			return "", false
+		}
+		start, first := strconv.Atoi(fields[1])
+		count, second := strconv.Atoi(fields[2])
+		if first == nil && second == nil {
+			next = max(next, start+count)
+		}
+	}
+	return strconv.Itoa(next) + "-" + strconv.Itoa(next+subordinateCount-1), true
 }
 
 func (context *Context) engineWanted() string {
