@@ -28,6 +28,7 @@ var (
 	sizeSlot  = pattern(`\{\{ size ([0-9]{1,4}) \}\}`)
 	largeLine = pattern(`(?m)^\{\{ larger \}\}(.*\n?)`)
 	hues      = []string{"red", "green", "yellow", "blue", "magenta", "cyan"}
+	shades    = []string{"accent", "orange", "brown", "muted", "selection", "selection_background", "selection_foreground", "surface", "raised", "subtext", "theme_accent", "color8", "color15"}
 	textScale = map[string]float64{"normal": 1, "large": 1.25, "larger": 1.5}
 	aliases   = [][2]string{
 		{"background", "bg"}, {"foreground", "fg"}, {"dark_background", "dark_bg"}, {"darker_background", "darker_bg"},
@@ -47,13 +48,36 @@ func pattern(expression string) func() *regexp.Regexp {
 
 func Parse(text string) Colors {
 	colors := Colors{}
-	lines := strings.Split(text, "\n")
-	for _, line := range lines[:len(lines)-1] {
-		if key, value, ok := assignment(line); ok && safeValue().MatchString(value) {
-			colors[key] = value
+	for _, line := range strings.Split(strings.TrimSuffix(text, "\n"), "\n") {
+		if key, value, ok := assignment(line); ok {
+			colors.take(key, value)
 		}
 	}
 	return colors
+}
+
+func (colors Colors) take(key, value string) {
+	if strings.HasPrefix(value, "#") || colourKey(key) {
+		if color, ok := follow.Hex(value); ok {
+			colors[key] = color
+		}
+		return
+	}
+	if safeValue().MatchString(value) {
+		colors[key] = value
+	}
+}
+
+func colourKey(key string) bool {
+	if key == "mode" || key == "theme_type" {
+		return false
+	}
+	for _, pair := range aliases {
+		if pair[0] == key || pair[1] == key {
+			return true
+		}
+	}
+	return slices.Contains(shades, key)
 }
 
 func assignment(line string) (string, string, bool) {
@@ -151,6 +175,9 @@ func WithAccent(text, accent, original string) string {
 		}
 	}
 	result := strings.Join(lines, "\n")
+	if result != "" && !strings.HasSuffix(result, "\n") {
+		result += "\n"
+	}
 	if !found {
 		result += line + "\n"
 	}

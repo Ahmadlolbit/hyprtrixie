@@ -37,12 +37,16 @@ Singleton {
     return Math.round(pixels * textScale);
   }
 
+  function hex(digits) {
+    return "#" + (digits.length === 3 ? digits.replace(/./g, digit => digit + digit) : digits.slice(0, 6));
+  }
+
   function parse(text) {
     const colors = {};
     for (const line of text.split("\n")) {
-      const match = line.match(/^\s*([a-z0-9_]+)\s*=\s*"(#[0-9A-Fa-f]{6})"/);
+      const match = line.match(/^\s*([a-z0-9_]+)\s*=\s*"#([0-9A-Fa-f]{8}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})"/);
       if (match)
-        colors[match[1]] = match[2];
+        colors[match[1]] = hex(match[2]);
     }
     return colors;
   }
