@@ -11,15 +11,19 @@ Singleton {
   readonly property bool detailed: Popups.open !== null && Popups.open.name === "temperature"
   readonly property var cpu: typeof report.cpu === "number" ? report.cpu : null
 
+  function read() {
+    probe.command = detailed ? ["hyprtrixie-sensors"] : ["hyprtrixie-sensors", "cpu"];
+    probe.running = true;
+  }
+
   onDetailedChanged: {
     if (detailed)
-      probe.running = true;
+      read();
   }
 
   Process {
     id: probe
 
-    command: root.detailed ? ["hyprtrixie-sensors"] : ["hyprtrixie-sensors", "cpu"]
     stdout: StdioCollector {
       onStreamFinished: {
         try {
@@ -36,6 +40,6 @@ Singleton {
     running: true
     repeat: true
     triggeredOnStart: true
-    onTriggered: probe.running = true
+    onTriggered: root.read()
   }
 }
