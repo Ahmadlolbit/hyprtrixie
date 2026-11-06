@@ -1,8 +1,12 @@
 package fetch
 
 import (
+	"errors"
+	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -76,28 +80,77 @@ func fileName(address string) string {
 	return address[strings.LastIndex(address, "/")+1:]
 }
 
+func downloads() string {
+	return filepath.Join(env.CacheDir(), "downloads")
+}
+
+func keptIndex() string {
+	return filepath.Join(downloads(), "kept")
+}
+
+func readKept() map[string]string {
+	kept := map[string]string{}
+	for _, line := range strings.Split(fsutil.Optional(keptIndex()), "\n") {
+		if name, file, found := strings.Cut(line, "\t"); found && file == filepath.Base(file) && !strings.HasPrefix(file, ".") {
+			kept[name] = file
+		}
+	}
+	return kept
+}
+
+func writeKept(kept map[string]string) error {
+	var text strings.Builder
+	for _, name := range slices.Sorted(maps.Keys(kept)) {
+		text.WriteString(name + "\t" + kept[name] + "\n")
+	}
+	return atomic.Write(keptIndex(), []byte(text.String()), stateFileMode)
+}
+
+func keepOnly(log *runlog.Log, name, file string) {
+	kept := readKept()
+	older := kept[name]
+	if older == file {
+		return
+	}
+	if older != "" {
+		if err := os.Remove(filepath.Join(downloads(), older)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			log.Line("warn", "cannot remove the older download "+older+": "+err.Error())
+		}
+	}
+	kept[name] = file
+	if err := writeKept(kept); err != nil {
+		log.Line("warn", "cannot note the download "+file+": "+err.Error())
+	}
+}
+
+func fetchChecked(log *runlog.Log, release Release, file string) error {
+	log.Line("info", "downloading "+release.URL)
+	if err := download(log, release.URL, file+".part"); err != nil {
+		return err
+	}
+	if !sumOK(file+".part", release.SHA256) {
+		os.Remove(file + ".part")
+		return log.Failed("checksum mismatch for " + release.Name + " " + release.Version)
+	}
+	return os.Rename(file+".part", file)
+}
+
 func FetchRelease(log *runlog.Log, name string) (string, error) {
 	release, err := GetRelease(log, name)
 	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(env.CacheDir(), "downloads")
-	file := filepath.Join(dir, release.Name+"-"+release.Version+"-"+fileName(release.URL))
-	if err := os.MkdirAll(dir, folderMode); err != nil {
+	file := filepath.Join(downloads(), release.Name+"-"+release.Version+"-"+fileName(release.URL))
+	if err := os.MkdirAll(downloads(), folderMode); err != nil {
 		return "", err
 	}
-	if sumOK(file, release.SHA256) {
-		return file, nil
+	if !sumOK(file, release.SHA256) {
+		if err := fetchChecked(log, release, file); err != nil {
+			return "", err
+		}
 	}
-	log.Line("info", "downloading "+release.URL)
-	if err := download(log, release.URL, file+".part"); err != nil {
-		return "", err
-	}
-	if !sumOK(file+".part", release.SHA256) {
-		os.Remove(file + ".part")
-		return "", log.Failed("checksum mismatch for " + release.Name + " " + release.Version)
-	}
-	return file, os.Rename(file+".part", file)
+	keepOnly(log, release.Name, filepath.Base(file))
+	return file, nil
 }
 
 func marker(kind, name string) string {
