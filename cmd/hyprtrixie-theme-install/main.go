@@ -7,26 +7,42 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/theme"
 )
 
 const usage = `Usage: hyprtrixie-theme-install <https URL of a theme repository>
 
 Clones a theme into ~/.config/hyprtrixie/themes and applies it. A theme
 from a repository can change colours and backgrounds, but not run code.
+Installing it again takes its newest version; a folder of the same name
+that isn't a clone of that repository stays, and the install stops.
 `
-
-var validName = regexp.MustCompile(`^[a-z0-9_][a-z0-9._+-]*$`)
 
 func themeName(url string) string {
 	name := path.Base(strings.TrimRight(url, "/"))
 	name = strings.TrimSuffix(name, ".git")
 	name = strings.TrimSuffix(name, "-theme")
-	return strings.ToLower(name)
+	return theme.NameOf(name)
+}
+
+func plain(url string) string {
+	return strings.TrimSuffix(strings.TrimRight(strings.TrimSpace(url), "/"), ".git")
+}
+
+func taken(dir, url string) bool {
+	if _, err := os.Lstat(dir); err != nil {
+		return false
+	}
+	if !fsutil.IsDir(filepath.Join(dir, ".git")) {
+		return true
+	}
+	origin, err := run.CaptureQuiet(run.Quick, "git", "-C", dir, "config", "--get", "remote.origin.url")
+	return err != nil || plain(origin) != plain(url)
 }
 
 func swap(part, dir string) error {
@@ -73,11 +89,16 @@ func main() {
 		os.Exit(2)
 	}
 	name := themeName(url)
-	if !validName.MatchString(name) {
+	if !theme.ValidName(name) {
 		fmt.Fprintf(os.Stderr, "cannot tell the theme name from %s\n", url)
 		os.Exit(1)
 	}
-	if !install(url, filepath.Join(env.AppConfig(), "themes", name)) {
+	dir := filepath.Join(env.AppConfig(), "themes", name)
+	if taken(dir, url) {
+		fmt.Fprintf(os.Stderr, "%s is already there and isn't a clone of %s; move it away to install this one\n", dir, url)
+		os.Exit(1)
+	}
+	if !install(url, dir) {
 		os.Exit(1)
 	}
 	os.Exit(run.Report(run.Exec("hyprtrixie-theme-set", name)))

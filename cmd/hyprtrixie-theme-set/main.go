@@ -58,7 +58,7 @@ func userThemes() string {
 func themesIn(dir string) []string {
 	var names []string
 	for _, entry := range fsutil.Entries(dir) {
-		if entry.IsDir() || entry.Type()&os.ModeSymlink != 0 {
+		if (entry.IsDir() || entry.Type()&os.ModeSymlink != 0) && theme.ValidName(entry.Name()) {
 			names = append(names, entry.Name())
 		}
 	}
@@ -87,24 +87,44 @@ func previewOf(name string) string {
 	return ""
 }
 
-func stageFromGit(own, next string) error {
+func stageOwn(own, next string) error {
 	entries, err := os.ReadDir(own)
 	if err != nil {
 		return err
 	}
 	for _, entry := range entries {
-		base := entry.Name()
-		switch {
-		case strings.HasPrefix(base, "."):
-		case entry.Type()&os.ModeSymlink != 0 || strings.HasSuffix(base, ".lua") || strings.Contains(denied, " "+base+" "):
-			fmt.Fprintf(os.Stderr, "ignored %s from %s: a theme from a git repo cannot ship code or terminal configs\n", base, own)
-		default:
-			if err := fsutil.CopyEntry(filepath.Join(own, base), filepath.Join(next, base)); err != nil {
-				return err
-			}
+		if err := stageEntry(own, next, entry); err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+func stageEntry(own, next string, entry fs.DirEntry) error {
+	base := entry.Name()
+	source, target := filepath.Join(own, base), filepath.Join(next, base)
+	switch {
+	case strings.HasPrefix(base, "."):
+		return nil
+	case strings.HasSuffix(base, ".lua") || strings.Contains(denied, " "+base+" "):
+		fmt.Fprintf(os.Stderr, "ignored %s from %s: your themes can't bring code or settings that run commands\n", base, own)
+		return nil
+	case entry.Type()&os.ModeSymlink != 0:
+		return stageLink(source, target)
+	}
+	return fsutil.CopyEntry(source, target)
+}
+
+func stageLink(source, target string) error {
+	if !fsutil.IsFile(source) {
+		fmt.Fprintf(os.Stderr, "ignored %s: it links to something other than a file\n", source)
+		return nil
+	}
+	data, err := os.ReadFile(source)
+	if err != nil {
+		return err
+	}
+	return atomic.Install(target, data, 0o644)
 }
 
 func stage(name, next string) error {
@@ -123,10 +143,7 @@ func stage(name, next string) error {
 	if !fsutil.IsDir(own) {
 		return nil
 	}
-	if fsutil.IsLink(own) || !fsutil.IsDir(filepath.Join(own, ".git")) {
-		return fsutil.CopyTree(own, next)
-	}
-	return stageFromGit(own, next)
+	return stageOwn(own, next)
 }
 
 func overrideAccent(colors theme.Colors, file string) {
@@ -449,8 +466,7 @@ func lock() (*os.File, error) {
 
 func set(argument string) int {
 	name := theme.Slug(argument)
-	if name == "" || strings.HasPrefix(name, ".") || strings.Contains(name, "/") ||
-		(!fsutil.IsDir(filepath.Join(systemRoot, "themes", name)) && !fsutil.IsDir(filepath.Join(userThemes(), name))) {
+	if !theme.ValidName(name) || (!fsutil.IsDir(filepath.Join(systemRoot, "themes", name)) && !fsutil.IsDir(filepath.Join(userThemes(), name))) {
 		fmt.Fprintf(os.Stderr, "no theme named %s; see hyprtrixie-theme-set --list\n", argument)
 		return 1
 	}

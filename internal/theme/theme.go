@@ -239,6 +239,16 @@ func ValidName(name string) bool {
 	return themeName().MatchString(name)
 }
 
+func NameOf(text string) string {
+	name := []byte(strings.ToLower(text))
+	for index, char := range name {
+		if (char < 'a' || char > 'z') && (char < '0' || char > '9') && char != '_' {
+			name[index] = '-'
+		}
+	}
+	return strings.Trim(string(name), "-_")
+}
+
 func ValidFont(name string) bool {
 	return fontName().MatchString(name)
 }
