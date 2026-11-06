@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import Quickshell.Networking
 import qs.common
 
@@ -16,6 +17,8 @@ Label {
   readonly property var wifi: Networking.devices.values.find(item => item.type === DeviceType.Wifi) || null
   property var asking: null
   property string failure: ""
+  property bool trusted: false
+  property string trustedName: ""
 
   function strength(network) {
     return network.signalStrength > 1 ? network.signalStrength / 100 : network.signalStrength;
@@ -100,6 +103,8 @@ Label {
       root.failure = "";
       if (root.wifi)
         root.wifi.scannerEnabled = visible;
+      if (visible)
+        trustStatus.running = true;
     }
 
     RowLayout {
@@ -194,6 +199,34 @@ Label {
       color: Theme.critical
     }
 
+    RowLayout {
+      visible: root.trustedName !== ""
+      Layout.fillWidth: true
+      spacing: 10
+
+      Label {
+        Layout.fillWidth: true
+        text: "Trust this network"
+      }
+
+      Toggle {
+        checked: root.trusted
+        onToggled: {
+          trustChange.command = ["hyprtrixie", "trust", root.trusted ? "off" : "on"];
+          trustChange.running = true;
+        }
+      }
+    }
+
+    Label {
+      visible: root.trustedName !== ""
+      Layout.fillWidth: true
+      Layout.preferredWidth: Theme.size(300)
+      text: root.trusted ? "LocalSend can receive files on " + root.trustedName : "LocalSend can't receive files on " + root.trustedName
+      color: Theme.subtext
+      wrapMode: Text.WordWrap
+    }
+
     Label {
       text: "More settings"
       color: Theme.accent
@@ -207,5 +240,24 @@ Label {
         }
       }
     }
+  }
+
+  Process {
+    id: trustStatus
+
+    command: ["hyprtrixie", "trust"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        const fields = text.trim().split("\t");
+        root.trusted = fields[0] === "yes";
+        root.trustedName = fields.length === 2 ? fields[1] : "";
+      }
+    }
+  }
+
+  Process {
+    id: trustChange
+
+    onExited: trustStatus.running = true
   }
 }
