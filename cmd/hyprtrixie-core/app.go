@@ -56,7 +56,7 @@ func appChange(action string, change func(apps.App) int) int {
 	if os.Getenv("HYPRTRIXIE_ENGINE") == "" {
 		return throughScript()
 	}
-	return asRoot("app-"+action, func() int { return change(app) })
+	return asRoot("app "+action+" "+id, func() int { return change(app) })
 }
 
 func appCommand() int {

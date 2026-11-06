@@ -39,7 +39,6 @@ const (
 	gtkBase        = "adw-gtk3"
 	gtkThemes      = "/usr/share/themes"
 	consoleService = "hyprtrixie-console.service"
-	consoleSetup   = "/etc/default/console-setup"
 	consoleBanner  = "/etc/issue.d/hyprtrixie.issue"
 	unitFolder     = "/etc/systemd/system/"
 	splashScript   = "/usr/share/plymouth/themes/hyprtrixie/"
@@ -49,6 +48,7 @@ const (
 )
 
 var (
+	consoleFont = [][2]string{{"FONTFACE", `"Terminus"`}, {"FONTSIZE", `"16x32"`}}
 	themeFiles  = []string{"colors.toml", "icons.theme", "preview.png"}
 	themeTools  = []string{"hyprtrixie-look", "hyprtrixie-theme-install", "hyprtrixie-weather", "hyprtrixie-background", themeSetter}
 	lookOptions = [][2]string{
@@ -548,21 +548,65 @@ func (theme *themeRun) grubSetup(log *runlog.Log) error {
 	})
 }
 
-func (theme *themeRun) consoleInstall(log *runlog.Log) error {
-	if theme.Config.Get("CONSOLE_THEME") != "yes" {
-		if err := theme.Deploy.Remove(consoleBanner); err != nil {
+func consoleSetup() string {
+	return env.Or("HYPRTRIXIE_CONSOLE_SETUP", "/etc/default/console-setup")
+}
+
+func settingIn(path, key string) string {
+	lines, _ := fsutil.Lines(path)
+	for _, line := range lines {
+		if value, found := strings.CutPrefix(strings.TrimSpace(line), key+"="); found {
+			return value
+		}
+	}
+	return ""
+}
+
+func consoleFontBack() error {
+	saved := consoleSetup() + ".hyprtrixie-old"
+	for _, setting := range consoleFont {
+		old := settingIn(saved, setting[0])
+		if old == "" || settingIn(consoleSetup(), setting[0]) != setting[1] {
+			continue
+		}
+		if err := files.ConfSet(consoleSetup(), setting[0], old); err != nil {
 			return err
 		}
-		return service.Disable(log, consoleService)
+	}
+	return nil
+}
+
+func keepConsoleSetup(log *runlog.Log) error {
+	if !fsutil.IsFile(consoleSetup()) {
+		return nil
+	}
+	return keepOld(log, consoleSetup())
+}
+
+func (theme *themeRun) consoleOff(log *runlog.Log) error {
+	if err := theme.Deploy.Remove(consoleBanner); err != nil {
+		return err
+	}
+	if err := consoleFontBack(); err != nil {
+		return err
+	}
+	return service.Disable(log, consoleService)
+}
+
+func (theme *themeRun) consoleInstall(log *runlog.Log) error {
+	if theme.Config.Get("CONSOLE_THEME") != "yes" {
+		return theme.consoleOff(log)
 	}
 	if err := apt.Install(log, "kbd", "console-setup"); err != nil {
 		return err
 	}
-	if err := files.ConfSet(consoleSetup, "FONTFACE", `"Terminus"`); err != nil {
+	if err := keepConsoleSetup(log); err != nil {
 		return err
 	}
-	if err := files.ConfSet(consoleSetup, "FONTSIZE", `"16x32"`); err != nil {
-		return err
+	for _, setting := range consoleFont {
+		if err := files.ConfSet(consoleSetup(), setting[0], setting[1]); err != nil {
+			return err
+		}
 	}
 	if err := theme.Deploy.File("system/systemd/"+consoleService, unitFolder+consoleService); err != nil {
 		return err

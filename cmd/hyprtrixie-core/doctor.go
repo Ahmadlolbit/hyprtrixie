@@ -428,5 +428,5 @@ func examine() int {
 }
 
 func doctor() int {
-	return asRoot("", examine)
+	return asRoot("doctor", examine)
 }

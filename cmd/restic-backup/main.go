@@ -11,6 +11,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/restic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
@@ -126,6 +127,9 @@ func backup() int {
 		"--exclude", home + "/.local/share/containers", "--exclude", "node_modules"}
 	if !useRepository() {
 		return 1
+	}
+	if repository, inside := restic.InsideHome(os.Getenv("RESTIC_REPOSITORY"), home); inside {
+		args = append(args, "--exclude", repository)
 	}
 	excludes := filepath.Join(configDir(), "excludes")
 	if fsutil.IsFile(excludes) {

@@ -40,15 +40,18 @@ build() {
     as_root apt-get update
     as_root apt-get install -y golang-go
   fi
-  if [[ -e $root/build && ! -w $root/build ]]; then
+  local builder=()
+  if [[ -e $root/build && ! -w $root/build && -O $root ]]; then
     as_root chown -R "$(id -u):$(id -g)" "$root/build"
+  elif [[ -e $root/build && ! -w $root/build ]]; then
+    builder=(as_root)
   fi
   printf 'Building the Hyprtrixie tools\n' >&2
-  (cd "$root" && CGO_ENABLED=0 go build -buildvcs=false -trimpath -ldflags='-s -w' -o "$tools/" ./cmd/...)
+  (cd "$root" && "${builder[@]}" env CGO_ENABLED=0 go build -buildvcs=false -trimpath -ldflags='-s -w' -o "$tools/" ./cmd/...)
   local tool
   for tool in "$root"/cmd/hyprtrixie-core/tools/*/; do
     tool="${tool%/}"
-    ln -sfn hyprtrixie-core "$tools/${tool##*/}"
+    "${builder[@]}" ln -sfn hyprtrixie-core "$tools/${tool##*/}"
   done
 }
 
@@ -78,7 +81,7 @@ case "${1:-} ${2:-}" in
     fresh "$@"
     ;;
   "app install" | "app remove")
-    needs_root "app-$2"
+    needs_root "app $2${3:+ $3}"
     build
     fresh "$@"
     ;;
