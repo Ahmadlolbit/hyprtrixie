@@ -2,6 +2,7 @@ package fetch
 
 import (
 	"errors"
+	"io"
 	"io/fs"
 	"maps"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
@@ -36,6 +38,10 @@ type Release struct {
 type Source struct {
 	URL    string
 	Commit string
+}
+
+type Person interface {
+	RunWithin(limit time.Duration, out io.Writer, args ...string) error
 }
 
 func manifestLine(file, name string) []string {
@@ -255,32 +261,37 @@ func GitCached(log *runlog.Log, name string, paths ...string) (string, error) {
 	return target, Git(log, name, target, paths...)
 }
 
-func GitCopy(log *runlog.Log, name, target string) error {
+func GitShared(log *runlog.Log, name string) (string, error) {
+	cached, err := GitCached(log, name)
+	if err != nil {
+		return "", err
+	}
+	if err := run.LoggedWithin(run.Quick, log, "chmod", "a+x", env.CacheDir(), filepath.Dir(cached)); err != nil {
+		return "", err
+	}
+	return cached, run.LoggedWithin(run.Minute, log, "chmod", "-R", "a+rX", cached)
+}
+
+func GitCopy(log *runlog.Log, name, target string, person Person) error {
 	source, err := GetSource(log, name)
 	if err != nil {
 		return err
 	}
-	if fsutil.IsDir(filepath.Join(target, ".git")) && head(target) == source.Commit {
+	var current strings.Builder
+	if person.RunWithin(run.Quick, &current, "git", "-C", target, "rev-parse", "HEAD") == nil && strings.TrimSpace(current.String()) == source.Commit {
 		return nil
 	}
-	cached, err := GitCached(log, name)
+	cached, err := GitShared(log, name)
 	if err != nil {
 		return err
 	}
 	part := target + ".part"
-	if err := os.RemoveAll(part); err != nil {
-		return err
+	for _, args := range [][]string{{"rm", "-rf", part}, {"cp", "-R", cached, part}, {"rm", "-rf", target}, {"mv", "-T", part, target}} {
+		if err := person.RunWithin(run.Slow, log, args...); err != nil {
+			return err
+		}
 	}
-	if err := os.MkdirAll(filepath.Dir(target), folderMode); err != nil {
-		return err
-	}
-	if err := fsutil.CopyTree(cached, part); err != nil {
-		return err
-	}
-	if err := os.RemoveAll(target); err != nil {
-		return err
-	}
-	return os.Rename(part, target)
+	return nil
 }
 
 func inPlace(target string, mode os.FileMode) bool {
