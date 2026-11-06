@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/battery"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/bus"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
@@ -15,6 +17,7 @@ const (
 	batteryPlugged = "\U000f0084"
 	lockLineRunes  = 60
 	trackFormat    = "{{status}}\t{{title}}\t{{artist}}"
+	playerName     = "org.mpris.MediaPlayer2."
 )
 
 var (
@@ -47,7 +50,19 @@ func chosenTrack(output string) []string {
 	return paused
 }
 
+func isPlayer(name string) bool {
+	return strings.HasPrefix(name, playerName)
+}
+
+func noPlayer() bool {
+	names, err := bus.Names()
+	return err == nil && !slices.ContainsFunc(names, isPlayer)
+}
+
 func trackLine() string {
+	if noPlayer() {
+		return ""
+	}
 	output, err := run.CaptureQuiet(run.Quick, "playerctl", "--all-players", "metadata", "--format", trackFormat)
 	track := chosenTrack(output)
 	if err != nil || track == nil {
