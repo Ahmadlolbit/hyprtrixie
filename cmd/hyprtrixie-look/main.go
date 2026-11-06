@@ -289,8 +289,15 @@ func flatWallpaper() int {
 }
 
 func workspaces(args []string) int {
-	on := putThen("workspaces", "yes", func() int { return background("workspaces") })
-	return onOff{"workspaces", on, putThen("workspaces", "no", flatWallpaper)}.run(args)
+	on := putThen("workspaces", "yes", func() int {
+		look.ReloadShell()
+		return background("workspaces")
+	})
+	off := putThen("workspaces", "no", func() int {
+		look.ReloadShell()
+		return flatWallpaper()
+	})
+	return onOff{"workspaces", on, off}.run(args)
 }
 
 func video(args []string) int {

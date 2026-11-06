@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Services.UPower
+import qs.common
 
 Scope {
   function followPower() {
@@ -25,11 +26,18 @@ Scope {
     command: ["hyprtrixie-look", "tick"]
   }
 
-  Connections {
-    target: Hyprland
+  Variants {
+    model: Theme.looks.workspaces === "yes" ? Hyprland.monitors.values : []
 
-    function onFocusedWorkspaceChanged() {
-      Quickshell.execDetached(["hyprtrixie-background", "workspaces"]);
+    Connections {
+      required property HyprlandMonitor modelData
+
+      target: modelData
+
+      function onActiveWorkspaceChanged() {
+        if (modelData.activeWorkspace)
+          Quickshell.execDetached(["hyprtrixie-background", "workspace", modelData.name, String(modelData.activeWorkspace.id)]);
+      }
     }
   }
 
