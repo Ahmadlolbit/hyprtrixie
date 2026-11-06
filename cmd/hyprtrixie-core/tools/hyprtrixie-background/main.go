@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -23,11 +24,13 @@ const usage = `Usage: hyprtrixie-background <file>
        hyprtrixie-background --list
        hyprtrixie-background --current
        hyprtrixie-background workspaces
+       hyprtrixie-background workspace MONITOR WORKSPACE
 
 Sets the wallpaper. Backgrounds come from the current theme and from
 ~/.config/hyprtrixie/backgrounds/<theme>. With a wallpaper per workspace on
 (hyprtrixie-look workspaces on), each workspace shows the next one along,
-and workspaces shows each monitor's.
+workspaces shows each monitor's, and workspace shows one monitor's for the
+workspace it just switched to.
 `
 
 func state() string {
@@ -72,18 +75,37 @@ func workspaces() bool {
 	if len(found) == 0 {
 		return true
 	}
-	offset := max(slices.Index(found, current()), 0)
 	monitors, _ := hypr.QuietMonitors()
 	for _, monitor := range monitors {
 		if monitor.ActiveWorkspace.ID == nil {
 			continue
 		}
-		id := max(*monitor.ActiveWorkspace.ID, 1)
-		if !hypr.Wallpaper(monitor.Name, found[(id-1+offset)%len(found)]) {
+		if !hypr.Wallpaper(monitor.Name, forWorkspace(found, *monitor.ActiveWorkspace.ID)) {
 			return false
 		}
 	}
 	return true
+}
+
+func forWorkspace(found []string, id int) string {
+	offset := max(slices.Index(found, current()), 0)
+	return found[(max(id, 1)-1+offset)%len(found)]
+}
+
+func oneWorkspace(monitor, workspace string) int {
+	id, err := strconv.Atoi(workspace)
+	if err != nil || !hypr.ValidMonitor(monitor) {
+		fmt.Fprint(os.Stderr, usage)
+		return 2
+	}
+	if !inHyprland() || !perWorkspace() {
+		return 0
+	}
+	found := backgrounds()
+	if len(found) == 0 || hypr.Wallpaper(monitor, forWorkspace(found, id)) {
+		return 0
+	}
+	return 1
 }
 
 func overIPC(file string) bool {
@@ -191,6 +213,8 @@ func Main() {
 		os.Exit(showCurrent())
 	case "workspaces":
 		os.Exit(showWorkspaces())
+	case "workspace":
+		os.Exit(oneWorkspace(env.Arg(2), env.Arg(3)))
 	case "next":
 		os.Exit(moveOn())
 	default:

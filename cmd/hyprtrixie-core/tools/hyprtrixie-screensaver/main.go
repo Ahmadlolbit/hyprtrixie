@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 
@@ -37,8 +36,7 @@ const (
 	mouseOn    = "\x1b[?1003h\x1b[?1006h"
 	mouseOff   = "\x1b[?1006l\x1b[?1003l"
 
-	effectLimit       = time.Hour
-	monitorCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"
+	effectLimit = time.Hour
 )
 
 var effects = []string{"beams", "binarypath", "blackhole", "bouncyballs", "bubbles", "burn", "colorshift", "crumble", "decrypt", "errorcorrect", "expand", "fireworks",
@@ -74,7 +72,7 @@ func monitors() []string {
 	var others, last []string
 	for _, monitor := range found {
 		switch {
-		case !validMonitor(monitor.Name):
+		case !hypr.ValidMonitor(monitor.Name):
 		case monitor.Focused:
 			last = append(last, monitor.Name)
 		default:
@@ -82,10 +80,6 @@ func monitors() []string {
 		}
 	}
 	return append(others, last...)
-}
-
-func validMonitor(name string) bool {
-	return name != "" && strings.Trim(name, monitorCharacters) == ""
 }
 
 func dispatch(command string) int {

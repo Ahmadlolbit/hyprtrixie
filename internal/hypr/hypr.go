@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
+
+const monitorCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"
 
 type Monitor struct {
 	Name            string `json:"name"`
@@ -65,6 +68,10 @@ func parsed[T any](what, output string, failed error) (T, bool) {
 		return nothing, false
 	}
 	return value, true
+}
+
+func ValidMonitor(name string) bool {
+	return name != "" && strings.Trim(name, monitorCharacters) == ""
 }
 
 func Wallpaper(monitor, file string) bool {
