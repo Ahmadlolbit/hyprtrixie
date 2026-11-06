@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -13,15 +14,48 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
 const (
-	fileMode = 0o644
-	dirMode  = 0o755
-	runStamp = "20060102-150405"
-	canWrite = 2
+	fileMode    = 0o644
+	dirMode     = 0o755
+	privateFile = 0o600
+	privateDir  = 0o700
+	runStamp    = "20060102-150405"
+	canWrite    = 2
+	hiddenStamp = ".secrets-hidden"
 )
+
+var secrets = regexp.MustCompile(`(wifi-sec\.psk|802-11-wireless-security\.psk|wpa-psk|psk=)[^\n]*`)
+
+func Redact(text string) string {
+	return secrets.ReplaceAllString(text, "$1 (hidden)")
+}
+
+func hideIn(path string) {
+	info, err := os.Lstat(path)
+	if err != nil || !info.Mode().IsRegular() {
+		return
+	}
+	data, err := os.ReadFile(path)
+	if hidden := Redact(string(data)); err == nil && hidden != string(data) {
+		atomic.Write(path, []byte(hidden), info.Mode().Perm())
+	}
+}
+
+func hideOldSecrets(dir string) {
+	stamp := filepath.Join(dir, hiddenStamp)
+	if fsutil.Exists(stamp) {
+		return
+	}
+	logs, _ := filepath.Glob(filepath.Join(dir, "*.log"))
+	for _, path := range logs {
+		hideIn(path)
+	}
+	atomic.Write(stamp, nil, fileMode)
+}
 
 type Log struct {
 	file        string
@@ -43,6 +77,7 @@ func Start(what string) (*Log, error) {
 	if err := os.Chmod(dir, dirMode); err != nil {
 		return nil, err
 	}
+	hideOldSecrets(dir)
 	name := "run-" + time.Now().Format(runStamp) + ".log"
 	log := &Log{file: filepath.Join(dir, name)}
 	if err := add(log.file, os.O_CREATE, nil); err != nil {
@@ -55,20 +90,66 @@ func Start(what string) (*Log, error) {
 	return log, nil
 }
 
-func (log *Log) Attach(home, owner string) error {
-	dir := filepath.Join(home, "runbook-logs")
-	if err := os.MkdirAll(dir, dirMode); err != nil {
+func private(path string, how int, mode os.FileMode) (*os.File, error) {
+	file, err := os.OpenFile(path, how|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, mode)
+	if err != nil {
+		return nil, err
+	}
+	if err := file.Chmod(mode); err != nil {
+		file.Close()
+		return nil, err
+	}
+	return file, nil
+}
+
+func hideInCopy(file *os.File) error {
+	data, err := io.ReadAll(file)
+	if err != nil {
 		return err
 	}
-	if info, err := os.Lstat(dir); err != nil || !info.IsDir() {
+	hidden := Redact(string(data))
+	if hidden == string(data) {
+		return nil
+	}
+	if err := file.Truncate(0); err != nil {
+		return err
+	}
+	_, err = file.WriteAt([]byte(hidden), 0)
+	return err
+}
+
+func startCopy(target string, earlier []byte) error {
+	file, err := private(target, os.O_RDWR|os.O_CREATE, privateFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	if err := hideInCopy(file); err != nil {
+		return err
+	}
+	if _, err := file.Seek(0, io.SeekEnd); err != nil {
+		return err
+	}
+	_, err = file.Write(append([]byte("\n"), earlier...))
+	return err
+}
+
+func (log *Log) Attach(home, owner string) error {
+	dir := filepath.Join(home, "runbook-logs")
+	if err := os.MkdirAll(dir, privateDir); err != nil {
+		return err
+	}
+	folder, err := private(dir, os.O_RDONLY|syscall.O_DIRECTORY, privateDir)
+	if err != nil {
 		return fmt.Errorf("%s is not a folder", dir)
 	}
+	folder.Close()
 	earlier, err := os.ReadFile(log.file)
 	if err != nil {
 		return err
 	}
 	target := filepath.Join(dir, "runbook.log")
-	if err := add(target, os.O_CREATE|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, append([]byte("\n"), earlier...)); err != nil {
+	if err := startCopy(target, earlier); err != nil {
 		return err
 	}
 	log.copy = target

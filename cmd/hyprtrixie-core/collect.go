@@ -3,13 +3,17 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io/fs"
+	"net/netip"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/deployed"
@@ -18,9 +22,15 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/modules"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 )
 
-const kernelLines = 100
+const (
+	kernelLines = 100
+	privateMode = 0o600
+)
+
+var details = regexp.MustCompile(`(?m)^(\s*(?:title|initialTitle|lastwindowtitle|serial):).*$`)
 
 var hyprRequests = [][]string{{"version"}, {"monitors"}, {"workspaces"}, {"clients"}, {"layers"}, {"configerrors"}, {"hyprpaper", "listactive"}}
 
@@ -138,13 +148,55 @@ func (out *report) system() {
 	out.command("lspci", "-nnk")
 	out.command("lsusb")
 	out.write("\n")
-	out.command("ip", "-brief", "address")
+	out.addresses()
 	out.command("nmcli", "general", "status")
 	out.command("findmnt", "-t", "btrfs")
 	out.write("\n")
 	out.command("dpkg-query", "-W", "-f", "${Package} ${Version}\n", "hyprland*", "quickshell", "linux-image-*", "firmware-*", "nvidia-*", "mesa-vulkan-drivers")
 	out.write("\n")
 	out.command("journalctl", "-b", "-p", "warning", "--no-pager", "-n", "300")
+}
+
+func public(address netip.Addr) bool {
+	return address.IsGlobalUnicast() && !address.IsPrivate()
+}
+
+func maskAddresses(line string) string {
+	fields := strings.Fields(line)
+	for index, field := range fields {
+		text, size, found := strings.Cut(field, "/")
+		if address, err := netip.ParseAddr(text); found && err == nil && public(address) {
+			fields[index] = "(public)/" + size
+		}
+	}
+	return strings.Join(fields, " ")
+}
+
+func (out *report) addresses() {
+	output, _ := out.quiet("ip", "-brief", "address")
+	for _, line := range run.Lines(output) {
+		out.write("%s\n", maskAddresses(line))
+	}
+}
+
+func hideDetails(text string) string {
+	return details.ReplaceAllString(runlog.Redact(text), "$1 (hidden)")
+}
+
+func privatize(folder string) error {
+	return filepath.WalkDir(folder, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil || !entry.Type().IsRegular() {
+			return err
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if hidden := hideDetails(string(data)); hidden != string(data) {
+			return atomic.Write(path, []byte(hidden), privateMode)
+		}
+		return nil
+	})
 }
 
 func (out *report) desktop() {
@@ -278,7 +330,7 @@ func (out *report) everything() {
 }
 
 func writeReport(path string, person account.Account, fill func(*report)) error {
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o666)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, privateMode)
 	if err != nil {
 		return err
 	}
@@ -288,7 +340,7 @@ func writeReport(path string, person account.Account, fill func(*report)) error 
 }
 
 func copyAsUser(person account.Account, source, folder string) {
-	target, err := os.OpenFile(filepath.Join(folder, filepath.Base(source)), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
+	target, err := os.OpenFile(filepath.Join(folder, filepath.Base(source)), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, privateMode)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
@@ -316,7 +368,7 @@ func copyLogs(person account.Account, folder string) {
 }
 
 func saveFor(person account.Account, path, name string, args ...string) bool {
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL|syscall.O_NOFOLLOW, 0o666)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL|syscall.O_NOFOLLOW, privateMode)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return false
@@ -355,6 +407,10 @@ func pack(person account.Account, work, stamp, target string, verbose bool) (str
 		}
 	}
 	copyLogs(person, folder)
+	if err := privatize(folder); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return folder, false
+	}
 	saved := ""
 	if verbose {
 		logfile := filepath.Join(person.Home, logName)
