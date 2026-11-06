@@ -30,11 +30,21 @@ Scope {
     if (kind === "themes") {
       themeName.reload();
       selected = themeName.text().trim();
-      list.command = ["hyprtrixie-theme-set", "--previews"];
-      list.running = true;
+      themeList.running = true;
     } else {
       background.running = true;
     }
+  }
+
+  function take(kind, text) {
+    if (mode !== kind)
+      return;
+    items = text.split("\n").filter(line => line !== "").map(line => parse(kind, line));
+    index = Math.max(0, items.findIndex(item => item.value === selected));
+  }
+
+  function address(path) {
+    return path ? "file://" + path.split("/").map(encodeURIComponent).join("/") : "";
   }
 
   function close() {
@@ -55,8 +65,8 @@ Scope {
     applying.running = true;
   }
 
-  function parse(line) {
-    if (mode === "themes") {
+  function parse(kind, line) {
+    if (kind === "themes") {
       const fields = line.split("\t");
       return {
         value: fields[0],
@@ -87,21 +97,29 @@ Scope {
     command: ["hyprtrixie-background", "--current"]
     stdout: StdioCollector {
       onStreamFinished: {
+        if (root.mode !== "backgrounds")
+          return;
         root.selected = text.trim();
-        list.command = ["hyprtrixie-background", "--list"];
-        list.running = true;
+        backgroundList.running = true;
       }
     }
   }
 
   Process {
-    id: list
+    id: themeList
 
+    command: ["hyprtrixie-theme-set", "--previews"]
     stdout: StdioCollector {
-      onStreamFinished: {
-        root.items = text.split("\n").filter(line => line !== "").map(line => root.parse(line));
-        root.index = Math.max(0, root.items.findIndex(item => item.value === root.selected));
-      }
+      onStreamFinished: root.take("themes", text)
+    }
+  }
+
+  Process {
+    id: backgroundList
+
+    command: ["hyprtrixie-background", "--list"]
+    stdout: StdioCollector {
+      onStreamFinished: root.take("backgrounds", text)
     }
   }
 
@@ -141,6 +159,10 @@ Scope {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "hyprtrixie-picker"
+    onVisibleChanged: {
+      if (!visible)
+        root.items = [];
+    }
     WlrLayershell.keyboardFocus: root.open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
     anchors {
@@ -237,7 +259,7 @@ Scope {
               Image {
                 anchors.fill: parent
                 anchors.margins: slice.current ? 2 : 0
-                source: slice.modelData.image ? "file://" + slice.modelData.image : ""
+                source: root.address(slice.modelData.image)
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 sourceSize.width: root.wide

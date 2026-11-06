@@ -17,6 +17,16 @@ Scope {
   property string filter: ""
   property int index: 0
   property int stamp: 0
+  property var looks: ({})
+  readonly property var listers: ({
+      fonts: monospaceFonts,
+      "ui-fonts": allFonts,
+      restore: restorePoints,
+      keyboard: layouts,
+      install: available,
+      remove: installed,
+      credits: makers
+    })
   property var typed: []
   readonly property var secretKeys: [Qt.Key_Up, Qt.Key_Up, Qt.Key_Down, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right, Qt.Key_Left, Qt.Key_Right, Qt.Key_B, Qt.Key_A]
   property var entries: ({})
@@ -111,6 +121,7 @@ Scope {
 
   function show(id) {
     load();
+    settings.running = true;
     filter = "";
     const path = [];
     for (let at = id; at && at !== "root" && entries[at]; at = parentOf(at))
@@ -134,16 +145,35 @@ Scope {
       listed = apps();
       return;
     }
-    lister.kind = kind;
-    if (kind === "fonts" || kind === "ui-fonts")
-      lister.command = ["fc-list", "--format", "%{family[0]}\n", kind === "fonts" ? ":spacing=100" : ":"];
-    else if (kind === "restore")
-      lister.command = ["hyprtrixie", "restore", "list"];
-    else if (kind === "keyboard")
-      lister.command = ["hyprtrixie", "keyboard", "list"];
-    else
-      lister.command = ["hyprtrixie", "app", "list", kind === "install" ? "available" : "installed"];
-    lister.running = true;
+    const lister = listers[kind];
+    if (lister)
+      lister.running = true;
+  }
+
+  function deliver(kind, text) {
+    const entry = entries[page];
+    if (kind === "credits" && page === "credits")
+      listed = credits(text);
+    else if (entry && entry.list === kind)
+      listed = kind.endsWith("fonts") ? fonts(kind, text) : catalogue(kind, text);
+  }
+
+  function lookState(state) {
+    const match = (state || "").match(/^test "\$\(hyprtrixie-look ([a-z-]+)\)" (!?=) (?:'([^']*)'|(\S+))$/);
+    if (!match)
+      return null;
+    return {
+      key: match[1].replace(/-/g, "_"),
+      same: match[2] === "=",
+      value: match[3] !== undefined ? match[3] : match[4]
+    };
+  }
+
+  function lookOn(look) {
+    const have = look.key === "bar" ? Config.preset : look.key === "position" ? Config.position : looks[look.key];
+    if (have === undefined)
+      return false;
+    return look.same ? have === look.value : have !== look.value;
   }
 
   function apps() {
@@ -230,9 +260,7 @@ Scope {
     stack = ["root", "credits"];
     index = 0;
     listed = [];
-    lister.kind = "credits";
-    lister.command = ["hyprtrixie", "credits"];
-    lister.running = true;
+    provide("credits");
   }
 
   function credits(text) {
@@ -333,18 +361,78 @@ Scope {
     onFileChanged: reload()
   }
 
-  Process {
+  component Lister: Process {
     id: lister
 
-    property string kind: ""
+    required property string kind
 
     stdout: StdioCollector {
+      onStreamFinished: root.deliver(lister.kind, text)
+    }
+  }
+
+  Lister {
+    id: monospaceFonts
+
+    kind: "fonts"
+    command: ["fc-list", "--format", "%{family[0]}\n", ":spacing=100"]
+  }
+
+  Lister {
+    id: allFonts
+
+    kind: "ui-fonts"
+    command: ["fc-list", "--format", "%{family[0]}\n", ":"]
+  }
+
+  Lister {
+    id: restorePoints
+
+    kind: "restore"
+    command: ["hyprtrixie", "restore", "list"]
+  }
+
+  Lister {
+    id: layouts
+
+    kind: "keyboard"
+    command: ["hyprtrixie", "keyboard", "list"]
+  }
+
+  Lister {
+    id: available
+
+    kind: "install"
+    command: ["hyprtrixie", "app", "list", "available"]
+  }
+
+  Lister {
+    id: installed
+
+    kind: "remove"
+    command: ["hyprtrixie", "app", "list", "installed"]
+  }
+
+  Lister {
+    id: makers
+
+    kind: "credits"
+    command: ["hyprtrixie", "credits"]
+  }
+
+  Process {
+    id: settings
+
+    command: ["hyprtrixie-look"]
+    stdout: StdioCollector {
       onStreamFinished: {
-        const entry = root.entries[root.page];
-        if (lister.kind === "credits" && root.page === "credits")
-          root.listed = root.credits(text);
-        else if (entry && entry.list === lister.kind)
-          root.listed = lister.kind.endsWith("fonts") ? root.fonts(lister.kind, text) : root.catalogue(lister.kind, text);
+        const values = {};
+        for (const line of text.split("\n")) {
+          const at = line.indexOf("=");
+          if (at > 0)
+            values[line.slice(0, at)] = line.slice(at + 1);
+        }
+        root.looks = values;
       }
     }
   }
@@ -353,7 +441,10 @@ Scope {
     id: refresh
 
     interval: 600
-    onTriggered: root.stamp++
+    onTriggered: {
+      root.stamp++;
+      settings.running = true;
+    }
   }
 
   IpcHandler {
@@ -491,7 +582,9 @@ Scope {
             required property var modelData
             required property int index
             readonly property bool current: index === root.index
-            property bool on: false
+            readonly property var look: root.lookState(modelData.state)
+            property bool probed: false
+            readonly property bool on: look ? root.lookOn(look) : probed
 
             width: ListView.view.width
             height: root.rowHeight
@@ -502,15 +595,15 @@ Scope {
               id: probe
 
               command: ["sh", "-c", item.modelData.state]
-              running: !!item.modelData.state && root.open
-              onExited: code => item.on = code === 0
+              running: !item.look && !!item.modelData.state && root.open
+              onExited: code => item.probed = code === 0
             }
 
             Connections {
               target: root
 
               function onStampChanged() {
-                if (item.modelData.state)
+                if (!item.look && item.modelData.state)
                   probe.running = true;
               }
             }
