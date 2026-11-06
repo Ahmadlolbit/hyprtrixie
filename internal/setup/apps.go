@@ -140,13 +140,7 @@ func removeSnap(log *runlog.Log, name string) error {
 	return run.Logged(log, "snap", "remove", name)
 }
 
-func (context *Context) appRemove(log *runlog.Log, app apps.App) error {
-	switch {
-	case app.Source == "webapp":
-		return removeFiles(filepath.Join(apps.WebFolder, app.ID+"-web.desktop"), filepath.Join(env.ShareDir(), "icons", app.ID+"-web.svg"))
-	case app.Source == "teams" && context.Config.Get("TEAMS_SOURCE") == "snap":
-		return removeSnap(log, apps.TeamsApp)
-	}
+func removePackages(log *runlog.Log, app apps.App) error {
 	var present []string
 	installed := apt.Installed()
 	for _, spec := range app.Packages {
@@ -154,10 +148,25 @@ func (context *Context) appRemove(log *runlog.Log, app apps.App) error {
 			present = append(present, name)
 		}
 	}
-	if len(present) > 0 {
-		if err := apt.Remove(log, present...); err != nil {
-			return err
-		}
+	if len(present) == 0 {
+		return nil
+	}
+	kept, err := apt.Remove(log, present...)
+	if err == nil && len(kept) > 0 {
+		err = log.Failed(strings.Join(kept, " ") + " stays installed, because other packages need it")
+	}
+	return err
+}
+
+func (context *Context) appRemove(log *runlog.Log, app apps.App) error {
+	switch {
+	case app.Source == "webapp":
+		return removeFiles(filepath.Join(apps.WebFolder, app.ID+"-web.desktop"), filepath.Join(env.ShareDir(), "icons", app.ID+"-web.svg"))
+	case app.Source == "teams" && context.Config.Get("TEAMS_SOURCE") == "snap":
+		return removeSnap(log, apps.TeamsApp)
+	}
+	if err := removePackages(log, app); err != nil {
+		return err
 	}
 	repository := repositoryOf(app)
 	if repository == "" || !apt.ExtrepoEnabled(repository) || context.repositoryInUse(repository, app.ID) {

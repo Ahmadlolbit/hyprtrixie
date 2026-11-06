@@ -349,10 +349,6 @@ func ExtrepoEnabled(name string) bool {
 	return true
 }
 
-func Remove(log *runlog.Log, names ...string) error {
-	return get(log, append([]string{"remove", "--autoremove"}, names...)...)
-}
-
 func Fetch(log *runlog.Log, names ...string) error {
 	if err := Update(log); err != nil {
 		return err
