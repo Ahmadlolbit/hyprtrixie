@@ -19,6 +19,7 @@ const (
 	File       = "file"
 	Service    = "service"
 	Made       = "made"
+	Replaced   = "replaced"
 	folderMode = 0o755
 	recordMode = 0o644
 )
