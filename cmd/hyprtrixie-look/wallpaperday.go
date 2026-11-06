@@ -131,7 +131,7 @@ func nasaPicture(date string) (string, error) {
 	if day.Copyright != "" {
 		credit += "\n© " + strings.TrimSpace(day.Copyright)
 	}
-	notify.Post("--app-name=Wallpaper", "NASA's picture of the day", credit)
+	notify.Post([]string{"--app-name=Wallpaper"}, "NASA's picture of the day", credit)
 	return path, nil
 }
 

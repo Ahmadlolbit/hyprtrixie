@@ -91,22 +91,23 @@ func usbOff() int {
 }
 
 func usbRun() int {
-	notify.Post("--app-name=hyprtrixie", "Backup started", "Leave the drive plugged in.")
+	app, urgent := []string{"--app-name=hyprtrixie"}, []string{"--app-name=hyprtrixie", "--urgency=critical"}
+	notify.Post(app, "Backup started", "Leave the drive plugged in.")
 	cleanup.Notify(make(chan os.Signal, 1))
 	code := backup()
 	finished := time.Now().Format("15:04")
 	switch {
 	case code == 0:
-		notify.Post("--app-name=hyprtrixie", "Backup done", finished+": your home folder is on the drive.")
+		notify.Post(app, "Backup done", finished+": your home folder is on the drive.")
 		return 0
 	case code == unreadable:
-		notify.Post("--app-name=hyprtrixie", "Backup done with a warning", finished+": some files could not be read. Run restic-backup in a terminal to see which.")
+		notify.Post(app, "Backup done with a warning", finished+": some files could not be read. Run restic-backup in a terminal to see which.")
 		return 0
 	case code > interrupted:
-		notify.Post("--app-name=hyprtrixie", "--urgency=critical", "Backup stopped", "It did not finish.")
+		notify.Post(urgent, "Backup stopped", "It did not finish.")
 		return 1
 	}
-	notify.Post("--app-name=hyprtrixie", "--urgency=critical", "Backup failed", "Run restic-backup in a terminal to see why.")
+	notify.Post(urgent, "Backup failed", "Run restic-backup in a terminal to see why.")
 	return 1
 }
 

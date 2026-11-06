@@ -16,13 +16,31 @@ Label {
   readonly property int newest: history.length ? Math.max(...history.map(item => item.id)) : 0
   readonly property int unread: history.filter(item => item.id > Math.max(seen, cleared)).length
 
+  function character(match, name) {
+    const named = {
+      amp: "&",
+      lt: "<",
+      gt: ">",
+      quot: "\"",
+      apos: "'"
+    };
+    if (!name.startsWith("#"))
+      return named[name];
+    const code = name[1] === "x" ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10);
+    return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : match;
+  }
+
+  function plain(body) {
+    return body.replace(/<[^>]*>/g, "").replace(/&(amp|lt|gt|quot|apos|#[0-9]+|#x[0-9a-fA-F]+);/g, character);
+  }
+
   function parse(text) {
     try {
       return JSON.parse(text).data[0].map(item => ({
             id: item.id.data,
             app: item["app-name"].data,
             summary: item.summary.data,
-            body: item.body.data.replace(/<[^>]*>/g, ""),
+            body: plain(item.body.data),
             critical: item.urgency.data === 2
           })).reverse();
     } catch (error) {
