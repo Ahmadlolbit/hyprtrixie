@@ -24,6 +24,7 @@ var moment = sync.OnceValues(look.Now)
 const (
 	noLocation   = "no location: set one with hyprtrixie-look location LATITUDE,LONGITUDE"
 	weatherStale = 1800
+	weatherRetry = 900
 	weatherLimit = time.Minute
 	doNotDisturb = "do-not-disturb"
 	nightLight   = "hyprsunset"
@@ -206,9 +207,22 @@ func weatherFresh() bool {
 	return ok && at.Unix()-info.ModTime().Unix() < weatherStale
 }
 
+func weatherDue() bool {
+	retry, known := look.WholeNumber(stored(lookState("weather-retry")))
+	at, ok := moment()
+	return !known || !ok || at.Unix() >= retry
+}
+
 func weatherTick() {
-	if settings.Get("weather") == "yes" && !weatherFresh() {
-		run.Quiet(weatherLimit, run.Sibling("hyprtrixie-weather"), "update")
+	if settings.Get("weather") != "yes" || weatherFresh() || !weatherDue() {
+		return
+	}
+	if run.Quiet(weatherLimit, run.Sibling("hyprtrixie-weather"), "update") == 0 {
+		remove(lookState("weather-retry"))
+		return
+	}
+	if at, ok := moment(); ok {
+		save(lookState("weather-retry"), strconv.FormatInt(at.Unix()+weatherRetry, 10))
 	}
 }
 

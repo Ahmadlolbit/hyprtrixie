@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
@@ -74,6 +75,11 @@ func (store *Store) Put(key, value string) error {
 	if err := os.MkdirAll(filepath.Dir(store.path), 0o777); err != nil {
 		return err
 	}
+	unlock, err := hold(filepath.Dir(store.path))
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	current, err := os.ReadFile(store.path)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
@@ -84,6 +90,24 @@ func (store *Store) Put(key, value string) error {
 	}
 	store.user = updated
 	return nil
+}
+
+func hold(dir string) (func(), error) {
+	folder, err := os.Open(dir)
+	if err != nil {
+		return nil, err
+	}
+	for {
+		err = syscall.Flock(int(folder.Fd()), syscall.LOCK_EX)
+		if !errors.Is(err, syscall.EINTR) {
+			break
+		}
+	}
+	if err != nil {
+		folder.Close()
+		return nil, err
+	}
+	return func() { folder.Close() }, nil
 }
 
 func (store *Store) Coordinates() (string, bool) {

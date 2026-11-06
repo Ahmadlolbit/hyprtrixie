@@ -96,7 +96,7 @@ func splash(current theme, initramfs bool) bool {
 		return false
 	}
 	if changed || drawn || initramfs {
-		rebuild := bootimage.Rebuild(true)
+		rebuild := bootimage.Rebuild(false)
 		return run.Within(initramfsLimit, rebuild[0], rebuild[1:]...) == 0
 	}
 	return true

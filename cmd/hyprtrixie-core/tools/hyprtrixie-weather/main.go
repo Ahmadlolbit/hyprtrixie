@@ -37,14 +37,16 @@ func update() int {
 		return 1
 	}
 	data, err := weather.Fetch(url)
-	if err == nil {
-		data, err = weather.Stamp(data, time.Now().Unix())
-	}
-	if err == nil {
-		err = atomic.Write(cache(), data, 0o666)
-	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "could not fetch the weather")
+		return 1
+	}
+	if data, err = weather.Stamp(data, time.Now().Unix()); err != nil {
+		fmt.Fprintf(os.Stderr, "could not read the weather: %v\n", err)
+		return 1
+	}
+	if err := atomic.Write(cache(), data, 0o666); err != nil {
+		fmt.Fprintf(os.Stderr, "could not save the weather: %v\n", err)
 		return 1
 	}
 	return 0
