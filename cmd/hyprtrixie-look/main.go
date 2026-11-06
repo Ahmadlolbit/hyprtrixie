@@ -418,8 +418,8 @@ func location(args []string) int {
 }
 
 func remember(args []string) int {
-	name := arg(args, 0)
-	if name == "" {
+	name := theme.Slug(arg(args, 0))
+	if !theme.ValidName(name) {
 		return 2
 	}
 	key := "dark"

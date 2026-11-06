@@ -29,6 +29,10 @@ func appColors(colors theme.Colors) theme.Colors {
 	if name == appsFollow || name == appsOff {
 		return colors
 	}
+	if !theme.ValidName(name) {
+		fmt.Fprintf(os.Stderr, "no theme named %s for GTK and KDE apps\n", name)
+		return colors
+	}
 	for _, dir := range []string{filepath.Join(userThemes(), name), filepath.Join(systemRoot, "themes", name)} {
 		if fixed, err := themeColors(dir); err == nil {
 			return fixed
