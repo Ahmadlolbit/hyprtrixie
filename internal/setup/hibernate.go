@@ -139,7 +139,7 @@ func (rest *hibernation) setup(log *runlog.Log) error {
 }
 
 func (rest *hibernation) remove(log *runlog.Log) error {
-	if err := removeFiles(resumeGrub(), resumeInitramfs(), resumeDracut()); err != nil {
+	if err := rest.Deploy.Remove(resumeGrub(), resumeInitramfs(), resumeDracut()); err != nil {
 		return err
 	}
 	rest.boot.need(true)

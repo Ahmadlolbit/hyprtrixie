@@ -162,6 +162,9 @@ func (work *install) purgeLive(log *runlog.Log) error {
 	if err := restoreSkel(); err != nil {
 		return err
 	}
+	if err := forgetLiveUser(); err != nil {
+		return err
+	}
 	for _, path := range liveFiles {
 		if err := os.Remove(inTarget(path)); err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return err
