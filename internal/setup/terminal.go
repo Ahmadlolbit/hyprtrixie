@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
@@ -144,19 +145,31 @@ func (context *Context) tmuxSetup(log *runlog.Log) error {
 	if err := context.Deploy.UserFile("config/tmux/tmux.conf", ".config/tmux/tmux.conf"); err != nil {
 		return err
 	}
-	if err := context.userFolder(log, ".config/tmux/plugins"); err != nil {
+	plugins, err := context.pluginsFolder(log)
+	if err != nil {
 		return err
 	}
 	for _, plugin := range []string{"tpm", "tmux-resurrect", "tmux-continuum"} {
-		dir := context.Person.Path(".config/tmux/plugins/" + plugin)
-		if err := fetch.GitCopy(log, plugin, dir); err != nil {
-			return err
-		}
-		if err := give(log, context.Person.Name, dir); err != nil {
+		if err := fetch.GitCopy(log, plugin, filepath.Join(plugins, plugin), context.Person); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (context *Context) pluginsFolder(log *runlog.Log) (string, error) {
+	dir := context.Person.Path(".config/tmux/plugins")
+	if err := context.userFolder(log, ".config/tmux/plugins"); err != nil {
+		return "", err
+	}
+	info, err := os.Lstat(dir)
+	if err != nil || !info.IsDir() {
+		return dir, err
+	}
+	if owner, ok := info.Sys().(*syscall.Stat_t); ok && owner.Uid == 0 && context.Person.UID != "0" {
+		return dir, run.Logged(log, "chown", "-h", context.Person.Name+":", dir)
+	}
+	return dir, nil
 }
 
 func (context *Context) tmuxReady(*runlog.Log) error {

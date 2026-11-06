@@ -327,7 +327,11 @@ func (context *Context) lazyvimSetup(log *runlog.Log) error {
 	if fsutil.Exists(config) {
 		return nil
 	}
-	cached, err := fetch.GitCached(log, "lazyvim-starter")
+	cached, err := fetch.GitShared(log, "lazyvim-starter")
+	if err != nil {
+		return err
+	}
+	scheme, err := os.ReadFile(filepath.Join(env.Root(), "config/nvim/hyprtrixie.lua"))
 	if err != nil {
 		return err
 	}
@@ -335,34 +339,16 @@ func (context *Context) lazyvimSetup(log *runlog.Log) error {
 		return err
 	}
 	part := config + ".part"
-	if err := os.RemoveAll(part); err != nil {
+	plugins := filepath.Join(part, "lua", "plugins")
+	for _, args := range [][]string{{"rm", "-rf", part}, {"cp", "-R", cached, part}, {"rm", "-rf", filepath.Join(part, ".git")}, {"mkdir", "-p", plugins}} {
+		if err := context.Person.RunWithin(run.Slow, log, args...); err != nil {
+			return err
+		}
+	}
+	if err := context.Person.Write(log, filepath.Join(plugins, "hyprtrixie.lua"), string(scheme)); err != nil {
 		return err
 	}
-	if err := run.Logged(log, "cp", "-a", cached, part); err != nil {
-		return err
-	}
-	if err := os.RemoveAll(filepath.Join(part, ".git")); err != nil {
-		return err
-	}
-	if err := lazyvimScheme(part); err != nil {
-		return err
-	}
-	if err := give(log, context.Person.Name, part); err != nil {
-		return err
-	}
-	return os.Rename(part, config)
-}
-
-func lazyvimScheme(config string) error {
-	data, err := os.ReadFile(filepath.Join(env.Root(), "config/nvim/hyprtrixie.lua"))
-	if err != nil {
-		return err
-	}
-	plugins := filepath.Join(config, "lua", "plugins")
-	if err := os.MkdirAll(plugins, programMode); err != nil {
-		return err
-	}
-	return atomic.Write(filepath.Join(plugins, "hyprtrixie.lua"), data, plainMode)
+	return context.Person.RunWithin(run.Minute, log, "mv", "-T", part, config)
 }
 
 func (context *Context) lazyvimPlugins(log *runlog.Log) error {
