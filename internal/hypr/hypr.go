@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
@@ -72,6 +73,17 @@ func parsed[T any](what, output string, failed error) (T, bool) {
 
 func ValidMonitor(name string) bool {
 	return name != "" && strings.Trim(name, monitorCharacters) == ""
+}
+
+func Session(runtime string) ([]string, bool) {
+	entries, _ := os.ReadDir(filepath.Join(runtime, "hypr"))
+	for _, entry := range entries {
+		hyprctl := []string{"env", "XDG_RUNTIME_DIR=" + runtime, "HYPRLAND_INSTANCE_SIGNATURE=" + entry.Name(), "hyprctl"}
+		if entry.IsDir() && run.Quiet(run.Quick, hyprctl[0], append(hyprctl[1:], "version")...) == 0 {
+			return hyprctl, true
+		}
+	}
+	return nil, false
 }
 
 func Wallpaper(monitor, file string) bool {

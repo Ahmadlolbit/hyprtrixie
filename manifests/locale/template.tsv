@@ -423,6 +423,8 @@ The folder of pictures, or a file that lists them one per line, for the wallpape
 The hyprtrixie command points at this folder	
 The install stopped at the step that failed, and nothing after it ran.	
 The kernel comes from backports	
+The keyboard stays as it is: %s	
+The keyboard stays as it is: this terminal can't reach the desktop. Open Install Hyprtrixie from the launcher to change it	
 The lock screen is configured	
 The login screen starts at boot	
 The login screen uses the Hyprtrixie theme	
