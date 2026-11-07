@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/disks"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
@@ -57,8 +59,10 @@ func (answers Answers) Check() error {
 		return errors.New("no disk was picked")
 	case answers.Password == "" || answers.Secret == "":
 		return errors.New("a password is missing")
-	case !userPattern.MatchString(answers.User) || slices.Contains(taken, answers.User):
-		return errors.New("the user name has to start with a small letter, use small letters, digits, - and _, and not be one the system uses")
+	case !userPattern.MatchString(answers.User):
+		return errors.New("the user name has to start with a small letter, and use small letters, digits, - and _")
+	case slices.Contains(taken, answers.User) || known(answers.User):
+		return errors.New("the system already has an account or a group called " + answers.User + ", so pick another user name")
 	case strings.ContainsAny(answers.Name, ":,\n"):
 		return errors.New("the full name can't have : or , in it")
 	case !hostPattern.MatchString(answers.Host):
@@ -69,6 +73,24 @@ func (answers Answers) Check() error {
 		return errors.New("the language isn't one like en_US.UTF-8")
 	}
 	return nil
+}
+
+func liveEtc() string {
+	return env.Or("HYPRTRIXIE_LIVE_ETC", "/etc")
+}
+
+func known(name string) bool {
+	if name == liveUser {
+		return false
+	}
+	for _, table := range []string{"passwd", "group"} {
+		for _, line := range strings.Split(fsutil.Optional(filepath.Join(liveEtc(), table)), "\n") {
+			if entry, _, _ := strings.Cut(line, ":"); entry == name {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func Ready() error {
