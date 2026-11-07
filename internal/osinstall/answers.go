@@ -10,6 +10,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/disks"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
@@ -71,6 +72,9 @@ func (answers Answers) Check() error {
 }
 
 func Ready() error {
+	if !fsutil.IsFile(squashfs()) {
+		return errors.New("the installer only runs on the Hyprtrixie live system, started from its USB stick (" + squashfs() + " isn't here)")
+	}
 	switch secureBoot() {
 	case "enabled":
 		return errors.New("this computer has Secure Boot on, and Hyprtrixie doesn't start with it: restart into the firmware setup (often F2, F10 or Del), turn Secure Boot off, then start the installer again")
