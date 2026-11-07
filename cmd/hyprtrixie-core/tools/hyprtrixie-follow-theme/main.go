@@ -30,7 +30,11 @@ user has picked.
 Run as root; the installer and a theme switch run it for you.
 `
 
-const initramfsLimit = 30 * time.Minute
+const (
+	initramfsLimit = 30 * time.Minute
+	rounds         = 3
+	settle         = 2 * time.Second
+)
 
 var (
 	settingsFile = env.Or("HYPRTRIXIE_FOLLOW_SETTINGS", "/etc/hyprtrixie/follow-theme")
@@ -44,6 +48,7 @@ var (
 type theme struct {
 	settings   string
 	colors     string
+	seen       string
 	user       string
 	home       string
 	background string
@@ -244,14 +249,26 @@ func load() (theme, bool) {
 	current.foreground = cmp.Or(follow.Color(current.colors, "foreground"), "#cdd6f4")
 	current.accent = cmp.Or(follow.Color(current.colors, "accent"), "#89b4fa")
 	current.muted = follow.Blend(current.foreground, current.background)
+	link, _ := os.Readlink(filepath.Join(home, ".local/state/hyprtrixie/current/background"))
+	current.seen = current.colors + "\x00" + link
 	return current, true
 }
 
 func paint(initramfs bool) int {
 	current, ok := load()
-	if !ok {
-		return 0
+	code := 0
+	for round := 0; ok && round < rounds; round++ {
+		code = paintOnce(current, initramfs && round == 0)
+		if now, found := load(); !found || now.seen == current.seen {
+			break
+		}
+		time.Sleep(settle)
+		current, ok = load()
 	}
+	return code
+}
+
+func paintOnce(current theme, initramfs bool) int {
 	if follow.Setting(current.settings, "splash") == "yes" && !splash(current, initramfs) {
 		return 1
 	}
