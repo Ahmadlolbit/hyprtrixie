@@ -106,6 +106,10 @@ func Stop() {
 	stopped.Store(true)
 }
 
+func Stopped() bool {
+	return stopped.Load()
+}
+
 func Trace(to io.Writer) {
 	traced.Store(&to)
 }
