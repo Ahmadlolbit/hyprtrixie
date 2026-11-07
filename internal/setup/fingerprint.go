@@ -9,6 +9,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 )
 
@@ -19,6 +20,26 @@ const (
 
 func sudoPAM() string {
 	return env.Or("HYPRTRIXIE_PAM_SUDO", "/etc/pam.d/sudo")
+}
+
+func commonAuthPAM() string {
+	return env.Or("HYPRTRIXIE_PAM_COMMON_AUTH", "/etc/pam.d/common-auth")
+}
+
+func fprintdProfile() string {
+	return env.Or("HYPRTRIXIE_PAM_FPRINTD", "/usr/share/pam-configs/fprintd")
+}
+
+func fingerprintOnlyWhereAsked(log *runlog.Log) error {
+	if !fsutil.IsFile(fprintdProfile()) {
+		return nil
+	}
+	return run.LoggedWithin(run.Minute, log, "pam-auth-update", "--disable", "fprintd")
+}
+
+func fingerprintEverywhere() bool {
+	current, _ := fsutil.Text(commonAuthPAM())
+	return strings.Contains(current, "pam_fprintd")
 }
 
 func sameFields(line, wanted string) bool {
@@ -68,6 +89,9 @@ func fingerprintSetup(log *runlog.Log) error {
 	if err := apt.InstallLists(log, "fingerprint"); err != nil {
 		return err
 	}
+	if err := fingerprintOnlyWhereAsked(log); err != nil {
+		return err
+	}
 	return fingerprintSudo(true)
 }
 
@@ -76,13 +100,19 @@ func fingerprintInSudo() bool {
 	return slices.ContainsFunc(strings.Split(current, "\n"), func(line string) bool { return sameFields(line, FingerprintLine) })
 }
 
-func fingerprintOff(*runlog.Log) error {
+func fingerprintOff(log *runlog.Log) error {
+	if err := fingerprintOnlyWhereAsked(log); err != nil {
+		return err
+	}
 	return fingerprintSudo(false)
 }
 
 func fingerprintReady(log *runlog.Log) error {
 	if err := apt.ListsPresent(log, "fingerprint"); err != nil {
 		return err
+	}
+	if fingerprintEverywhere() {
+		return fmt.Errorf("%s lets a finger into every login, not only sudo and the lock screen", commonAuthPAM())
 	}
 	return expect(fingerprintInSudo(), "sudo doesn't ask for a finger")
 }
