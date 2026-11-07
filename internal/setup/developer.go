@@ -29,6 +29,7 @@ const (
 	toolboxDir   = "/opt/jetbrains-toolbox"
 	toolboxTool  = "jetbrains-toolbox"
 	zedDesktop   = "share/applications/dev.zed.Zed.desktop"
+	zedVersion   = ".hyprtrixie-version"
 
 	firstSubordinate = 100000
 	subordinateCount = 65536
@@ -392,25 +393,43 @@ func vendorEditor(repository, list string) step.Work {
 	}
 }
 
-func (context *Context) zedUnpack(log *runlog.Log, app string) error {
-	dir, err := unpackedRelease(log, "zed")
-	if err != nil {
-		return err
+func (context *Context) asYou(log *runlog.Log, commands ...[]string) error {
+	for _, args := range commands {
+		if err := context.Person.RunWithin(run.Slow, log, args...); err != nil {
+			return err
+		}
 	}
-	defer os.RemoveAll(dir)
-	if err := os.RemoveAll(app); err != nil {
+	return nil
+}
+
+func (context *Context) zedUnpack(log *runlog.Log, app, version string) error {
+	file, err := fetch.ReleaseShared(log, "zed")
+	if err != nil {
 		return err
 	}
 	if err := context.userFolder(log, ".local"); err != nil {
 		return err
 	}
-	if err := run.Logged(log, "mv", filepath.Join(dir, "zed.app"), app); err != nil {
+	part := app + ".part"
+	unpacked := filepath.Join(part, "zed.app")
+	if err := context.asYou(log, []string{"rm", "-rf", part}, []string{"mkdir", "-p", part}, []string{"tar", "-xzf", file, "-C", part}); err != nil {
 		return err
 	}
-	if err := give(log, context.Person.Name, app); err != nil {
+	if err := context.Person.Write(log, filepath.Join(unpacked, zedVersion), version+"\n"); err != nil {
 		return err
 	}
-	return fetch.ReleaseMark(log, "zed")
+	return context.asYou(log, []string{"rm", "-rf", app}, []string{"mv", "-T", unpacked, app}, []string{"rm", "-rf", part})
+}
+
+func (context *Context) zedVersionIn(app string) (string, bool) {
+	var text strings.Builder
+	err := context.Person.RunWithin(run.Quick, &text, "head", "-c", "64", filepath.Join(app, zedVersion))
+	return strings.TrimSpace(text.String()), err == nil
+}
+
+func zedTheirs(app string) bool {
+	_, err := os.Lstat(app)
+	return err == nil && !ledger.Recorded(ledger.Made, app)
 }
 
 func (context *Context) zedEntry(log *runlog.Log, app string) error {
@@ -428,9 +447,18 @@ func (context *Context) zedEntry(log *runlog.Log, app string) error {
 
 func (context *Context) zedInstall(log *runlog.Log) error {
 	app := context.Person.Path(".local/zed.app")
+	release, err := fetch.GetRelease(log, "zed")
+	if err != nil {
+		return err
+	}
+	version, marked := context.zedVersionIn(app)
+	if !marked && zedTheirs(app) {
+		log.Line("info", app+" is a Zed you installed yourself, so it stays as it is")
+		return nil
+	}
 	ledger.Note(ledger.Made, app, context.Person.Path(".local/bin/zed"))
-	if !fetch.ReleaseCurrent(log, "zed") || !fsutil.Runnable(filepath.Join(app, "bin/zed")) {
-		if err := context.zedUnpack(log, app); err != nil {
+	if version != release.Version || !fsutil.Runnable(filepath.Join(app, "bin/zed")) {
+		if err := context.zedUnpack(log, app, release.Version); err != nil {
 			return err
 		}
 	}

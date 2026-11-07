@@ -157,7 +157,3 @@ func (context *Context) removeYours(log *runlog.Log, paths ...string) error {
 	}
 	return context.Person.Run(log, append([]string{"rm", "-f", "--"}, there...)...)
 }
-
-func give(log *runlog.Log, person, path string) error {
-	return run.Logged(log, "chown", "-R", person+":", path)
-}

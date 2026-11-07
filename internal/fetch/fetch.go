@@ -159,6 +159,17 @@ func FetchRelease(log *runlog.Log, name string) (string, error) {
 	return file, nil
 }
 
+func ReleaseShared(log *runlog.Log, name string) (string, error) {
+	file, err := FetchRelease(log, name)
+	if err != nil {
+		return "", err
+	}
+	if err := run.LoggedWithin(run.Quick, log, "chmod", "a+x", env.CacheDir(), downloads()); err != nil {
+		return "", err
+	}
+	return file, run.LoggedWithin(run.Quick, log, "chmod", "a+r", file)
+}
+
 func marker(kind, name string) string {
 	return filepath.Join(env.StateDir(), kind, name)
 }
