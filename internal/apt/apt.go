@@ -135,7 +135,7 @@ func ForceUpdate(log *runlog.Log) error {
 	if simulating() {
 		return nil
 	}
-	if err := get(log, "update"); err != nil {
+	if err := refresh(log); err != nil {
 		return err
 	}
 	if err := noteUpdate(); err != nil {
@@ -515,6 +515,9 @@ func ExtrepoTry(log *runlog.Log, name string) error {
 		update = ForceUpdate
 	}
 	failure := update(log)
+	if failure == nil && !ExtrepoEnabled(name) {
+		return errors.New("the " + name + " repository was turned off, because apt rejects it")
+	}
 	if failure == nil || errors.Is(failure, run.ErrStopped) {
 		return failure
 	}
