@@ -27,6 +27,12 @@ Singleton {
   }
 
   Process {
+    running: root.awake
+    stdinEnabled: true
+    command: ["systemd-inhibit", "--what=idle", "--who=Hyprtrixie", "--why=Stay awake", "cat"]
+  }
+
+  Process {
     id: recorder
 
     running: true

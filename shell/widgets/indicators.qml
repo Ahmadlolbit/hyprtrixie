@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Services.Pipewire
-import Quickshell.Wayland
 import qs.common
 
 RowLayout {
@@ -32,11 +31,6 @@ RowLayout {
 
   PwObjectTracker {
     objects: [root.source]
-  }
-
-  IdleInhibitor {
-    window: root.bar
-    enabled: Session.awake
   }
 
   Label {
