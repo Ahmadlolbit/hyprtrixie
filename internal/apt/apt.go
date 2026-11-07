@@ -26,6 +26,9 @@ import (
 var (
 	dpkgJournal = "/var/lib/dpkg/updates"
 	dpkgLock    = "/var/lib/dpkg/lock"
+	aptLocks    = []string{"/var/lib/apt/lists/lock", "/var/cache/apt/archives/lock"}
+	lockPause   = 5 * time.Second
+	lockLimit   = 10 * time.Minute
 )
 
 const (
@@ -58,14 +61,27 @@ func simulating() bool {
 	return os.Getenv("APT_SIMULATE") == "1"
 }
 
-func dpkgBusy() bool {
-	file, err := os.OpenFile(dpkgLock, os.O_RDWR, 0)
+func held(path string) bool {
+	file, err := os.OpenFile(path, os.O_RDWR, 0)
 	if err != nil {
 		return false
 	}
 	defer file.Close()
 	lock := syscall.Flock_t{Type: syscall.F_WRLCK}
 	return syscall.FcntlFlock(file.Fd(), syscall.F_GETLK, &lock) == nil && lock.Type != syscall.F_UNLCK
+}
+
+func dpkgBusy() bool {
+	return held(dpkgLock)
+}
+
+func waitForApt(out io.Writer) {
+	for waited := time.Duration(0); !run.Stopped() && slices.ContainsFunc(aptLocks, held) && waited < lockLimit; waited += lockPause {
+		if waited == 0 {
+			fmt.Fprintln(out, "another apt is updating its lists or downloading, perhaps the daily update; waiting for it, up to 10 minutes")
+		}
+		time.Sleep(lockPause)
+	}
 }
 
 func Interrupted() bool {
@@ -96,6 +112,8 @@ func get(out io.Writer, args ...string) error {
 	command := []string{"-y"}
 	if simulating() {
 		command = append(command, "-s")
+	} else {
+		waitForApt(out)
 	}
 	command = append(command, "-o", "Dpkg::Use-Pty=0", "-o", lockWait, "-o", "Dpkg::Options::=--force-confdef", "-o", "Dpkg::Options::=--force-confold")
 	return run.LoggedInEnglish(aptLimit, out, "apt-get", append(command, args...)...)
