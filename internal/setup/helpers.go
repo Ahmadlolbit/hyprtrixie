@@ -12,6 +12,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/files"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
@@ -112,11 +113,11 @@ func filesCheck(path string) step.Work {
 	return func(*runlog.Log) error { return fileThere(path) }
 }
 
-func keepOld(log *runlog.Log, path string) error {
+func keepOld(_ *runlog.Log, path string) error {
 	if fsutil.Exists(path + ".hyprtrixie-old") {
 		return nil
 	}
-	return run.Logged(log, "cp", "-a", path, path+".hyprtrixie-old")
+	return files.KeepCopy(path, path+".hyprtrixie-old")
 }
 
 func unpackedRelease(log *runlog.Log, name string) (string, error) {

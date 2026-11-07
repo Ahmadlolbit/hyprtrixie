@@ -12,13 +12,13 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"syscall"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
-	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 )
 
@@ -29,6 +29,7 @@ const (
 	programMode  = 0o755
 	databaseMode = 0o600
 	systemOwner  = "root"
+	keptBits     = fs.ModePerm | fs.ModeSetuid | fs.ModeSetgid | fs.ModeSticky
 )
 
 type Deployer struct {
@@ -175,8 +176,31 @@ func (deployer *Deployer) keepEdits(target string, data []byte, mode os.FileMode
 	return nil
 }
 
+func KeepCopy(from, to string) error {
+	info, err := os.Lstat(from)
+	if err != nil {
+		return err
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		link, err := os.Readlink(from)
+		if err != nil {
+			return err
+		}
+		return atomic.Symlink(link, to)
+	}
+	owner, ok := info.Sys().(*syscall.Stat_t)
+	if !ok {
+		return errors.New("cannot tell who owns " + from)
+	}
+	data, err := os.ReadFile(from)
+	if err != nil {
+		return err
+	}
+	return atomic.InstallAs(to, data, info.Mode()&keptBits, int(owner.Uid), int(owner.Gid))
+}
+
 func (deployer *Deployer) saveOld(target string) error {
-	if err := run.Logged(deployer.Log, "cp", "-a", target, target+oldSuffix); err != nil {
+	if err := KeepCopy(target, target+oldSuffix); err != nil {
 		return err
 	}
 	deployer.Log.Line("info", "saved the previous "+target+" as "+target+oldSuffix)
@@ -196,7 +220,7 @@ func (deployer *Deployer) existing(target string, data []byte, mode os.FileMode,
 		return true, deployer.keepEdits(target, data, mode, owner)
 	case known != "":
 		return false, nil
-	case fsutil.Exists(target + oldSuffix):
+	case fsutil.Exists(target+oldSuffix) || deployer.inHome(target):
 		return true, deployer.keepEdits(target, data, mode, owner)
 	}
 	return false, deployer.saveOld(target)
@@ -313,6 +337,11 @@ func (deployer *Deployer) treeFile(source, path, target string) error {
 	}
 	_, err = deployer.deploy(data, filepath.Join(target, rel), modeOf(path), systemOwner)
 	return err
+}
+
+func (deployer *Deployer) inHome(path string) bool {
+	home := deployer.Person.Home
+	return home != "" && strings.HasPrefix(path, filepath.Clean(home)+"/")
 }
 
 func (deployer *Deployer) userDir(rel string) error {
