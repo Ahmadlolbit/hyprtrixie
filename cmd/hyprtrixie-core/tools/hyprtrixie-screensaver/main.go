@@ -19,9 +19,10 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/term"
 )
 
-const usage = `Usage: hyprtrixie-screensaver start|toggle|status
+const usage = `Usage: hyprtrixie-screensaver start|stop|toggle|status
 
 start   shows the screensaver on every monitor (the idle timer runs this)
+stop    ends it (the idle timer runs this when it turns the screens off)
 toggle  turns the screensaver off or back on for your account
 status  prints on or off
 
@@ -61,6 +62,10 @@ func textFile() string {
 
 func running() bool {
 	return run.Quiet(run.Quick, "pgrep", "-f", "kitty --class "+class) == 0
+}
+
+func stop() {
+	run.Quiet(run.Quick, "pkill", "-f", "kitty --class "+class)
 }
 
 func locked() bool {
@@ -166,7 +171,7 @@ func saver() {
 	fmt.Print(mouseOff)
 	restore()
 	cursor("false")
-	run.Within(run.Quick, "pkill", "-f", "kitty --class "+class)
+	stop()
 }
 
 func toggle() int {
@@ -192,6 +197,8 @@ func Main() {
 		os.Exit(start())
 	case "run":
 		saver()
+	case "stop":
+		stop()
 	case "toggle":
 		os.Exit(toggle())
 	case "status":

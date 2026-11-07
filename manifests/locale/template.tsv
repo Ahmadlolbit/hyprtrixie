@@ -252,7 +252,7 @@ Load configuration
 Loaded %s	
 LocalSend opens only on networks you trust	
 Lock after (minutes)	
-Lock the screen when you're away; it turns off 30 s later; 0 = never	
+Lock the screen when you're away; it turns off 30 s later; 0 = never, and the screen turns off 10 minutes after the screensaver starts, or after 10 minutes without one	
 Login screen	
 Login screen runs on	
 Logs are being written	
