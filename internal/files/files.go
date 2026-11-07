@@ -144,15 +144,25 @@ func install(path string, data []byte, mode os.FileMode, owner string) error {
 	return atomic.InstallAs(path, data, mode, uid, gid)
 }
 
-func place(path string, data []byte, mode os.FileMode, owner string) error {
+func (deployer *Deployer) place(path string, data []byte, mode os.FileMode, owner string) error {
+	if deployer.inHome(path) {
+		return deployer.userWrite(path, data, mode)
+	}
 	if err := os.MkdirAll(filepath.Dir(path), programMode); err != nil {
 		return err
 	}
 	return install(path, data, mode, owner)
 }
 
-func (deployer *Deployer) settle(target, hash string, mode os.FileMode, owner string) error {
+func (deployer *Deployer) settle(target string, data []byte, mode os.FileMode, owner string) error {
+	hash := fingerprint(data)
 	if fsutil.IsLink(target) {
+		return deployer.record(target, hash)
+	}
+	if deployer.inHome(target) {
+		if err := deployer.settleHome(target, data, mode); err != nil {
+			return err
+		}
 		return deployer.record(target, hash)
 	}
 	uid, gid, err := ids(owner)
@@ -169,7 +179,7 @@ func (deployer *Deployer) settle(target, hash string, mode os.FileMode, owner st
 }
 
 func (deployer *Deployer) keepEdits(target string, data []byte, mode os.FileMode, owner string) error {
-	if err := install(target+newSuffix, data, mode, owner); err != nil {
+	if err := deployer.place(target+newSuffix, data, mode, owner); err != nil {
 		return err
 	}
 	deployer.Log.Line("warn", "kept local edits in "+target+", new version written to "+target+newSuffix)
@@ -213,7 +223,7 @@ func (deployer *Deployer) existing(target string, data []byte, mode os.FileMode,
 	known := deployer.hashes[target]
 	switch {
 	case found == fresh:
-		return true, deployer.settle(target, fresh, mode, owner)
+		return true, deployer.settle(target, data, mode, owner)
 	case known == fresh && found != known:
 		return true, nil
 	case known != "" && found != known:
@@ -240,7 +250,7 @@ func (deployer *Deployer) put(data []byte, target string, mode os.FileMode, owne
 			return false, err
 		}
 	}
-	if err := place(target, data, mode, owner); err != nil {
+	if err := deployer.place(target, data, mode, owner); err != nil {
 		return false, err
 	}
 	if err := deployer.record(target, fingerprint(data)); err != nil {
@@ -339,11 +349,6 @@ func (deployer *Deployer) treeFile(source, path, target string) error {
 	return err
 }
 
-func (deployer *Deployer) inHome(path string) bool {
-	home := deployer.Person.Home
-	return home != "" && strings.HasPrefix(path, filepath.Clean(home)+"/")
-}
-
 func (deployer *Deployer) userDir(rel string) error {
 	path := deployer.Person.Path(rel)
 	if fsutil.IsDir(path) {
@@ -384,7 +389,7 @@ func (deployer *Deployer) UserOnce(source, rel string) error {
 	if err != nil {
 		return err
 	}
-	if err := place(target, data, plainMode, deployer.Person.Name); err != nil {
+	if err := deployer.place(target, data, plainMode, deployer.Person.Name); err != nil {
 		return err
 	}
 	deployer.Log.Line("info", "created "+target)
@@ -519,13 +524,6 @@ func (deployer *Deployer) forgetOne(path string) error {
 	return deployer.writeDatabase()
 }
 
-func restoreOld(path string) (bool, error) {
-	if !fsutil.Exists(path + oldSuffix) {
-		return false, nil
-	}
-	return true, os.Rename(path+oldSuffix, path)
-}
-
 func (deployer *Deployer) Remove(paths ...string) error {
 	before := len(deployer.hashes)
 	for _, path := range paths {
@@ -556,16 +554,16 @@ func (deployer *Deployer) ours(path string) bool {
 }
 
 func (deployer *Deployer) Undeploy(path string) (string, error) {
-	if err := os.Remove(path + newSuffix); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if err := deployer.remove(path + newSuffix); err != nil {
 		return "", err
 	}
 	if !deployer.ours(path) {
 		return "kept", deployer.forgetOne(path)
 	}
-	if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if err := deployer.remove(path); err != nil {
 		return "", err
 	}
-	restored, err := restoreOld(path)
+	restored, err := deployer.restoreOld(path)
 	if err != nil {
 		return "", err
 	}

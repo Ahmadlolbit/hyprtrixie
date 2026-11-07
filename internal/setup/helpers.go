@@ -145,6 +145,19 @@ func removeFiles(paths ...string) error {
 	return nil
 }
 
+func (context *Context) removeYours(log *runlog.Log, paths ...string) error {
+	var there []string
+	for _, path := range paths {
+		if _, err := os.Lstat(path); err == nil {
+			there = append(there, path)
+		}
+	}
+	if len(there) == 0 {
+		return nil
+	}
+	return context.Person.Run(log, append([]string{"rm", "-f", "--"}, there...)...)
+}
+
 func give(log *runlog.Log, person, path string) error {
 	return run.Logged(log, "chown", "-R", person+":", path)
 }
