@@ -112,6 +112,10 @@ func Forget(module, kind, value string) error {
 	return atomic.Install(Path(module), []byte(record.text()), recordMode)
 }
 
+func Recorded(kind, value string) bool {
+	return Elsewhere("", kind)[value]
+}
+
 func WantedElsewhere(module string) map[string]bool {
 	return Elsewhere(module, Wants)
 }
