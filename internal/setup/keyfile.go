@@ -72,7 +72,7 @@ func keyfile(network wifiNetwork) string {
 	if network.key != "" {
 		text += "\n[wifi-security]\nkey-mgmt=wpa-psk\npsk=" + keyfileValue(network.key) + "\n"
 	}
-	return text + "\n[ipv4]\nmethod=auto\n\n[ipv6]\nmethod=auto\n"
+	return text + "\n[ipv4]\nmethod=auto\n\n[ipv6]\nmethod=auto\naddr-gen-mode=stable-privacy\n"
 }
 
 func fieldsOf(line string) []string {
