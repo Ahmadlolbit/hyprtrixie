@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	liveHome   = "/home/hyprtrixie/"
+	liveUser   = "hyprtrixie"
+	liveHome   = "/home/" + liveUser + "/"
 	stateMode  = 0o600
 	targetData = "var/lib/hyprtrixie"
 )
