@@ -64,6 +64,9 @@ func powerReady(log *runlog.Log) error {
 }
 
 func firewallSetup(log *runlog.Log) error {
+	if err := apt.InstallLists(log, "firewall"); err != nil {
+		return err
+	}
 	if err := run.Logged(log, "ufw", "default", "deny", "incoming"); err != nil {
 		return err
 	}
