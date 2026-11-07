@@ -48,6 +48,9 @@ func liveRecord(line string) bool {
 
 func forgetLiveUser() error {
 	state := inTarget(targetData)
+	if err := os.RemoveAll(filepath.Join(state, "defaults")); err != nil {
+		return err
+	}
 	if err := dropLines(filepath.Join(state, "files.db"), liveFile); err != nil {
 		return err
 	}

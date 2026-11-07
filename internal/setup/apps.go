@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apps"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
-	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
@@ -25,6 +23,7 @@ const (
 	heliumEntry   = "helium.desktop"
 	snapLimit     = 20 * time.Minute
 	downloadLimit = 30 * time.Minute
+	yourDefaults  = ".local/state/hyprtrixie/defaults"
 )
 
 var (
@@ -196,17 +195,23 @@ func RemoveApp(context *Context, app apps.App) {
 }
 
 func (context *Context) defaultApp(log *runlog.Log, name, entry string, types []string) error {
-	stamp := filepath.Join(env.StateDir(), "defaults", name)
+	stamp := context.Person.Path(filepath.Join(yourDefaults, name))
 	if fsutil.IsFile(stamp) || !fsutil.IsFile(filepath.Join(applicationsDir(), entry)) {
 		return nil
 	}
-	if err := context.Person.Run(log, append([]string{"xdg-mime", "default", entry}, types...)...); err != nil {
+	shared := filepath.Join(env.StateDir(), "defaults", name)
+	if !fsutil.IsFile(shared) {
+		if err := context.Person.Run(log, append([]string{"xdg-mime", "default", entry}, types...)...); err != nil {
+			return err
+		}
+	}
+	if err := context.userFolder(log, yourDefaults); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(stamp), programMode); err != nil {
+	if err := context.Person.Write(log, stamp, entry+"\n"); err != nil {
 		return err
 	}
-	return atomic.Write(stamp, []byte(entry+"\n"), plainMode)
+	return removeFiles(shared)
 }
 
 func (context *Context) defaultApps(log *runlog.Log) error {
