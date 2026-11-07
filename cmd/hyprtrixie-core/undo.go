@@ -118,6 +118,9 @@ func (plan undoPlan) takeFiles(log *runlog.Log) error {
 		if outcome == "kept" {
 			fmt.Fprintln(log, "kept "+path+": you changed it since")
 		}
+		if err := ledger.Forget(plan.id, ledger.File, path); err != nil {
+			return err
+		}
 	}
 	return nil
 }

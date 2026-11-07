@@ -194,10 +194,12 @@ func (deployer *Deployer) existing(target string, data []byte, mode os.FileMode,
 		return true, nil
 	case known != "" && found != known:
 		return true, deployer.keepEdits(target, data, mode, owner)
-	case known == "" && !fsutil.Exists(target+oldSuffix):
-		return false, deployer.saveOld(target)
+	case known != "":
+		return false, nil
+	case fsutil.Exists(target + oldSuffix):
+		return true, deployer.keepEdits(target, data, mode, owner)
 	}
-	return false, nil
+	return false, deployer.saveOld(target)
 }
 
 func (deployer *Deployer) deploy(data []byte, target string, mode os.FileMode, owner string) (bool, error) {
@@ -516,12 +518,19 @@ func (deployer *Deployer) RemoveTree(dir string) error {
 	return deployer.Forget(strings.TrimSuffix(dir, "/") + "/")
 }
 
+func (deployer *Deployer) ours(path string) bool {
+	if link, err := os.Readlink(path); err == nil {
+		return filepath.Dir(link) == env.BinDir()
+	}
+	found := current(path)
+	return found == "" || found == deployer.hashes[path]
+}
+
 func (deployer *Deployer) Undeploy(path string) (string, error) {
 	if err := os.Remove(path + newSuffix); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return "", err
 	}
-	known, found := deployer.hashes[path], current(path)
-	if found != "" && known != "" && found != known {
+	if !deployer.ours(path) {
 		return "kept", deployer.forgetOne(path)
 	}
 	if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {

@@ -102,6 +102,16 @@ func End(module string, before, after map[string]bool) error {
 	return atomic.Install(Path(module), []byte(record.text()), recordMode)
 }
 
+func Forget(module, kind, value string) error {
+	record := Load(module)
+	before := len(record[kind])
+	record[kind] = slices.DeleteFunc(record[kind], func(found string) bool { return found == value })
+	if len(record[kind]) == before {
+		return nil
+	}
+	return atomic.Install(Path(module), []byte(record.text()), recordMode)
+}
+
 func WantedElsewhere(module string) map[string]bool {
 	return Elsewhere(module, Wants)
 }
