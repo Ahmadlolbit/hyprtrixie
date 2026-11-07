@@ -98,7 +98,7 @@ func get(out io.Writer, args ...string) error {
 		command = append(command, "-s")
 	}
 	command = append(command, "-o", "Dpkg::Use-Pty=0", "-o", lockWait, "-o", "Dpkg::Options::=--force-confdef", "-o", "Dpkg::Options::=--force-confold")
-	return run.LoggedWithin(aptLimit, out, "apt-get", append(command, args...)...)
+	return run.LoggedInEnglish(aptLimit, out, "apt-get", append(command, args...)...)
 }
 
 func fresh() bool {
@@ -451,7 +451,7 @@ func Bare(spec string) string {
 }
 
 func Candidate(spec string) string {
-	output, _ := run.CaptureQuiet(run.Minute, "apt-cache", "policy", Bare(spec))
+	output, _ := run.CaptureInEnglish(run.Minute, "apt-cache", "policy", Bare(spec))
 	for _, line := range run.Lines(output) {
 		if rest, found := strings.CutPrefix(strings.TrimSpace(line), "Candidate:"); found {
 			if version := strings.TrimSpace(rest); version != "(none)" {

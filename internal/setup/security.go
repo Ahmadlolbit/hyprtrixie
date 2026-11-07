@@ -74,7 +74,7 @@ func firewallSetup(log *runlog.Log) error {
 }
 
 func firewallReady(*runlog.Log) error {
-	output, _ := run.CaptureQuiet(run.Minute, "ufw", "status")
+	output, _ := run.CaptureInEnglish(run.Minute, "ufw", "status")
 	return holds(lineHasPrefix(output, "Status: active"))
 }
 
