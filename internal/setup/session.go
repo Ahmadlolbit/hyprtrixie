@@ -39,6 +39,8 @@ const (
 	dpmsOff      = `hyprctl dispatch 'hl.dsp.dpms({action = "off"})'`
 	secondsAMin  = 60
 	dimAhead     = 30
+	screenOff    = 10 * secondsAMin
+	saverStop    = "hyprtrixie-screensaver stop; "
 )
 
 var elephantProviders = []string{"desktopapplications", "calc", "runner", "files", "symbols", "websearch", "clipboard", "providerlist", "unicode"}
@@ -164,15 +166,24 @@ func idleListener(timeout int, action, resume string) string {
 	return text + "}\n"
 }
 
+func dimListeners(at int) string {
+	return idleListener(at, "brightnessctl -s set 10%", "brightnessctl -r") +
+		idleListener(at, "brightnessctl -sd '*::kbd_backlight' set 0", "brightnessctl -rd '*::kbd_backlight'")
+}
+
 func lockListeners(lock int) string {
 	var text strings.Builder
 	if lock > secondsAMin {
-		text.WriteString(idleListener(lock-dimAhead, "brightnessctl -s set 10%", "brightnessctl -r"))
-		text.WriteString(idleListener(lock-dimAhead, "brightnessctl -sd '*::kbd_backlight' set 0", "brightnessctl -rd '*::kbd_backlight'"))
+		text.WriteString(dimListeners(lock - dimAhead))
 	}
 	text.WriteString(idleListener(lock, "loginctl lock-session", ""))
 	text.WriteString(idleListener(lock+dimAhead, dpmsOff, dpmsOn))
 	return text.String()
+}
+
+func screenOffListeners(saver int) string {
+	off := saver + screenOff
+	return dimListeners(off-dimAhead) + idleListener(off, saverStop+dpmsOff, dpmsOn)
 }
 
 func hypridleConfig(lock, suspend, saver int) string {
@@ -184,6 +195,8 @@ func hypridleConfig(lock, suspend, saver int) string {
 	}
 	if lock > 0 {
 		text.WriteString(lockListeners(lock))
+	} else {
+		text.WriteString(screenOffListeners(saver))
 	}
 	if suspend > 0 {
 		text.WriteString(idleListener(suspend, "systemctl suspend", ""))

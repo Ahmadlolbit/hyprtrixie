@@ -81,7 +81,7 @@ var table = []Option{
 	{"TIPS_NOTIFY", "Tip notifications", YesNo, "yes", "", "look", "Now and then a tip as a notification, at most once a day", nil},
 	{"POWER_FOLLOW", "Power saver on battery", YesNo, "no", "", "system", "Switch to power saver when you unplug, and back when you plug in", nil},
 	{"CARE_NOTIFY", "Firmware and disk warnings", YesNo, "yes", "", "system", "A notification when new firmware is ready, or when the disk is nearly full", nil},
-	{"IDLE_LOCK_MINUTES", "Lock after (minutes)", Number, "5", "", "system", "Lock the screen when you're away; it turns off 30 s later; 0 = never", nil},
+	{"IDLE_LOCK_MINUTES", "Lock after (minutes)", Number, "5", "", "system", "Lock the screen when you're away; it turns off 30 s later; 0 = never, and the screen turns off 10 minutes after the screensaver starts, or after 10 minutes without one", nil},
 	{"IDLE_SUSPEND_MINUTES", "Suspend after (minutes)", Number, "30", "", "system", "Put the laptop to sleep when you're away; 0 = never", nil},
 	{"BAR_PRESET", "Bar layout", Choice, "full", "full floating minimal vertical", "look", "Full width, floating with rounded corners, minimal, or down the left side", nil},
 	{"BAR_POSITION", "Bar position", Choice, "top", "top bottom", "look", "The bar at the top or the bottom of the screen", barHorizontal},
