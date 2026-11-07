@@ -11,6 +11,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/deployed"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
@@ -86,13 +87,43 @@ func releaseTarget() (string, string, error) {
 }
 
 func afterUpdate(from, to string) int {
-	dir := changesDir()
-	text := changesBetween(from, to)
-	if err := writeChanges(dir, text); err != nil {
-		fmt.Fprintln(os.Stderr, "cannot save the update notes:", err)
+	args := []string{script(), "install"}
+	if text := changesBetween(from, to); text != "" {
+		dir := changesDir()
+		if err := writeChanges(dir, text); err != nil {
+			fmt.Fprintln(os.Stderr, "cannot save the update notes:", err)
+		}
+		fmt.Printf("\nWhat changed:\n%s\n", text)
+		args = append(args, "--changes", filepath.Join(dir, "changes.txt"))
 	}
-	fmt.Printf("\nWhat changed:\n%s\n", text)
-	return run.Report(run.Exec("sudo", script(), "install", "--changes", filepath.Join(dir, "changes.txt")))
+	return run.Report(run.Exec("sudo", args...))
+}
+
+func setupBehind(head string) (string, bool) {
+	from := deployed.Finished()
+	switch {
+	case from == head:
+		return "", false
+	case from == "":
+		from = deployed.LastCommit()
+	}
+	if from == "" {
+		return "", false
+	}
+	if run.Quiet(run.Quick, "git", "-C", root(), "cat-file", "-e", from+"^{commit}") != 0 {
+		from = head
+	}
+	return from, true
+}
+
+func finishSetup(upToDate string) int {
+	head := git("rev-parse", "HEAD")
+	from, behind := setupBehind(head)
+	if !behind {
+		return say(upToDate)
+	}
+	fmt.Println("The setup hasn't finished at this version yet, so it runs now.")
+	return afterUpdate(from, head)
 }
 
 func writable() bool {
@@ -110,14 +141,14 @@ func gitWrite(args ...string) int {
 func updateHyprtrixie() int {
 	fmt.Printf("Updating %s\n", root())
 	tag, target, err := releaseTarget()
-	if errors.Is(err, errNoReleaseKey) {
-		return say("Hyprtrixie itself only updates to signed releases, and this copy has no release key yet, so it stays as it is.\n")
-	}
-	if err != nil {
+	switch {
+	case errors.Is(err, errNoReleaseKey):
+		fmt.Print("Hyprtrixie itself only updates to signed releases, and this copy has no release key yet, so it stays as it is.\n")
+		return finishSetup("")
+	case err != nil:
 		return fail("%v", err)
-	}
-	if run.Quiet(run.Quick, "git", "-C", root(), "merge-base", "--is-ancestor", target, "HEAD") == 0 {
-		return say("Hyprtrixie is up to date (" + tag + ").\n")
+	case run.Quiet(run.Quick, "git", "-C", root(), "merge-base", "--is-ancestor", target, "HEAD") == 0:
+		return finishSetup("Hyprtrixie is up to date (" + tag + ").\n")
 	}
 	from := git("rev-parse", "HEAD")
 	if gitWrite("merge", "--ff-only", target) != 0 {

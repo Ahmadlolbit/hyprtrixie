@@ -7,14 +7,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
 const (
-	hexDigits = "0123456789abcdef"
-	starts    = "hyprtrixie "
+	hexDigits  = "0123456789abcdef"
+	starts     = "hyprtrixie "
+	folderMode = 0o755
+	stampMode  = 0o644
 )
 
 type Change struct {
@@ -48,6 +51,26 @@ func startedFrom(text string) (string, bool) {
 	rest, opened := strings.CutPrefix(rest, "(")
 	commit, rest, closed := strings.Cut(rest, ")")
 	return commit, opened && closed && !strings.Contains(version, "\n") && strings.HasPrefix(rest, " from ") && strings.Trim(commit, hexDigits) == ""
+}
+
+func finishedFile() string {
+	return filepath.Join(env.StateDir(), "finished")
+}
+
+func NoteFinished(root string) error {
+	commit, err := run.CaptureQuiet(run.Quick, "git", "-C", root, "rev-parse", "HEAD")
+	if err != nil || commit == "" {
+		return nil
+	}
+	if err := os.MkdirAll(env.StateDir(), folderMode); err != nil {
+		return err
+	}
+	return atomic.Write(finishedFile(), []byte(commit+"\n"), stampMode)
+}
+
+func Finished() string {
+	text, _ := fsutil.Text(finishedFile())
+	return strings.TrimSpace(text)
 }
 
 func Commit(root string) string {
