@@ -16,6 +16,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/files"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/modules"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/service"
@@ -147,12 +148,43 @@ func (context *Context) snapperConfigure(log *runlog.Log) error {
 	return nil
 }
 
-func snapperFirst(log *runlog.Log) error {
-	listing, _ := run.CaptureQuiet(run.Minute, "snapper", snapperArgs("list", "--columns", "description")...)
-	if strings.Contains(listing, firstSnapshot) {
-		return nil
+func firstTaken() string {
+	return filepath.Join(env.StateDir(), "first-snapshot")
+}
+
+func firstTakenBefore() bool {
+	status, _ := modules.StatusOf(fsutil.Optional(modules.StatusFile()), "05")
+	return fsutil.Exists(firstTaken()) || status == "PASS"
+}
+
+func firstIn(listing string) (string, string, bool) {
+	for _, line := range run.Lines(listing) {
+		if fields := strings.SplitN(line, "\t", 3); len(fields) == 3 && fields[2] == firstSnapshot {
+			return fields[0], fields[1], true
+		}
 	}
-	return run.Logged(log, "snapper", snapperArgs("create", "--description", firstSnapshot, "--cleanup-algorithm", "number")...)
+	return "", "", false
+}
+
+func snapperFirst(log *runlog.Log) error {
+	listing, _ := run.CaptureQuiet(run.Minute, "snapper", snapperArgs("--csvout", "--no-headers", "--separator", "\t", "list", "--columns", "number,cleanup,description")...)
+	number, cleanup, found := firstIn(listing)
+	var err error
+	switch {
+	case found && cleanup != "":
+		err = run.Logged(log, "snapper", snapperArgs("modify", "--cleanup-algorithm", "", number)...)
+	case !found && firstTakenBefore():
+		log.Line("info", "the first snapshot, "+firstSnapshot+", was deleted; it isn't taken again, since it would show this finished system")
+	case !found:
+		err = run.Logged(log, "snapper", snapperArgs("create", "--description", firstSnapshot)...)
+	}
+	if err != nil || fsutil.Exists(firstTaken()) {
+		return err
+	}
+	if err := os.MkdirAll(env.StateDir(), programMode); err != nil {
+		return err
+	}
+	return atomic.Write(firstTaken(), nil, plainMode)
 }
 
 func snapperReady(*runlog.Log) error {
@@ -262,9 +294,6 @@ func grubReady(*runlog.Log) error {
 }
 
 func (context *Context) rollbackInstall(*runlog.Log) error {
-	if err := removeFiles(rollbackTool); err != nil {
-		return err
-	}
 	if err := context.Deploy.ToolAt("snapper-rollback", rollbackTool); err != nil {
 		return err
 	}
