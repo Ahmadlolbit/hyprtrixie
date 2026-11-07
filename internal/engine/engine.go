@@ -15,6 +15,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/deployed"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/events"
@@ -363,7 +364,17 @@ func (work *session) install() int {
 	}
 	work.applyOverrides()
 	work.walk(stepsAndChecks)
+	work.noteFinished()
 	return work.outcome()
+}
+
+func (work *session) noteFinished() {
+	if work.runner.ExitCode() != 0 || work.options.Only != "" || work.options.Skip != "" {
+		return
+	}
+	if err := deployed.NoteFinished(env.Root()); err != nil {
+		work.log.Line("warn", "cannot note that the setup finished: "+err.Error())
+	}
 }
 
 func (work *session) setUpAccount() int {
