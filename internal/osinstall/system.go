@@ -200,5 +200,15 @@ func (work *install) close(log *runlog.Log) error {
 	if run.Logged(log, "cryptsetup", "close", disks.Mapper) != nil {
 		log.Line("warn", "the encrypted disk stays open until the restart")
 	}
+	work.finished(log)
 	return nil
+}
+
+func (work *install) finished(log *runlog.Log) {
+	table, err := partitions(work.plan.Disk.Path)
+	root := table.Numbers(work.plan.IDs[2])
+	if err == nil && len(root) == 1 && run.Logged(log, "sgdisk", "-c", root[0]+":"+disks.RootName, work.plan.Disk.Path) == nil {
+		return
+	}
+	log.Line("warn", "the new system's partition keeps the name "+disks.Unfinished+", so the installer would offer its space again")
 }

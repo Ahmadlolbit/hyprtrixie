@@ -22,7 +22,11 @@ func Steps(runner *step.Runner, answers Answers, plan disks.Plan) {
 	runner.Step("Set the time zone, keyboard and language", work.localize)
 	runner.Step("Give the computer its own identity", work.identity)
 	runner.Step("Build the boot image", work.bootImage)
+	loading := !runner.Ended()
 	runner.Step("Install the boot loader", work.bootLoader)
 	runner.Step("Hand the rest of the setup to the first start", work.firstBoot)
 	runner.Step("Close the new system", work.close)
+	if !loading {
+		work.giveBack(runner.Log)
+	}
 }

@@ -131,13 +131,17 @@ func PlanFor(answers Answers) (disks.Plan, error) {
 	if !answers.Beside {
 		return disks.Whole(all[0], ids), nil
 	}
-	dump, err := run.CaptureQuiet(run.Quick, "sfdisk", "--json", answers.Disk)
-	if err != nil {
-		return disks.Plan{}, err
-	}
-	table, err := disks.ReadTable(dump)
+	table, err := partitions(answers.Disk)
 	if err != nil {
 		return disks.Plan{}, err
 	}
 	return disks.Beside(all[0], table, ids)
+}
+
+func partitions(disk string) (disks.Table, error) {
+	dump, err := run.CaptureQuiet(run.Quick, "sfdisk", "--json", disk)
+	if err != nil {
+		return disks.Table{}, err
+	}
+	return disks.ReadTable(dump)
 }

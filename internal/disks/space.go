@@ -9,8 +9,12 @@ import (
 )
 
 type slot struct {
-	Start int64 `json:"start"`
-	Size  int64 `json:"size"`
+	Node  string `json:"node"`
+	Start int64  `json:"start"`
+	Size  int64  `json:"size"`
+	Type  string `json:"type"`
+	UUID  string `json:"uuid"`
+	Name  string `json:"name"`
 }
 
 type Table struct {
@@ -64,6 +68,38 @@ func (table Table) Gaps() []Gap {
 		gaps = append(gaps, gap)
 	}
 	return gaps
+}
+
+func (each slot) number() string {
+	return each.Node[len(strings.TrimRight(each.Node, "0123456789")):]
+}
+
+func (each slot) is(kind, name string) bool {
+	return strings.EqualFold(each.Type, kind) && each.Name == name
+}
+
+func (table Table) Numbers(ids ...string) []string {
+	var found []string
+	for _, each := range table.Slots {
+		if each.UUID != "" && slices.ContainsFunc(ids, func(id string) bool { return strings.EqualFold(id, each.UUID) }) {
+			found = append(found, each.number())
+		}
+	}
+	return found
+}
+
+func (table Table) unfinished() (Table, []string) {
+	slots := slices.Clone(table.Slots)
+	slices.SortFunc(slots, func(a, b slot) int { return cmp.Compare(a.Start, b.Start) })
+	for index := 0; index+1 < len(slots); index++ {
+		boot, root := slots[index], slots[index+1]
+		if boot.is(linuxData, "boot") && root.is(linuxLUKS, Unfinished) && root.Start == boot.Start+boot.Size {
+			left := table
+			left.Slots = slices.Delete(slots, index, index+2)
+			return left, []string{boot.number(), root.number()}
+		}
+	}
+	return table, nil
 }
 
 func (table Table) Largest() Gap {
