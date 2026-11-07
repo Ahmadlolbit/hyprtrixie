@@ -20,7 +20,7 @@ Singleton {
   Process {
     id: counter
 
-    command: ["sh", "-c", "apt list --upgradable 2>/dev/null | grep -c upgradable"]
+    command: ["sh", "-c", "LC_ALL=C LANGUAGE= apt list --upgradable 2>/dev/null | grep -c upgradable"]
     stdout: StdioCollector {
       onStreamFinished: root.count = parseInt(text.trim()) || 0
     }
