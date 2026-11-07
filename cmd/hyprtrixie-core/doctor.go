@@ -314,7 +314,7 @@ func (visit *checkup) firmware() {
 }
 
 func (visit *checkup) updates() {
-	output, err := run.CaptureQuiet(visit.limit, "apt", "list", "--upgradable")
+	output, err := run.CaptureInEnglish(visit.limit, "apt", "list", "--upgradable")
 	if run.TimedOut(err) {
 		tooLong("Checking for updates")
 		return

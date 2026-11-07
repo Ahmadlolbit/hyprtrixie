@@ -36,6 +36,7 @@ var (
 	ErrStopped = errors.New("stopped before it started")
 	stopped    atomic.Bool
 	traced     atomic.Pointer[io.Writer]
+	english    = []string{"LC_ALL=C.UTF-8", "LANGUAGE="}
 )
 
 func Exec(name string, args ...string) error {
@@ -147,7 +148,15 @@ func LoggedWithin(limit time.Duration, output io.Writer, name string, args ...st
 		return ErrStopped
 	}
 	trace(name, args)
-	return loggedWithin(limit, output, name, args)
+	return loggedWithin(limit, output, nil, name, args)
+}
+
+func LoggedInEnglish(limit time.Duration, output io.Writer, name string, args ...string) error {
+	if stopped.Load() {
+		return ErrStopped
+	}
+	trace(name, args)
+	return loggedWithin(limit, output, english, name, args)
 }
 
 func LoggedPrivately(limit time.Duration, output io.Writer, name string, args ...string) error {
@@ -155,12 +164,19 @@ func LoggedPrivately(limit time.Duration, output io.Writer, name string, args ..
 		return ErrStopped
 	}
 	trace(name, []string{"(arguments hidden)"})
-	return loggedWithin(limit, output, name, args)
+	return loggedWithin(limit, output, nil, name, args)
 }
 
-func loggedWithin(limit time.Duration, output io.Writer, name string, args []string) error {
+func withEnvironment(command *exec.Cmd, environment []string) {
+	if environment != nil {
+		command.Env = append(os.Environ(), environment...)
+	}
+}
+
+func loggedWithin(limit time.Duration, output io.Writer, environment []string, name string, args []string) error {
 	shared := &serial{output: output}
 	command, finish := limited(limit, shared, name, args)
+	withEnvironment(command, environment)
 	command.Stdout = shared
 	command.Stderr = shared
 	return finish(command.Run())
@@ -237,7 +253,16 @@ func CaptureTo(limit time.Duration, messages io.Writer, name string, args ...str
 }
 
 func CaptureQuiet(limit time.Duration, name string, args ...string) (string, error) {
+	return captureQuiet(limit, nil, name, args)
+}
+
+func CaptureInEnglish(limit time.Duration, name string, args ...string) (string, error) {
+	return captureQuiet(limit, english, name, args)
+}
+
+func captureQuiet(limit time.Duration, environment []string, name string, args []string) (string, error) {
 	command, finish := bounded(limit, nil, name, args)
+	withEnvironment(command, environment)
 	output, err := collect(command)
 	return output, finish(err)
 }
