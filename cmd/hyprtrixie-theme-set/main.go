@@ -146,19 +146,9 @@ func stage(name, next string) error {
 	return stageOwn(own, next)
 }
 
-func overrideAccent(colors theme.Colors, file string) {
-	original := colors["accent"]
-	accent, ok := colors.Accent(settings.Get("accent"))
-	if !ok {
-		return
-	}
-	colors["accent"] = accent
-	data, err := os.ReadFile(file)
-	if err == nil {
-		err = atomic.Install(file, []byte(theme.WithAccent(string(data), accent, original)), 0o644)
-	}
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+func overrideAccent(colors theme.Colors) {
+	if accent, ok := colors.Accent(settings.Get("accent")); ok {
+		colors["theme_accent"], colors["accent"] = colors["accent"], accent
 	}
 }
 
@@ -202,7 +192,10 @@ func readColors(next string) (theme.Colors, error) {
 	if err != nil {
 		return nil, err
 	}
-	overrideAccent(colors, filepath.Join(next, "colors.toml"))
+	overrideAccent(colors)
+	if err := atomic.Install(filepath.Join(next, "colors.toml"), []byte(colors.Canonical()), 0o644); err != nil {
+		return nil, err
+	}
 	chooseFont(colors)
 	glassSettings(colors)
 	styleSettings(colors)

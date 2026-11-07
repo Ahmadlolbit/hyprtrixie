@@ -1,6 +1,7 @@
 package theme
 
 import (
+	"cmp"
 	"fmt"
 	"maps"
 	"math"
@@ -128,10 +129,10 @@ func (colors Colors) Resolve() {
 	}
 	colors.fallback("bright_foreground", "color15", colors["foreground"])
 	colors.fallback("light_foreground", "foreground", "")
-	colors.fallback("lighter_background", "background", "")
-	colors.fallback("dark_foreground", "color8", colors["foreground"])
-	colors.fallback("muted", "color8", colors["dark_foreground"])
-	colors.fallback("selection", "selection_background", colors["muted"])
+	colors.fallback("lighter_background", "", colors.shade(10))
+	colors.fallback("selection", "selection_background", cmp.Or(colors["muted"], colors["color8"], colors["dark_foreground"], colors.shade(20)))
+	colors.fallback("muted", "color8", cmp.Or(colors["dark_foreground"], colors.shade(30)))
+	colors.fallback("dark_foreground", "color8", colors.shade(45))
 	colors.fallback("selection_background", "selection", "")
 	colors.fallback("selection_foreground", "bright_foreground", "")
 	colors.fallback("accent", "blue", "")
@@ -141,6 +142,10 @@ func (colors Colors) Resolve() {
 		colors["mode"] = "dark"
 	}
 	colors.fallback("kde_icons", "", kdeIcons[colors["mode"]])
+}
+
+func (colors Colors) shade(percent int) string {
+	return Mix(colors["background"], colors["foreground"], percent)
 }
 
 func (colors Colors) resolveShades() {
@@ -165,28 +170,14 @@ func (colors Colors) Accent(setting string) (string, bool) {
 	return "", false
 }
 
-func WithAccent(text, accent, original string) string {
-	line := `accent = "` + accent + `"`
-	lines := strings.Split(text, "\n")
-	found := false
-	for index := range lines {
-		if isAccentLine(lines[index]) {
-			lines[index], found = line, true
+func (colors Colors) Canonical() string {
+	var text strings.Builder
+	for _, key := range slices.Sorted(maps.Keys(colors)) {
+		if colors[key] != "" {
+			text.WriteString(key + ` = "` + colors[key] + "\"\n")
 		}
 	}
-	result := strings.Join(lines, "\n")
-	if result != "" && !strings.HasSuffix(result, "\n") {
-		result += "\n"
-	}
-	if !found {
-		result += line + "\n"
-	}
-	return result + `theme_accent = "` + original + `"` + "\n"
-}
-
-func isAccentLine(line string) bool {
-	rest, ok := strings.CutPrefix(line, "accent")
-	return ok && strings.HasPrefix(strings.TrimLeft(rest, " "), "=")
+	return text.String()
 }
 
 func (colors Colors) Replacer() *strings.Replacer {
