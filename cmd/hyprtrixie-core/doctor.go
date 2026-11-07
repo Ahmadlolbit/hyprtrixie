@@ -35,6 +35,18 @@ var desktopPrograms = [][2]string{
 	{"hypridle", "^hypridle"},
 }
 
+var sleepUnits = []string{
+	"systemd-suspend.service",
+	"systemd-hibernate.service",
+	"systemd-hybrid-sleep.service",
+	"systemd-suspend-then-hibernate.service",
+	"systemd-poweroff.service",
+	"systemd-reboot.service",
+	"systemd-halt.service",
+	"systemd-kexec.service",
+	"systemd-soft-reboot.service",
+}
+
 type fix struct {
 	question string
 	apply    func() bool
@@ -145,6 +157,10 @@ func (visit *checkup) services() {
 	ui.Fail("Failed services: " + strings.Join(names, " "))
 	ui.Note("Fix: systemctl status NAME says why; restarting often helps")
 	for _, unit := range system {
+		if slices.Contains(sleepUnits, unit) {
+			ui.Note("Not restarting " + unit + ": it would put the machine to sleep or switch it off at once. journalctl -b -u " + unit + " says why it failed")
+			continue
+		}
 		visit.offer("Restart "+unit, func() bool { return succeeded("systemctl", "restart", unit) })
 	}
 	for _, unit := range user {
