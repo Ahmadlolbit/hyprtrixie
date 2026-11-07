@@ -223,12 +223,40 @@ func (visit *checkup) snapshots(setting string) {
 	ui.OK("Snapshots are being taken")
 }
 
-func freeSpace() bool {
+func (visit *checkup) freeSpace() bool {
+	before, _ := filesystems(visit.limit)
 	run.Within(run.Slow, "apt-get", "clean")
 	if installed("snapper") {
 		run.Within(run.Slow, "snapper", "-c", "root", "cleanup", "number")
 	}
-	return succeeded("journalctl", "--vacuum-time=2weeks")
+	run.Within(run.Slow, "journalctl", "--vacuum-time=2weeks")
+	after, err := filesystems(visit.limit)
+	if err != nil || len(after) == 0 {
+		ui.Note("Couldn't check the disks again; df -h shows how full they are")
+		return false
+	}
+	return roomNow(before, after)
+}
+
+func roomNow(before, after []fsutil.Filesystem) bool {
+	room := true
+	for _, now := range after {
+		if !now.Known {
+			continue
+		}
+		was := now.Use
+		for _, old := range before {
+			if old.Device == now.Device && old.Known {
+				was = old.Use
+			}
+		}
+		ui.Note(fmt.Sprintf("%s was %d%% full, now %d%%", now.Mount, was, now.Use))
+		room = room && now.Use < warnedFull
+	}
+	if !room {
+		ui.Note("Still full: the space is in your files or the snapshots. du -sh ~/* lists your biggest folders, and sudo hyprtrixie cleanup removes older snapshots")
+	}
+	return room
 }
 
 func filesystems(limit time.Duration) ([]fsutil.Filesystem, error) {
@@ -257,7 +285,7 @@ func (visit *checkup) disk() {
 		ui.Note("Fix: clear the package cache, trim old snapshots and old logs")
 		if !offered {
 			offered = true
-			visit.offer("Free space: clear the package cache, trim old snapshots and old logs", freeSpace)
+			visit.offer("Free space: clear the package cache, trim old snapshots and old logs", visit.freeSpace)
 		}
 	}
 }
