@@ -382,7 +382,7 @@ func (theme *themeRun) btopSetup(log *runlog.Log) error {
 	return theme.Person.Run(log, "sed", "-i", "--follow-symlinks", "s|^"+btopSetting+".*|"+btopTheme+"|", conf)
 }
 
-func (theme *themeRun) lookInstall(*runlog.Log) error {
+func (theme *themeRun) lookInstall(log *runlog.Log) error {
 	var pairs []string
 	for _, option := range lookOptions {
 		pairs = append(pairs, option[0]+"="+theme.Config.Get(option[1]))
@@ -392,7 +392,7 @@ func (theme *themeRun) lookInstall(*runlog.Log) error {
 	if err != nil || !changed {
 		return err
 	}
-	return removeFiles(theme.Person.Path(".local/state/hyprtrixie/look/period"))
+	return theme.removeYours(log, theme.Person.Path(".local/state/hyprtrixie/look/period"))
 }
 
 func (theme *themeRun) readerInstall(log *runlog.Log) error {

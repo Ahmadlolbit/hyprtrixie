@@ -56,6 +56,15 @@ func Humans() []Account {
 	return found
 }
 
+func Owning(path string) (Account, bool) {
+	for _, person := range Humans() {
+		if person.Home != "" && strings.HasPrefix(path, filepath.Clean(person.Home)+"/") {
+			return person, true
+		}
+	}
+	return Account{}, false
+}
+
 func Lookup(name string) (Account, bool) {
 	output, err := run.Capture(run.Quick, "getent", "passwd", name)
 	if err != nil {

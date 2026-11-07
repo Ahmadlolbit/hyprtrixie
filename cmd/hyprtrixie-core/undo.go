@@ -125,10 +125,17 @@ func (plan undoPlan) takeFiles(log *runlog.Log) error {
 	return nil
 }
 
+func removeMade(log *runlog.Log, path string) error {
+	if person, ok := account.Owning(path); ok {
+		return person.Run(log, "rm", "-rf", path)
+	}
+	return os.RemoveAll(path)
+}
+
 func (plan undoPlan) takeMade(log *runlog.Log) error {
 	for _, path := range plan.made {
 		fmt.Fprintln(log, "removing "+path)
-		if err := os.RemoveAll(path); err != nil {
+		if err := removeMade(log, path); err != nil {
 			return err
 		}
 	}
