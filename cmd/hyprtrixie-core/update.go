@@ -44,7 +44,10 @@ func updateSystem() int {
 		}
 	}
 	fmt.Println("Updating Debian")
-	if run.Status("sudo", "apt", "update") != 0 || run.Status("sudo", "apt", "full-upgrade") != 0 {
+	if run.Status("sudo", "apt", "update") != 0 {
+		fmt.Println("apt couldn't refresh every list (see above), so Debian updates from the lists it has. sudo hyprtrixie install turns off a vendor repository that apt keeps rejecting.")
+	}
+	if run.Status("sudo", "apt", "full-upgrade") != 0 {
 		return fail("updating Debian failed")
 	}
 	return 0
