@@ -19,6 +19,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/disks"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/hypr"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/keyboard"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/osinstall"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
@@ -38,6 +39,7 @@ type system struct {
 	room    map[string]string
 	blocked string
 	seen    string
+	say     func(string)
 }
 
 func answersFile() string {
@@ -302,27 +304,59 @@ func (state *system) arguments(string) []string {
 	return []string{"install-os", "--events", "--answers", answersFile()}
 }
 
-func applyLayout(layout string) {
-	text := keyboard.With(fsutil.Optional(keyboard.File()), layout)
-	if atomic.Write(keyboard.File(), []byte(text), 0o644) != nil {
-		return
-	}
+func desktopReload() ([]string, bool) {
 	if os.Getenv("HYPRLAND_INSTANCE_SIGNATURE") != "" {
-		run.Quiet(run.Quick, "hyprctl", "reload")
-		return
+		return []string{"hyprctl", "reload"}, true
 	}
-	run.Quiet(run.Slow, "setupcon", "-k", "--force")
+	if os.Getenv("TERM") == "linux" {
+		return nil, true
+	}
+	uid := os.Getenv("SUDO_UID")
+	if uid == "" {
+		return nil, false
+	}
+	hyprctl, found := hypr.Session(filepath.Join(env.Or("HYPRTRIXIE_RUN_USER", "/run/user"), uid))
+	if !found {
+		return nil, false
+	}
+	return append(hyprctl, "reload"), true
+}
+
+func applyLayout(layout string) string {
+	reload, reachable := desktopReload()
+	if !reachable {
+		return "The keyboard stays as it is: this terminal can't reach the desktop. Open Install Hyprtrixie from the launcher to change it"
+	}
+	text := keyboard.With(fsutil.Optional(keyboard.File()), layout)
+	if err := atomic.Write(keyboard.File(), []byte(text), 0o644); err != nil {
+		return "The keyboard stays as it is: " + err.Error()
+	}
+	if reload == nil {
+		run.Quiet(run.Slow, "setupcon", "-k", "--force")
+		return ""
+	}
+	run.Quiet(run.Quick, reload[0], reload[1:]...)
+	return ""
 }
 
 func (state *system) keyboardRow() row {
 	line := textRow("Keyboard", "Such as us, de or gb. It changes at once, so the passwords you type next work at every start", layoutCharacter, &state.answers.Keyboard, nil)
 	line.input.valid = keyboard.Known
 	line.input.set = func(text string) {
+		if why := applyLayout(text); why != "" {
+			state.tell(why)
+			return
+		}
 		state.takeLayout(text)
-		applyLayout(text)
 		state.seen = keyboard.Current()
 	}
 	return line
+}
+
+func (state *system) tell(text string) {
+	if state.say != nil {
+		state.say(text)
+	}
 }
 
 func (state *system) takeLayout(layout string) {
@@ -364,6 +398,7 @@ func (state *system) welcomeRows(machine []string) []row {
 
 func (flow *wizard) systemStages(machine []string, catalogue []apps.App) []stage {
 	state := flow.system
+	state.say = func(text string) { flow.notice = text }
 	stages := []stage{
 		&welcome{page: &page{wizard: flow, title: "Welcome", rows: func() []row { return state.welcomeRows(machine) }, ready: state.welcomeReady}, started: time.Now()},
 		&page{wizard: flow, title: "Disk", rows: func() []row { return state.diskRows(flow) }, ready: state.diskReady},
@@ -377,7 +412,7 @@ func (flow *wizard) systemStages(machine []string, catalogue []apps.App) []stage
 
 func RunInstaller() int {
 	if os.Geteuid() != 0 {
-		fmt.Fprintln(os.Stderr, "the installer runs as root: sudo hyprtrixie-installer")
+		fmt.Fprintln(os.Stderr, "the installer runs as root: open Install Hyprtrixie from the app launcher, or start it with sudo in a terminal on the desktop")
 		return 1
 	}
 	if !canShow() {
