@@ -96,6 +96,37 @@ func (work *install) clean(log *runlog.Log) error {
 	return nil
 }
 
+func (work *install) giveBack(log *runlog.Log) {
+	if !work.plan.Beside {
+		return
+	}
+	disk := work.plan.Disk.Path
+	table, err := partitions(disk)
+	made := table.Numbers(work.plan.IDs[1], work.plan.IDs[2])
+	if err != nil || len(made) == 0 {
+		return
+	}
+	run.Quiet(run.Minute, "umount", "-R", target())
+	run.Quiet(run.Minute, "umount", "-R", "/run/hyprtrixie-top")
+	if fsutil.Exists("/dev/mapper/" + disks.Mapper) {
+		run.Quiet(run.Minute, "cryptsetup", "close", disks.Mapper)
+	}
+	if mounted(target()) || fsutil.Exists("/dev/mapper/"+disks.Mapper) {
+		log.Line("warn", "the partitions this install made next to Windows stay on "+disk+", because they're still in use")
+		return
+	}
+	args := []string{}
+	for _, number := range made {
+		args = append(args, "-d", number)
+	}
+	if output, err := run.CaptureQuiet(run.Minute, "sgdisk", append(args, disk)...); err != nil {
+		log.Line("warn", "the partitions this install made next to Windows stay on "+disk+": "+strings.TrimSpace(output+" "+err.Error()))
+		return
+	}
+	run.Quiet(run.Minute, "partprobe", disk)
+	log.Line("info", "the partitions this install made next to Windows are gone again, so the free space is there for the next try")
+}
+
 func mounted(point string) bool {
 	return run.Quiet(run.Quick, "findmnt", "--mountpoint", point) == 0
 }

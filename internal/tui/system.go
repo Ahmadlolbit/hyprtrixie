@@ -37,6 +37,7 @@ type system struct {
 	again   string
 	found   []disks.Disk
 	room    map[string]string
+	reuse   map[string]bool
 	blocked string
 	seen    string
 	say     func(string)
@@ -56,7 +57,7 @@ func newSystem(found []disks.Disk) *system {
 		zone = "UTC"
 	}
 	layout := keyboard.Current()
-	return &system{found: found, room: map[string]string{}, seen: layout,
+	return &system{found: found, room: map[string]string{}, reuse: map[string]bool{}, seen: layout,
 		answers: osinstall.Answers{Host: "hyprtrixie", Zone: zone, Keyboard: layout, Locale: "en_US.UTF-8"}}
 }
 
@@ -76,10 +77,11 @@ func (state *system) roomBeside(disk disks.Disk) string {
 	probe := state.answers
 	probe.Disk, probe.Beside = disk.Path, true
 	why := ""
-	if _, err := osinstall.PlanFor(probe); err != nil {
+	plan, err := osinstall.PlanFor(probe)
+	if err != nil {
 		why = err.Error()
 	}
-	state.room[disk.Path] = why
+	state.room[disk.Path], state.reuse[disk.Path] = why, len(plan.Reuses) > 0
 	return why
 }
 
@@ -118,9 +120,12 @@ func (state *system) consequences() []row {
 		return []row{{label: "Pick a disk with Space or Enter.", info: true}}
 	}
 	if state.answers.Beside {
-		return []row{state.besideRow(disk), {info: true},
-			{label: "Windows stays. Hyprtrixie goes in the free space, and the boot menu offers both for five seconds.", info: true},
-			{label: "Before you go on: save your BitLocker recovery key somewhere off this computer, and turn off Fast Startup in Windows.", info: true}}
+		rows := []row{state.besideRow(disk), {info: true},
+			{label: "Windows stays. Hyprtrixie goes in the free space, and the boot menu offers both for five seconds.", info: true}}
+		if state.reuse[disk.Path] {
+			rows = append(rows, row{label: "An install that stopped halfway left two partitions here: they go, and Hyprtrixie uses their space.", info: true})
+		}
+		return append(rows, row{label: "Before you go on: save your BitLocker recovery key somewhere off this computer, and turn off Fast Startup in Windows.", info: true})
 	}
 	rows := []row{{label: "Everything on " + disk.Name() + " is erased.", info: true}}
 	if !disk.Windows() {

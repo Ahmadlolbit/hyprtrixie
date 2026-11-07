@@ -9,12 +9,16 @@ import (
 )
 
 const (
-	espSize  = 1 * GiB
-	bootSize = 1 * GiB
-	Mapper   = "hyprtrixie_crypt"
-	Target   = "/target"
-	top      = "/run/hyprtrixie-top"
-	options  = "noatime,compress=zstd:1"
+	espSize    = 1 * GiB
+	bootSize   = 1 * GiB
+	Mapper     = "hyprtrixie_crypt"
+	Target     = "/target"
+	top        = "/run/hyprtrixie-top"
+	options    = "noatime,compress=zstd:1"
+	RootName   = "hyprtrixie"
+	Unfinished = RootName + "-unfinished"
+	linuxData  = "0fc63daf-8483-4772-8e79-3d69d8477de4"
+	linuxLUKS  = "ca7d7ccb-63ed-4c53-861c-1742536059cc"
 )
 
 type Plan struct {
@@ -25,6 +29,7 @@ type Plan struct {
 	Size   int64
 	Sector int64
 	IDs    [3]string
+	Reuses []string
 }
 
 type Step struct {
@@ -60,11 +65,12 @@ func Beside(disk Disk, table Table, ids [3]string) (Plan, error) {
 	case !found:
 		return Plan{}, errors.New("this disk has no EFI partition to share")
 	}
-	gap := table.Largest()
+	free, reused := table.unfinished()
+	gap := free.Largest()
 	if gap.Size < SmallestUse+bootSize {
 		return Plan{}, fmt.Errorf("the largest free space on this disk is %s; shrink Windows first to leave at least %s", Size(gap.Size), Size(SmallestUse+bootSize))
 	}
-	return Plan{Disk: disk, Beside: true, ESP: esp.Path, Start: gap.Start, Size: gap.Size, Sector: table.Sector, IDs: ids}, nil
+	return Plan{Disk: disk, Beside: true, ESP: esp.Path, Start: gap.Start, Size: gap.Size, Sector: table.Sector, IDs: ids, Reuses: reused}, nil
 }
 
 func (plan Plan) ESPDevice() string {
@@ -91,13 +97,17 @@ func (plan Plan) partitions() []string {
 		return []string{"sgdisk",
 			"-n1:0:+1G", "-t1:ef00", "-u1:" + plan.IDs[0], "-c1:EFI",
 			"-n2:0:+1G", "-t2:8300", "-u2:" + plan.IDs[1], "-c2:boot",
-			"-n3:0:0", "-t3:8309", "-u3:" + plan.IDs[2], "-c3:hyprtrixie", plan.Disk.Path}
+			"-n3:0:0", "-t3:8309", "-u3:" + plan.IDs[2], "-c3:" + Unfinished, plan.Disk.Path}
+	}
+	args := []string{"sgdisk"}
+	for _, number := range plan.Reuses {
+		args = append(args, "-d", number)
 	}
 	rootStart := plan.Start + bootSize
 	end := plan.Start + plan.Size - plan.Sector
-	return []string{"sgdisk",
-		"-n0:" + plan.sector(plan.Start) + ":" + plan.sector(rootStart-plan.Sector), "-t0:8300", "-u0:" + plan.IDs[1], "-c0:boot",
-		"-n0:" + plan.sector(rootStart) + ":" + plan.sector(end), "-t0:8309", "-u0:" + plan.IDs[2], "-c0:hyprtrixie", plan.Disk.Path}
+	return append(args,
+		"-n0:"+plan.sector(plan.Start)+":"+plan.sector(rootStart-plan.Sector), "-t0:8300", "-u0:"+plan.IDs[1], "-c0:boot",
+		"-n0:"+plan.sector(rootStart)+":"+plan.sector(end), "-t0:8309", "-u0:"+plan.IDs[2], "-c0:"+Unfinished, plan.Disk.Path)
 }
 
 func (plan Plan) Partition() []Step {
