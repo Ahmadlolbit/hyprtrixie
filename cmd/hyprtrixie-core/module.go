@@ -84,8 +84,11 @@ func recorded(id string, steps bool, work func()) {
 		work()
 		return
 	}
-	ledger.Begin()
 	before, failed := apt.Installed()
+	if failed != nil {
+		before = nil
+	}
+	ledger.Begin(id, before)
 	work()
 	after, err := apt.Installed()
 	if err != nil || failed != nil {

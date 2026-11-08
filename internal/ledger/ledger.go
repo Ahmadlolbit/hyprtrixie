@@ -3,6 +3,7 @@ package ledger
 import (
 	"errors"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -26,7 +27,10 @@ const (
 
 type Record map[string][]string
 
-var active Record
+var (
+	active Record
+	noting string
+)
 
 func Folder() string {
 	return filepath.Join(env.StateDir(), "modules")
@@ -36,13 +40,59 @@ func Path(module string) string {
 	return filepath.Join(Folder(), module+".record")
 }
 
-func Begin() {
-	active = Record{}
+func startPath(module string) string {
+	return filepath.Join(Folder(), module+".before")
+}
+
+func Begin(module string, before map[string]bool) {
+	active, noting = Record{}, module
+	if before == nil || fsutil.Exists(startPath(module)) {
+		return
+	}
+	names := slices.Sorted(maps.Keys(before))
+	if os.MkdirAll(Folder(), folderMode) == nil {
+		atomic.Install(startPath(module), []byte(strings.Join(names, "\n")+"\n"), recordMode)
+	}
+}
+
+func started(module string) map[string]bool {
+	names, err := fsutil.Lines(startPath(module))
+	if err != nil || len(names) == 0 {
+		return nil
+	}
+	before := map[string]bool{}
+	for _, name := range names {
+		before[name] = true
+	}
+	return before
+}
+
+func Unfinished(module string, installed map[string]bool) []string {
+	before := started(module)
+	var names []string
+	for name := range installed {
+		if before != nil && !before[name] {
+			names = append(names, name)
+		}
+	}
+	slices.Sort(names)
+	return names
+}
+
+func forgetStart(module string) error {
+	if err := os.Remove(startPath(module)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	return nil
 }
 
 func Note(kind string, values ...string) {
-	if active != nil {
-		active[kind] = append(active[kind], values...)
+	if active == nil {
+		return
+	}
+	active[kind] = append(active[kind], values...)
+	if record, added := Load(noting).with(Record{kind: values}); added {
+		save(noting, record)
 	}
 }
 
@@ -66,6 +116,26 @@ func (record Record) Values(kind string) []string {
 	return slices.Compact(values)
 }
 
+func (record Record) with(more Record) (Record, bool) {
+	added := false
+	for kind, values := range more {
+		for _, value := range values {
+			if !slices.Contains(record[kind], value) {
+				record[kind] = append(record[kind], value)
+				added = true
+			}
+		}
+	}
+	return record, added
+}
+
+func save(module string, record Record) error {
+	if err := os.MkdirAll(Folder(), folderMode); err != nil {
+		return err
+	}
+	return atomic.Install(Path(module), []byte(record.text()), recordMode)
+}
+
 func (record Record) text() string {
 	var lines []string
 	for kind, values := range record {
@@ -87,19 +157,19 @@ func End(module string, before, after map[string]bool) error {
 	}
 	done := active
 	active = nil
+	if older := started(module); older != nil {
+		before = older
+	}
 	for name := range after {
 		if before != nil && !before[name] {
 			done[Package] = append(done[Package], name)
 		}
 	}
-	record := Load(module)
-	for kind, values := range done {
-		record[kind] = append(record[kind], values...)
-	}
-	if err := os.MkdirAll(Folder(), folderMode); err != nil {
+	record, _ := Load(module).with(done)
+	if err := save(module, record); err != nil || after == nil {
 		return err
 	}
-	return atomic.Install(Path(module), []byte(record.text()), recordMode)
+	return forgetStart(module)
 }
 
 func Forget(module, kind, value string) error {
@@ -139,5 +209,5 @@ func Drop(module string) error {
 	if err := os.Remove(Path(module)); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
-	return nil
+	return forgetStart(module)
 }
