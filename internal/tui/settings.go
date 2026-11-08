@@ -99,7 +99,7 @@ func (flow *wizard) fieldRow(option options.Option) row {
 	line := flow.valueRow(option, nil)
 	line.input = &field{
 		allow:   config.SafeText,
-		valid:   func(text string) bool { return text != "" && option.Valid(text) },
+		valid:   func(text string) bool { return (text != "" || option.DefaultFor("") == "") && option.Valid(text) },
 		set:     func(text string) { flow.settings.Set(option.Key, text) },
 		refused: safeRefused,
 	}
