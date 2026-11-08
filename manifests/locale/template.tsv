@@ -40,7 +40,7 @@ Arrows move · Enter picks · Esc cancels
 Arrows or j and k   Move	
 Arrows scroll · Enter or Esc closes	
 Ask what to do, stop the run, or note the failure and carry on	
-At least 8 characters	
+At least 8 characters: English letters, digits, signs and spaces	
 Automatic light and dark	
 Automatic security updates	
 Backports are available	
@@ -291,6 +291,7 @@ Nothing changes until you choose Install at the end.
 Notifications are set up	
 Now and then a tip as a notification, at most once a day	
 Now playing on the lock screen	
+Only English letters, digits and signs: the boot prompt may misread others	
 Only English letters, digits, spaces, slashes and . , _ : @ + - ~	
 Open LocalSend only on networks you trust	
 Open the filesystem	
