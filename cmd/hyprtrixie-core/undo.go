@@ -42,23 +42,29 @@ func moduleTitle(id string) string {
 	return id
 }
 
+func takenBack(record ledger.Record, installed map[string]bool, id string) []string {
+	elsewhere := ledger.WantedElsewhere(id)
+	wanted := record.Values(ledger.Wants)
+	var names []string
+	for _, name := range record.Values(ledger.Package) {
+		if installed[name] && slices.Contains(wanted, name) && !elsewhere[name] {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
 func planUndo(id string) (undoPlan, error) {
 	installed, err := apt.Installed()
 	if err != nil {
 		return undoPlan{}, err
 	}
 	record := ledger.Load(id)
-	elsewhere := ledger.WantedElsewhere(id)
 	shared := ledger.Elsewhere(id, ledger.File)
-	plan := undoPlan{id: id, services: record.Values(ledger.Service)}
+	plan := undoPlan{id: id, services: record.Values(ledger.Service), packages: takenBack(record, installed, id)}
 	for _, path := range record.Values(ledger.File) {
 		if !shared[path] {
 			plan.files = append(plan.files, path)
-		}
-	}
-	for _, name := range record.Values(ledger.Package) {
-		if installed[name] && !elsewhere[name] {
-			plan.packages = append(plan.packages, name)
 		}
 	}
 	for _, path := range record.Values(ledger.Made) {
@@ -89,8 +95,8 @@ func named(noun string, names []string) string {
 func (plan undoPlan) describe() string {
 	text := fmt.Sprintf("Undoing module %s, %s, takes back:\n", plan.id, moduleTitle(plan.id))
 	text += named("packages", plan.packages) + named("services", plan.services) + named("files", plan.files) + named("unpacked", plan.made)
-	return text + "Packages and files another module also uses stay, and so do files you've changed since. apt also removes\n" +
-		"other packages nothing needs any more, as apt autoremove does.\n"
+	return text + "Packages and files another module also uses stay, and so do packages you asked apt for yourself and files\n" +
+		"you've changed since. apt also removes other packages nothing needs any more, as apt autoremove does.\n"
 }
 
 func snapshotBefore(description string) error {
