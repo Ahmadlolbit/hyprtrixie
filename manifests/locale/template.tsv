@@ -5,13 +5,16 @@
 %s · %d of %d	
 24-hour or 12-hour time in the bar and on the lock screen	
 64-bit PC (amd64)	
+A layout takes only small letters, digits, - and _, such as us or de	
 A light theme by day and a dark one at night: by the sun or at set times	
 A new wallpaper every day: drawn in the theme's colours, NASA's picture of the day (needs the internet), or one from your folder	
 A notification when new firmware is ready, or when the disk is nearly full	
 A short chime when you log in, lower for dark themes and higher for light ones; a sound of your own in ~/.config/hyprtrixie/startup.ogg plays instead	
 A short tip under the prompt in every new terminal	
 A theme is applied	
+A time zone takes only letters, digits, slashes and _ + -	
 A tip at the bottom of the welcome screen	
+A user name takes only small letters, digits, - and _	
 A wallpaper per workspace	
 A warmer screen: never, always, or at night	
 Accent colour	
@@ -288,6 +291,7 @@ Nothing changes until you choose Install at the end.
 Notifications are set up	
 Now and then a tip as a notification, at most once a day	
 Now playing on the lock screen	
+Only English letters, digits, spaces, slashes and . , _ : @ + - ~	
 Open LocalSend only on networks you trust	
 Open the filesystem	
 Open the new system	
@@ -403,6 +407,7 @@ Teams for Linux from its apt repository or from the Snap Store
 Terminal and shell	
 Testing mode	
 Text size	
+That row can't be empty, so it keeps what it had	
 The %s prompt is set up	
 The IPU6 webcam's tools are there	
 The NVIDIA module is built for the newest kernel	
@@ -415,6 +420,7 @@ The boot menu, where the snapshots are, in your theme's colours
 The boot splash is in the theme's colours	
 The colour and QR picker is installed	
 The computer can hibernate	
+The computer's name takes only small letters, digits and -	
 The disk password	
 The disk password needs at least 8 characters	
 The firewall is on	
@@ -463,6 +469,7 @@ Theme switches reach the boot screens
 Theme the boot menu	
 Theme the text consoles	
 Themes	
+There's no layout %s	
 There's no time zone %s	
 Time zone	
 Tip notifications	
@@ -476,6 +483,7 @@ Turn on the firewall
 Turn on the snapshot timers	
 Turn the swapfile off	
 Turn the swapfile on	
+Type a whole number, such as %s	
 Type to change · Arrows move · Enter goes on · Esc back	
 Type to search · Enter keeps it · Esc clears it	
 Type, then Enter	
@@ -526,6 +534,7 @@ You can manage printers and scanners
 Your Hyprland config loads the Hyprtrixie defaults	
 Your account can change the brightness	
 Your name	
+Your name can't have : or , in it	
 Your password, for sudo	
 curl is installed	
 distrobox and Podman are installed	

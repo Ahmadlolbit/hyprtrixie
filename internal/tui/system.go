@@ -185,7 +185,7 @@ func (flow *wizard) lockRows() []row {
 		secretRow("Disk password", "At least 8 characters", &state.answers.Password),
 		secretRow("Again", "The same once more", &state.twice),
 		{label: "Words above it", value: flow.settings.Get("BOOT_PROMPT"), help: "What the boot splash shows above the disk password, such as Welcome back; empty keeps the system's own words",
-			input: &field{allow: config.SafeText, valid: func(string) bool { return true }, set: func(text string) { flow.settings.Set("BOOT_PROMPT", text) }}},
+			input: &field{allow: config.SafeText, valid: func(string) bool { return true }, set: func(text string) { flow.settings.Set("BOOT_PROMPT", text) }, refused: safeRefused}},
 	}
 }
 
@@ -232,12 +232,12 @@ func (flow *wizard) youRows() []row {
 	state := flow.system
 	state.followLayout()
 	return []row{{label: "You and this computer", heading: true}, {info: true},
-		textRow("Your name", "Shown on the login screen", nameCharacter, &state.answers.Name, state.suggestUser),
-		textRow("User name", "For logging in: small letters, digits, - and _", userCharacter, &state.answers.User, nil),
+		textRow("Your name", "Shown on the login screen", nameCharacter, &state.answers.Name, state.suggestUser).refusing("Your name can't have : or , in it"),
+		textRow("User name", "For logging in: small letters, digits, - and _", userCharacter, &state.answers.User, nil).lowered().refusing("A user name takes only small letters, digits, - and _"),
 		secretRow("Password", "For logging in and for sudo", &state.answers.Secret),
 		secretRow("Again", "The same once more", &state.again),
-		textRow("Computer's name", "How it shows on the network: small letters, digits and -", hostCharacter, &state.answers.Host, nil),
-		textRow("Time zone", "Such as Europe/Istanbul or America/New_York", zoneCharacter, &state.answers.Zone, nil),
+		textRow("Computer's name", "How it shows on the network: small letters, digits and -", hostCharacter, &state.answers.Host, nil).lowered().refusing("The computer's name takes only small letters, digits and -"),
+		textRow("Time zone", "Such as Europe/Istanbul or America/New_York", zoneCharacter, &state.answers.Zone, nil).refusing("A time zone takes only letters, digits, slashes and _ + -"),
 	}
 }
 
@@ -346,8 +346,12 @@ func applyLayout(layout string) string {
 
 func (state *system) keyboardRow() row {
 	line := textRow("Keyboard", "Such as us, de or gb. It changes at once, so the passwords you type next work at every start", layoutCharacter, &state.answers.Keyboard, nil)
-	line.input.valid = keyboard.Known
+	line.input.refused = "A layout takes only small letters, digits, - and _, such as us or de"
 	line.input.set = func(text string) {
+		if !keyboard.Known(text) {
+			state.tell("There's no layout " + text)
+			return
+		}
 		if why := applyLayout(text); why != "" {
 			state.tell(why)
 			return
