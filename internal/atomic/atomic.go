@@ -11,11 +11,14 @@ import (
 	"path/filepath"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 )
 
 const maxLinks = 40
+
+var signalWait = 10 * time.Second
 
 func Write(path string, data []byte, perm os.FileMode) error {
 	target, err := follow(path)
@@ -49,7 +52,7 @@ func InstallAs(path string, data []byte, perm os.FileMode, uid, gid int) error {
 
 func Symlink(target, link string) error {
 	temp := temporary(link)
-	defer cleanup.OnSignal(func() { os.Remove(temp) })()
+	defer guarded(temp)()
 	if err := os.Symlink(target, temp); err != nil {
 		return err
 	}
@@ -99,9 +102,24 @@ func temporary(path string) string {
 	return filepath.Join(filepath.Dir(path), "."+filepath.Base(path)+"."+strconv.FormatUint(rand.Uint64(), 36))
 }
 
+func guarded(temp string) func() {
+	finished := make(chan struct{})
+	stop := cleanup.OnSignal(func() {
+		select {
+		case <-finished:
+		case <-time.After(signalWait):
+		}
+		os.Remove(temp)
+	})
+	return func() {
+		close(finished)
+		stop()
+	}
+}
+
 func replace(path string, source io.Reader, perm os.FileMode, adjust func(*os.File) error) error {
 	temp := temporary(path)
-	defer cleanup.OnSignal(func() { os.Remove(temp) })()
+	defer guarded(temp)()
 	file, err := os.OpenFile(temp, os.O_WRONLY|os.O_CREATE|os.O_EXCL, perm)
 	if err != nil {
 		return err
