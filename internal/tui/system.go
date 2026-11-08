@@ -21,6 +21,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/hypr"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/keyboard"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/lock"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/osinstall"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
@@ -428,6 +429,16 @@ func (flow *wizard) systemStages(machine []string, catalogue []apps.App) []stage
 	return append(stages, flow.allStages(machine, catalogue)[1:]...)
 }
 
+func installerBlocked() string {
+	if lock.Busy() {
+		return "Another Hyprtrixie run is still going: start the installer again once it ends"
+	}
+	if err := osinstall.Ready(); err != nil {
+		return sentence(err.Error())
+	}
+	return ""
+}
+
 func RunInstaller() int {
 	if os.Geteuid() != 0 {
 		fmt.Fprintln(os.Stderr, "the installer runs as root: open Install Hyprtrixie from the app launcher, or start it with sudo in a terminal on the desktop")
@@ -446,9 +457,7 @@ func RunInstaller() int {
 	flow.show = canShow
 	flow.nvidia = detect.ReadHardware().HasGPU("nvidia") || detect.NvidiaOnBus()
 	flow.system = newSystem(found)
-	if err := osinstall.Ready(); err != nil {
-		flow.system.blocked = sentence(err.Error())
-	}
+	flow.system.blocked = installerBlocked()
 	flow.stages = flow.systemStages(run.Lines(detect.Summary()), apps.All())
 	return play(flow)
 }

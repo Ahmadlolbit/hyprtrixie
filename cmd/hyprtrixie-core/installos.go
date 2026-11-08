@@ -6,6 +6,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/events"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/lock"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/osinstall"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
@@ -42,6 +43,11 @@ func installOSCommand() int {
 	}
 	defer os.Remove(answers)
 	defer cleanup.OnSignal(func() { os.Remove(answers) })()
+	held, err := lock.Take()
+	if err != nil {
+		return fail("%v", err)
+	}
+	defer held.Close()
 	if streamed {
 		cleanup.OwnGroup()
 		ui.Attach(events.Open(os.Stdin, os.Stdout, cleanup.StopGroup))
