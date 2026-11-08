@@ -255,6 +255,7 @@ func installStable(log *runlog.Log, specs []string) error {
 			return failure
 		}
 		log.Line("warn", fmt.Sprintf("attempt %d: taking %s from %s to match libraries already installed from there", attempt, strings.Join(more, " "), backportsSuite))
+		ledger.Note(ledger.Wants, more...)
 		for _, name := range more {
 			extra = append(extra, name+"/"+backportsSuite)
 		}
@@ -537,6 +538,7 @@ func ExtrepoTry(log *runlog.Log, name string) error {
 }
 
 func InstallRelease(log *runlog.Log, name, packageName string) error {
+	ledger.Note(ledger.Wants, packageName)
 	release, err := fetch.GetRelease(log, name)
 	if err != nil {
 		return err
