@@ -183,7 +183,7 @@ func loggedWithin(limit time.Duration, output io.Writer, environment []string, n
 	withEnvironment(command, environment)
 	command.Stdout = shared
 	command.Stderr = shared
-	return finish(command.Run())
+	return done(finish(command.Run()))
 }
 
 func Supply(limit time.Duration, output io.Writer, input, name string, args ...string) error {
@@ -194,7 +194,7 @@ func Supply(limit time.Duration, output io.Writer, input, name string, args ...s
 	if file, ok := output.(*os.File); ok {
 		command.Stderr = file
 	}
-	return finish(command.Run())
+	return done(finish(command.Run()))
 }
 
 type Child struct {
