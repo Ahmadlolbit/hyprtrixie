@@ -40,6 +40,8 @@ func installOSCommand() int {
 	if os.Geteuid() != 0 {
 		return fail("the installer runs as root")
 	}
+	defer os.Remove(answers)
+	defer cleanup.OnSignal(func() { os.Remove(answers) })()
 	if streamed {
 		cleanup.OwnGroup()
 		ui.Attach(events.Open(os.Stdin, os.Stdout, cleanup.StopGroup))

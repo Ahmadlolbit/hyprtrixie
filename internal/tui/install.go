@@ -184,6 +184,9 @@ func (work *installer) begin() tea.Cmd {
 	core := filepath.Join(env.ToolsDir(), "hyprtrixie-core")
 	child, err := privilege.Spawn(work.environment(), core, work.arguments()...)
 	if err != nil {
+		if work.flow.system != nil {
+			os.Remove(answersFile())
+		}
 		work.flow.notice = "Could not start the setup: " + err.Error()
 		return nil
 	}
