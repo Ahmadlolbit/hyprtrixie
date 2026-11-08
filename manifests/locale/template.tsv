@@ -330,6 +330,7 @@ SSH
 Save configuration	
 Save everything to disk and power off; the swapfile grows to the size of your memory	
 Saved to %s	
+Saved to %s until the restart: copy it to keep it	
 Screen reader	
 Screensaver after (minutes)	
 Search: 	

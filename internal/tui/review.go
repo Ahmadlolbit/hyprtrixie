@@ -36,6 +36,9 @@ func (flow *wizard) saveConfiguration() tea.Cmd {
 		return nil
 	}
 	flow.notice = "Saved to " + config.Path()
+	if flow.system != nil {
+		flow.notice = "Saved to " + config.Path() + " until the restart: copy it to keep it"
+	}
 	return nil
 }
 
@@ -46,6 +49,9 @@ func (flow *wizard) load(path string) tea.Cmd {
 		return nil
 	}
 	presets.Import(flow.settings, path)
+	if flow.system != nil {
+		flow.settings.Set(kernelKey, liveKernel)
+	}
 	flow.notice = "Loaded " + path
 	if found := warnings(flow.settings.Notes[before:]); len(found) > 0 {
 		return flow.open(&viewer{lines: found, leave: func() tea.Cmd { return nil }})
