@@ -3,6 +3,7 @@ package options
 import (
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
@@ -50,14 +51,14 @@ var table = []Option{
 	{"KERNEL", "Kernel", Choice, "backports", "backports stable", "system", "Backports has a newer kernel for recent laptops; stable is Debian's own", nil},
 	{"WEBCAM", "IPU6 webcam", Choice, "auto", "auto off", "system", "For the cameras on newer Intel laptops (IPU6): libcamera, its PipeWire camera for browsers and calls, and hyprtrixie webcam relay for apps that take only a normal webcam; auto sets it up only where that camera is found", nil},
 	{"GRAPHICS", "NVIDIA driver", Choice, "proprietary", "proprietary nouveau", "system", "NVIDIA's own driver is faster; nouveau is open source and slower", nvidiaPresent},
-	{"SWAPFILE_GB", "Swapfile size (GiB)", Number, "8", "", "storage", "Disk space used as extra memory when RAM runs out; 0 turns it off, and Hibernate with it", nil},
-	{"ZRAM_PERCENT", "zram size (% of memory)", Number, "50", "", "storage", "Compressed memory that works as fast swap; 0 turns it off", nil},
-	{"SWAPPINESS", "Swappiness", Number, "180", "", "storage", "How readily memory moves to swap; a high value suits zram", nil},
+	{"SWAPFILE_GB", "Swapfile size (GiB)", Number, "8", "0-65536", "storage", "Disk space used as extra memory when RAM runs out; 0 turns it off, and Hibernate with it", nil},
+	{"ZRAM_PERCENT", "zram size (% of memory)", Number, "50", "0-200", "storage", "Compressed memory that works as fast swap; 0 turns it off", nil},
+	{"SWAPPINESS", "Swappiness", Number, "180", "0-200", "storage", "How readily memory moves to swap; a high value suits zram", nil},
 	{"HIBERNATE", "Hibernate", YesNo, "no", "", "storage", "Save everything to disk and power off; the swapfile grows to the size of your memory", swapfileOn},
 	{"SNAPSHOTS", "System snapshots", YesNo, "yes", "", "storage", "Snapshots before changes, so you can roll back from the boot menu", nil},
-	{"SNAPSHOT_DAILY", "Daily snapshots to keep", Number, "7", "", "storage", "How many daily snapshots to keep", snapshotsOn},
-	{"SNAPSHOT_WEEKLY", "Weekly snapshots to keep", Number, "4", "", "storage", "How many weekly snapshots to keep", snapshotsOn},
-	{"SNAPSHOT_MONTHLY", "Monthly snapshots to keep", Number, "1", "", "storage", "How many monthly snapshots to keep", snapshotsOn},
+	{"SNAPSHOT_DAILY", "Daily snapshots to keep", Number, "7", "0-100", "storage", "How many daily snapshots to keep", snapshotsOn},
+	{"SNAPSHOT_WEEKLY", "Weekly snapshots to keep", Number, "4", "0-100", "storage", "How many weekly snapshots to keep", snapshotsOn},
+	{"SNAPSHOT_MONTHLY", "Monthly snapshots to keep", Number, "1", "0-100", "storage", "How many monthly snapshots to keep", snapshotsOn},
 	{"GREETER", "Login screen runs on", Choice, "x11", "x11 wayland", "system", "X11 is the most reliable for the login screen; Wayland is newer", nil},
 	{"SHELL_PROMPT", "Prompt", Choice, "starship", "starship powerlevel10k", "shell", "How the terminal prompt looks: Starship or Powerlevel10k", nil},
 	{"APPS", "Applications", Multi, "", "", "apps", "Apps to install, by category; untick any you don't want", nil},
@@ -75,14 +76,14 @@ var table = []Option{
 	{"TEXT_SIZE", "Text size", Choice, "normal", "normal large larger", "look", "Larger text in the bar, terminals, notifications, the lock screen and apps: large is a quarter bigger, larger half", nil},
 	{"SCREEN_READER", "Screen reader", YesNo, "no", "", "look", "Orca reads apps aloud; Super+Alt+R starts or stops it. On Hyprland it can't read the bar, the menu or the launcher, and its own key commands don't work", nil},
 	{"STARTUP_SOUND", "Startup sound", YesNo, "no", "", "look", "A short chime when you log in, lower for dark themes and higher for light ones; a sound of your own in ~/.config/hyprtrixie/startup.ogg plays instead", nil},
-	{"SCREENSAVER_MINUTES", "Screensaver after (minutes)", Number, "3", "", "system", "An animated logo on every screen; a key or mouse move ends it; 0 = never", nil},
+	{"SCREENSAVER_MINUTES", "Screensaver after (minutes)", Number, "3", "0-1440", "system", "An animated logo on every screen; a key or mouse move ends it; 0 = never", nil},
 	{"TIPS_TERMINAL", "Tips in new terminals", YesNo, "yes", "", "look", "A short tip under the prompt in every new terminal", nil},
 	{"TIPS_WELCOME", "Tips on the welcome screen", YesNo, "yes", "", "look", "A tip at the bottom of the welcome screen", nil},
 	{"TIPS_NOTIFY", "Tip notifications", YesNo, "yes", "", "look", "Now and then a tip as a notification, at most once a day", nil},
 	{"POWER_FOLLOW", "Power saver on battery", YesNo, "no", "", "system", "Switch to power saver when you unplug, and back when you plug in", nil},
 	{"CARE_NOTIFY", "Firmware and disk warnings", YesNo, "yes", "", "system", "A notification when new firmware is ready, or when the disk is nearly full", nil},
-	{"IDLE_LOCK_MINUTES", "Lock after (minutes)", Number, "5", "", "system", "Lock the screen when you're away; it turns off 30 s later; 0 = never, and the screen turns off 10 minutes after the screensaver starts, or after 10 minutes without one", nil},
-	{"IDLE_SUSPEND_MINUTES", "Suspend after (minutes)", Number, "30", "", "system", "Put the laptop to sleep when you're away; 0 = never", nil},
+	{"IDLE_LOCK_MINUTES", "Lock after (minutes)", Number, "5", "0-1440", "system", "Lock the screen when you're away; it turns off 30 s later; 0 = never, and the screen turns off 10 minutes after the screensaver starts, or after 10 minutes without one", nil},
+	{"IDLE_SUSPEND_MINUTES", "Suspend after (minutes)", Number, "30", "0-1440", "system", "Put the laptop to sleep when you're away; 0 = never", nil},
 	{"BAR_PRESET", "Bar layout", Choice, "full", "full floating minimal vertical", "look", "Full width, floating with rounded corners, minimal, or down the left side", nil},
 	{"BAR_POSITION", "Bar position", Choice, "top", "top bottom", "look", "The bar at the top or the bottom of the screen", barHorizontal},
 	{"CLOCK_FORMAT", "Clock", Choice, "24h", "24h 12h", "look", "24-hour or 12-hour time in the bar and on the lock screen", nil},
@@ -101,7 +102,7 @@ var table = []Option{
 	{"LIGHT_AT", "Light from", Choice, "07:00", lightAt, "look", "When the light theme starts", autoThemeTimes},
 	{"DARK_AT", "Dark from", Choice, "19:00", "17:00 18:00 19:00 20:00 21:00 22:00", "look", "When the dark theme starts", autoThemeTimes},
 	{"DAILY_THEME", "Theme of the day", YesNo, "no", "", "look", "The next theme every morning at 6; Super+Ctrl+T still changes it during the day", autoThemeOff},
-	{"WALLPAPER_MINUTES", "Change wallpaper every (minutes)", Number, "0", "", "look", "Move to the theme's next wallpaper every so many minutes; 0 keeps one", nil},
+	{"WALLPAPER_MINUTES", "Change wallpaper every (minutes)", Number, "0", "0-1440", "look", "Move to the theme's next wallpaper every so many minutes; 0 keeps one", nil},
 	{"DAY_WALLPAPER", "Wallpaper of the day", Choice, "off", "off drawn nasa folder", "look", "A new wallpaper every day: drawn in the theme's colours, NASA's picture of the day (needs the internet), or one from your folder", nil},
 	{"WALLPAPER_FOLDER", "Wallpaper folder", Text, "~/Pictures/Wallpapers", "", "look", "The folder of pictures, or a file that lists them one per line, for the wallpaper of the day", dayFromFolder},
 	{"WALLPAPER_PER_WORKSPACE", "A wallpaper per workspace", YesNo, "no", "", "look", "Each workspace shows its own wallpaper from the theme", nil},
@@ -244,12 +245,33 @@ func (option Option) Valid(value string) bool {
 	case YesNo:
 		return value == "yes" || value == "no"
 	case Number:
-		return value == "0" || value != "" && value[0] != '0' && strings.Trim(value, "0123456789") == ""
+		return whole(value) && option.within(value)
 	case Multi:
 		items := option.Items()
 		return !slices.ContainsFunc(strings.Fields(value), func(word string) bool { return !slices.Contains(items, word) })
 	}
 	return true
+}
+
+func whole(value string) bool {
+	return value == "0" || value != "" && value[0] != '0' && strings.Trim(value, "0123456789") == ""
+}
+
+func (option Option) Range() (int, int, bool) {
+	low, high, found := strings.Cut(option.values, "-")
+	least, first := strconv.Atoi(low)
+	most, second := strconv.Atoi(high)
+	return least, most, option.Kind == Number && found && first == nil && second == nil
+}
+
+func (option Option) within(value string) bool {
+	least, most, bounded := option.Range()
+	number, err := strconv.Atoi(value)
+	return !bounded || err == nil && number >= least && number <= most
+}
+
+func (option Option) Outside(value string) bool {
+	return option.Kind == Number && whole(value) && !option.within(value)
 }
 
 func (option Option) Preset() bool {
