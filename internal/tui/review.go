@@ -6,6 +6,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/presets"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/privilege"
 )
 
@@ -39,10 +41,11 @@ func (flow *wizard) saveConfiguration() tea.Cmd {
 
 func (flow *wizard) load(path string) tea.Cmd {
 	before := len(flow.settings.Notes)
-	if !flow.settings.Load(path) {
+	if !fsutil.IsFile(path) {
 		flow.notice = "Could not read " + path
 		return nil
 	}
+	presets.Import(flow.settings, path)
 	flow.notice = "Loaded " + path
 	if found := warnings(flow.settings.Notes[before:]); len(found) > 0 {
 		return flow.open(&viewer{lines: found, leave: func() tea.Cmd { return nil }})
