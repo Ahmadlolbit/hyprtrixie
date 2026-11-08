@@ -50,10 +50,10 @@ var table = []Option{
 	{"KERNEL", "Kernel", Choice, "backports", "backports stable", "system", "Backports has a newer kernel for recent laptops; stable is Debian's own", nil},
 	{"WEBCAM", "IPU6 webcam", Choice, "auto", "auto off", "system", "For the cameras on newer Intel laptops (IPU6): libcamera, its PipeWire camera for browsers and calls, and hyprtrixie webcam relay for apps that take only a normal webcam; auto sets it up only where that camera is found", nil},
 	{"GRAPHICS", "NVIDIA driver", Choice, "proprietary", "proprietary nouveau", "system", "NVIDIA's own driver is faster; nouveau is open source and slower", nvidiaPresent},
-	{"SWAPFILE_GB", "Swapfile size (GiB)", Number, "8", "", "storage", "Disk space used as extra memory when RAM runs out; 0 turns it off", nil},
+	{"SWAPFILE_GB", "Swapfile size (GiB)", Number, "8", "", "storage", "Disk space used as extra memory when RAM runs out; 0 turns it off, and Hibernate with it", nil},
 	{"ZRAM_PERCENT", "zram size (% of memory)", Number, "50", "", "storage", "Compressed memory that works as fast swap; 0 turns it off", nil},
 	{"SWAPPINESS", "Swappiness", Number, "180", "", "storage", "How readily memory moves to swap; a high value suits zram", nil},
-	{"HIBERNATE", "Hibernate", YesNo, "no", "", "storage", "Save everything to disk and power off; the swapfile grows to the size of your memory", nil},
+	{"HIBERNATE", "Hibernate", YesNo, "no", "", "storage", "Save everything to disk and power off; the swapfile grows to the size of your memory", swapfileOn},
 	{"SNAPSHOTS", "System snapshots", YesNo, "yes", "", "storage", "Snapshots before changes, so you can roll back from the boot menu", nil},
 	{"SNAPSHOT_DAILY", "Daily snapshots to keep", Number, "7", "", "storage", "How many daily snapshots to keep", snapshotsOn},
 	{"SNAPSHOT_WEEKLY", "Weekly snapshots to keep", Number, "4", "", "storage", "How many weekly snapshots to keep", snapshotsOn},
@@ -130,6 +130,10 @@ func ticked(facts Facts, key, item string) bool {
 
 func nvidiaPresent(facts Facts) bool {
 	return facts.Nvidia
+}
+
+func swapfileOn(facts Facts) bool {
+	return facts.Value("SWAPFILE_GB") != "0"
 }
 
 func snapshotsOn(facts Facts) bool {

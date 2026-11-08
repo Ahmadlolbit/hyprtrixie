@@ -102,7 +102,7 @@ Detect hardware
 Developer tools	
 Disk	
 Disk password	
-Disk space used as extra memory when RAM runs out; 0 turns it off	
+Disk space used as extra memory when RAM runs out; 0 turns it off, and Hibernate with it	
 Display scale	
 Do not disturb every night, for the hours below	
 Docker command uses	

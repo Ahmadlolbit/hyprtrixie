@@ -38,9 +38,20 @@ func resumeDracut() string {
 	return env.Or("HYPRTRIXIE_RESUME_DRACUT", "/etc/dracut.conf.d/hyprtrixie-resume.conf")
 }
 
+func (context *Context) cantHibernate() string {
+	switch {
+	case context.number("SWAPFILE_GB") == 0:
+		return "Hibernate stays off: it needs a swapfile, and Swapfile size is 0"
+	case detect.SecureBoot() == "enabled":
+		return "Hibernate stays off: it needs Secure Boot off"
+	case apt.Commands("update-grub") != nil:
+		return "Hibernate stays off: it needs GRUB"
+	}
+	return ""
+}
+
 func (context *Context) hibernates() bool {
-	return context.Config.Get(hibernateOption) == "yes" && context.number("SWAPFILE_GB") > 0 &&
-		detect.SecureBoot() != "enabled" && apt.Commands("update-grub") == nil
+	return context.Config.Get(hibernateOption) == "yes" && context.cantHibernate() == ""
 }
 
 func memoryGiB() int {
@@ -148,6 +159,11 @@ func (rest *hibernation) remove(log *runlog.Log) error {
 
 func hibernateSteps(context *Context) {
 	rest := &hibernation{Context: context, boot: followUp{name: resumeFollowUp}}
+	if context.Config.Get(hibernateOption) == "yes" {
+		if why := context.cantHibernate(); why != "" {
+			context.Run.Warn(why)
+		}
+	}
 	if context.hibernates() {
 		context.Run.Step("Let the computer hibernate", rest.setup)
 	} else if fsutil.Exists(resumeGrub()) || rest.boot.due() {
