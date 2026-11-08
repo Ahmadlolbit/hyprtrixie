@@ -13,9 +13,10 @@ import (
 )
 
 const (
-	twoValues  = 2
-	kernelKey  = "KERNEL"
-	liveKernel = "backports"
+	twoValues   = 2
+	kernelKey   = "KERNEL"
+	liveKernel  = "backports"
+	safeRefused = "Only English letters, digits, spaces, slashes and . , _ : @ + - ~"
 )
 
 type section struct {
@@ -97,13 +98,15 @@ func (flow *wizard) valueRow(option options.Option, change func() tea.Cmd) row {
 func (flow *wizard) fieldRow(option options.Option) row {
 	line := flow.valueRow(option, nil)
 	line.input = &field{
-		allow: config.SafeText,
-		valid: func(text string) bool { return text != "" && option.Valid(text) },
-		set:   func(text string) { flow.settings.Set(option.Key, text) },
+		allow:   config.SafeText,
+		valid:   func(text string) bool { return text != "" && option.Valid(text) },
+		set:     func(text string) { flow.settings.Set(option.Key, text) },
+		refused: safeRefused,
 	}
 	if option.Kind == options.Number {
 		line.input.allow = digit
 		line.input.replace = true
+		line.input.refused = fmt.Sprintf("Type a whole number, such as %s", option.DefaultFor(""))
 	}
 	return line
 }

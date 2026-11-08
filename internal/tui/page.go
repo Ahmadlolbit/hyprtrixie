@@ -14,12 +14,23 @@ const (
 	pageJump   = 10
 )
 
+const emptyRefused = "That row can't be empty, so it keeps what it had"
+
 type field struct {
 	allow   func(rune) bool
 	valid   func(string) bool
 	set     func(string)
+	refused string
+	small   bool
 	replace bool
 	secret  bool
+}
+
+func (input *field) folded(key tea.KeyMsg) tea.KeyMsg {
+	if input.small {
+		key.Runes = []rune(strings.ToLower(string(key.Runes)))
+	}
+	return key
 }
 
 type row struct {
@@ -33,6 +44,16 @@ type row struct {
 	input   *field
 	space   func() tea.Cmd
 	enter   func() tea.Cmd
+}
+
+func (line row) refusing(why string) row {
+	line.input.refused = why
+	return line
+}
+
+func (line row) lowered() row {
+	line.input.small = true
+	return line
 }
 
 func (line row) selectable() bool {
@@ -173,8 +194,12 @@ func (view *page) pressField(key tea.KeyMsg) bool {
 		return false
 	}
 	typed := key.Type == tea.KeyRunes || key.Type == tea.KeySpace || key.Type == tea.KeyBackspace
-	if !typed || !view.accepts(line, key) {
+	if !typed {
 		return false
+	}
+	key = line.input.folded(key)
+	if !view.accepts(line, key) {
+		return view.refuse(line, key)
 	}
 	if view.draft == nil {
 		view.draft = &input{allow: line.input.allow, secret: line.input.secret}
@@ -202,14 +227,35 @@ func (view *page) accepts(line row, key tea.KeyMsg) bool {
 	return !line.input.replace || len(key.Runes) > 0
 }
 
+func (view *page) refuse(line row, key tea.KeyMsg) bool {
+	if line.input.replace && pageKey(key) {
+		return false
+	}
+	view.wizard.notice = line.input.refused
+	return true
+}
+
+func pageKey(key tea.KeyMsg) bool {
+	switch key.String() {
+	case " ", "j", "k", "/":
+		return true
+	}
+	return false
+}
+
 func (view *page) commit() {
 	line, found := view.current()
 	if view.draft == nil || !found || line.input == nil {
 		view.draft = nil
 		return
 	}
-	if line.input.valid(view.draft.text) {
-		line.input.set(view.draft.text)
+	switch text := view.draft.text; {
+	case line.input.valid(text):
+		line.input.set(text)
+	case text == "":
+		view.wizard.notice = emptyRefused
+	default:
+		view.wizard.notice = line.input.refused
 	}
 	view.draft = nil
 }
