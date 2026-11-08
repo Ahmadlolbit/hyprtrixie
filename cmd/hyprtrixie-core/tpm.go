@@ -189,11 +189,16 @@ func updateGrub(log *runlog.Log) error {
 }
 
 func keepFallback(log *runlog.Log, kernel string) error {
+	var made []string
 	for _, pair := range fallbackPairs(kernel) {
+		if fsutil.Exists(pair[1]) {
+			continue
+		}
 		if err := copyFile(pair[0], pair[1]); err != nil {
-			dropFiles(fallbackFiles())
+			dropFiles(made)
 			return err
 		}
+		made = append(made, pair[1])
 	}
 	return updateGrub(log)
 }
