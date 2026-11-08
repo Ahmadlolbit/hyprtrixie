@@ -60,6 +60,7 @@ func planUndo(id string) (undoPlan, error) {
 		return undoPlan{}, err
 	}
 	record := ledger.Load(id)
+	record[ledger.Package] = append(record[ledger.Package], ledger.Unfinished(id, installed)...)
 	shared := ledger.Elsewhere(id, ledger.File)
 	plan := undoPlan{id: id, services: record.Values(ledger.Service), packages: takenBack(record, installed, id)}
 	for _, path := range record.Values(ledger.File) {

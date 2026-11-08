@@ -250,8 +250,9 @@ func (work *session) recordStart(id string) recording {
 	if !work.changesFiles() {
 		return recording{}
 	}
-	ledger.Begin()
-	return recording{true, work.packagesNow(id)}
+	before := work.packagesNow(id)
+	ledger.Begin(id, before)
+	return recording{true, before}
 }
 
 func (work *session) recordEnd(id string, record recording) {
