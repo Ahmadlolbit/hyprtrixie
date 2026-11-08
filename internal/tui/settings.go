@@ -106,7 +106,8 @@ func (flow *wizard) fieldRow(option options.Option) row {
 	if option.Kind == options.Number {
 		line.input.allow = digit
 		line.input.replace = true
-		line.input.refused = fmt.Sprintf("Type a whole number, such as %s", option.DefaultFor(""))
+		least, most, _ := option.Range()
+		line.input.refused = fmt.Sprintf("Type a number from %d to %d, such as %s", least, most, option.DefaultFor(""))
 	}
 	return line
 }

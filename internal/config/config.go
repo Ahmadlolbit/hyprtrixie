@@ -174,10 +174,17 @@ func (current *Config) validate() {
 	for _, option := range current.options {
 		if value := current.values[option.Key]; !option.Valid(value) {
 			fallback := option.DefaultFor(current.values["PROFILE"])
-			current.note("warn", "invalid "+option.Key+"='"+value+"' in the configuration, using '"+fallback+"'")
+			current.note("warn", invalid(option, value, fallback))
 			current.values[option.Key] = fallback
 		}
 	}
+}
+
+func invalid(option options.Option, value, fallback string) string {
+	if least, most, _ := option.Range(); option.Outside(value) {
+		return fmt.Sprintf("%s='%s' in the configuration isn't between %d and %d, using '%s'", option.Key, value, least, most, fallback)
+	}
+	return "invalid " + option.Key + "='" + value + "' in the configuration, using '" + fallback + "'"
 }
 
 func (current *Config) migrate(loaded string) {
