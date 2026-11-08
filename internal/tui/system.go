@@ -168,6 +168,15 @@ func secretRow(label, help string, into *string) row {
 		input: &field{allow: anything, valid: func(string) bool { return true }, set: func(text string) { *into = text }, secret: true}}
 }
 
+func printable(character rune) bool {
+	return character >= ' ' && character <= '~'
+}
+
+func bootTyped(line row) row {
+	line.input.allow = printable
+	return line.refusing("Only English letters, digits and signs: the boot prompt may misread others")
+}
+
 func textRow(label, help string, allow func(rune) bool, into *string, after func()) row {
 	return row{label: label, value: *into, help: help, input: &field{allow: allow, valid: func(text string) bool { return text != "" }, set: func(text string) {
 		*into = text
@@ -182,8 +191,8 @@ func (flow *wizard) lockRows() []row {
 	state.followLayout()
 	return []row{{label: "The disk password", heading: true}, {info: true},
 		{label: "Every start asks for it first. Without it nothing on the disk can be read, so keep it somewhere safe.", info: true}, {info: true},
-		secretRow("Disk password", "At least 8 characters", &state.answers.Password),
-		secretRow("Again", "The same once more", &state.twice),
+		bootTyped(secretRow("Disk password", "At least 8 characters: English letters, digits, signs and spaces", &state.answers.Password)),
+		bootTyped(secretRow("Again", "The same once more", &state.twice)),
 		{label: "Words above it", value: flow.settings.Get("BOOT_PROMPT"), help: "What the boot splash shows above the disk password, such as Welcome back; empty keeps the system's own words",
 			input: &field{allow: config.SafeText, valid: func(string) bool { return true }, set: func(text string) { flow.settings.Set("BOOT_PROMPT", text) }, refused: safeRefused}},
 	}
