@@ -20,7 +20,7 @@ const firstBootUnit = `[Unit]
 Description=Finish setting up Hyprtrixie
 Wants=network-online.target
 After=network-online.target
-Before=display-manager.service
+Before=display-manager.service systemd-user-sessions.service plymouth-quit.service plymouth-quit-wait.service getty@tty1.service
 ConditionPathExists=/etc/hyprtrixie/first-boot
 
 [Service]
