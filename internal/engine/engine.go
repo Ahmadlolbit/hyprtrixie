@@ -267,6 +267,13 @@ func (work *session) recordEnd(id string, record recording) {
 	}
 }
 
+func (work *session) ended(id string) {
+	if work.runner.Halted && !work.runner.Interrupted {
+		work.results[id] = work.runner.Result()
+		work.log.Line("info", "module "+id+" end: "+work.results[id])
+	}
+}
+
 func (work *session) one(module modules.Module, position, total int, part func(setup.Module, *setup.Context)) bool {
 	work.runner.Begin(module.ID)
 	ui.Rule(fmt.Sprintf(words.T("%s  %s  ·  %d of %d"), module.ID, words.T(module.Title), position, total))
@@ -274,6 +281,7 @@ func (work *session) one(module modules.Module, position, total int, part func(s
 	context, err := work.context()
 	if err != nil {
 		work.runner.Broke("step", "cannot read what's installed: "+err.Error())
+		work.ended(module.ID)
 		return false
 	}
 	record := work.recordStart(module.ID)
@@ -281,6 +289,7 @@ func (work *session) one(module modules.Module, position, total int, part func(s
 	work.recordEnd(module.ID, record)
 	work.person = context.Person
 	if work.runner.Ended() {
+		work.ended(module.ID)
 		return false
 	}
 	result := work.runner.Result()
