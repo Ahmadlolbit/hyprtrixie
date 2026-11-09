@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -124,6 +126,43 @@ func Text(path string) (string, error) {
 		return "", err
 	}
 	return strings.TrimRight(string(bytes.ReplaceAll(data, []byte{0}, nil)), "\n"), nil
+}
+
+func plain(path string, info fs.FileInfo, owners []int) error {
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("%s isn't a plain file, so it isn't read", path)
+	}
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	if len(owners) > 0 && (!ok || !slices.Contains(owners, int(stat.Uid))) {
+		return fmt.Errorf("%s belongs to someone else, so it isn't read", path)
+	}
+	return nil
+}
+
+func ReadPlain(path string, limit int64, owners ...int) ([]byte, error) {
+	file, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0)
+	if errors.Is(err, syscall.ELOOP) {
+		return nil, fmt.Errorf("%s is a link, so it isn't read", path)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	info, err := file.Stat()
+	if err == nil {
+		err = plain(path, info, owners)
+	}
+	if err != nil {
+		return nil, err
+	}
+	data, err := io.ReadAll(io.LimitReader(file, limit+1))
+	if err == nil && int64(len(data)) > limit {
+		err = fmt.Errorf("%s is bigger than %d bytes, so it isn't read", path, limit)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 func Lines(path string) ([]string, error) {
