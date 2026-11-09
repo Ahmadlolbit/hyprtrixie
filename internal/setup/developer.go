@@ -268,7 +268,14 @@ func kubernetesInstall(log *runlog.Log) error {
 	if err := apt.InstallRelease(log, "k9s", "k9s"); err != nil {
 		return err
 	}
+	return kindInstall(log)
+}
+
+func kindInstall(log *runlog.Log) error {
 	kind := filepath.Join(env.BinDir(), "kind")
+	if leftAlone(log, kind, "kind", "a kind") {
+		return nil
+	}
 	ledger.Note(ledger.Made, kind)
 	if fetch.ReleaseCurrent(log, "kind") && fsutil.Runnable(kind) {
 		return nil
@@ -302,19 +309,29 @@ func neovimUnpack(log *runlog.Log, target string) error {
 	return os.Rename(part, target)
 }
 
+func unpackedNeovim(link string) bool {
+	target, err := os.Readlink(link)
+	version, found := strings.CutPrefix(target, "/opt/nvim-")
+	return err == nil && found && version != "" && version[0] >= '0' && version[0] <= '9' && strings.HasSuffix(version, "/bin/nvim")
+}
+
 func (context *Context) neovimInstall(log *runlog.Log) error {
 	release, err := fetch.GetRelease(log, "neovim")
 	if err != nil {
 		return err
 	}
+	link := filepath.Join(env.BinDir(), "nvim")
+	if !unpackedNeovim(link) && leftAlone(log, link, "", "a Neovim") {
+		return apt.InstallLists(log, "dev-neovim")
+	}
 	dir := "/opt/nvim-" + strings.TrimPrefix(release.Version, "v")
-	ledger.Note(ledger.Made, dir, filepath.Join(env.BinDir(), "nvim"))
+	ledger.Note(ledger.Made, dir, link)
 	if !fsutil.Runnable(filepath.Join(dir, "bin/nvim")) {
 		if err := neovimUnpack(log, dir); err != nil {
 			return err
 		}
 	}
-	if err := atomic.Symlink(filepath.Join(dir, "bin/nvim"), filepath.Join(env.BinDir(), "nvim")); err != nil {
+	if err := atomic.Symlink(filepath.Join(dir, "bin/nvim"), link); err != nil {
 		return err
 	}
 	if err := context.Deploy.File(filepath.Join(dir, "share/applications/nvim.desktop"), filepath.Join(apps.WebFolder, "nvim.desktop")); err != nil {
@@ -427,11 +444,6 @@ func (context *Context) zedVersionIn(app string) (string, bool) {
 	return strings.TrimSpace(text.String()), err == nil
 }
 
-func zedTheirs(app string) bool {
-	_, err := os.Lstat(app)
-	return err == nil && !ledger.Recorded(ledger.Made, app)
-}
-
 func (context *Context) zedEntry(log *runlog.Log, app string) error {
 	if err := context.userFolder(log, ".local/share/applications"); err != nil {
 		return err
@@ -452,8 +464,7 @@ func (context *Context) zedInstall(log *runlog.Log) error {
 		return err
 	}
 	version, marked := context.zedVersionIn(app)
-	if !marked && zedTheirs(app) {
-		log.Line("info", app+" is a Zed you installed yourself, so it stays as it is")
+	if !marked && leftAlone(log, app, "", "a Zed") {
 		return nil
 	}
 	ledger.Note(ledger.Made, app, context.Person.Path(".local/bin/zed"))
@@ -499,6 +510,9 @@ func toolboxUnpack(log *runlog.Log) error {
 }
 
 func (context *Context) toolboxInstall(log *runlog.Log) error {
+	if leftAlone(log, toolboxDir, "toolbox", "a JetBrains Toolbox") {
+		return nil
+	}
 	program := filepath.Join(toolboxDir, "bin", toolboxTool)
 	ledger.Note(ledger.Made, toolboxDir, filepath.Join(env.BinDir(), toolboxTool))
 	if !fetch.ReleaseCurrent(log, "toolbox") || !fsutil.Runnable(program) {

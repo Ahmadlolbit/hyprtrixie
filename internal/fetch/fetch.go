@@ -190,6 +190,10 @@ func ReleaseCurrent(log *runlog.Log, name string) bool {
 	return err == nil && marked("releases", name, release.Version)
 }
 
+func Released(name string) bool {
+	return fsutil.Exists(marker("releases", name))
+}
+
 func ReleaseMark(log *runlog.Log, name string) error {
 	release, err := GetRelease(log, name)
 	if err != nil {
