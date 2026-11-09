@@ -2,8 +2,10 @@ package followtheme
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"image/color"
+	"io/fs"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
@@ -34,6 +36,7 @@ const (
 	initramfsLimit = 30 * time.Minute
 	rounds         = 3
 	settle         = 2 * time.Second
+	colorsLimit    = 64 << 10
 )
 
 var (
@@ -236,13 +239,13 @@ func load() (theme, bool) {
 	user := follow.Setting(settings, "user")
 	home := homeOf(user)
 	file := home + "/.local/state/hyprtrixie/current/theme/colors.toml"
-	if user == "" || !fsutil.IsFile(file) {
+	colors, err := fsutil.ReadPlain(file, colorsLimit)
+	if user == "" || err != nil {
+		if user != "" && !errors.Is(err, fs.ErrNotExist) {
+			fmt.Fprintln(os.Stderr, err)
+		}
 		fmt.Printf("No theme to follow yet (%s)\n", file)
 		return theme{}, false
-	}
-	colors, err := os.ReadFile(file)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
 	}
 	current := theme{settings: settings, colors: string(colors), user: user, home: home}
 	current.background = cmp.Or(follow.Color(current.colors, "background"), "#1e1e2e")
