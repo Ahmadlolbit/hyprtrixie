@@ -14,7 +14,9 @@ import (
 const (
 	configMode = 0o600
 	folderMode = 0o700
-	syncBack   = "[git]\n    autoCommit = true\n    autoPush = true\n"
+	syncBack   = "[git]\n    autoCommit = true\n"
+	pushedBack = "[git]\n    autoCommit = true\n    autoPush = true\n"
+	ConfigName = "chezmoi.toml"
 )
 
 var ErrNoChezmoi = errors.New("chezmoi isn't installed: sudo hyprtrixie app install chezmoi")
@@ -24,7 +26,26 @@ func folder() string {
 }
 
 func Config() string {
-	return filepath.Join(folder(), "chezmoi.toml")
+	return filepath.Join(folder(), ConfigName)
+}
+
+func Unpushed(text string) (string, bool) {
+	if text != pushedBack {
+		return text, false
+	}
+	return syncBack, true
+}
+
+func stopPushing() (bool, error) {
+	data, err := os.ReadFile(Config())
+	if err != nil {
+		return false, nil
+	}
+	text, changed := Unpushed(string(data))
+	if !changed {
+		return false, nil
+	}
+	return true, atomic.Install(Config(), []byte(text), configMode)
 }
 
 func Ready() error {
@@ -35,8 +56,12 @@ func Ready() error {
 }
 
 func SyncBack() (bool, error) {
-	if yours, err := filepath.Glob(filepath.Join(folder(), "chezmoi.*")); err != nil || len(yours) > 0 {
+	yours, err := filepath.Glob(filepath.Join(folder(), "chezmoi.*"))
+	if err != nil {
 		return false, err
+	}
+	if len(yours) > 0 {
+		return stopPushing()
 	}
 	if err := os.MkdirAll(folder(), folderMode); err != nil {
 		return false, err

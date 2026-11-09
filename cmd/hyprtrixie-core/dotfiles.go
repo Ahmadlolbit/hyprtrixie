@@ -28,7 +28,7 @@ func dotfilesCommand() int {
 		return fail("%v", err)
 	}
 	if written {
-		fmt.Printf("chezmoi will commit and push what you change back to %s; %s can turn that off\n", repository, dotfiles.Config())
+		fmt.Printf("chezmoi will commit what you change through it. To send it to %s, run: chezmoi git push\n", repository)
 	}
 	return dotfiles.Apply()
 }
