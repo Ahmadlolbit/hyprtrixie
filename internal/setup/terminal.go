@@ -22,6 +22,7 @@ const (
 	nerdFont   = "jetbrainsmono-nerd"
 	loginZsh   = "/usr/bin/zsh"
 	fontPrefix = "JetBrainsMonoNerdFont"
+	shellStamp = "shell"
 )
 
 func fontDir() string {
@@ -90,6 +91,14 @@ func (context *Context) zshrcSetup(log *runlog.Log) error {
 	return context.Deploy.UserOnce("config/zsh/zshrc", ".zshrc")
 }
 
+func (context *Context) zshLoaded() bool {
+	return mentions(context.Person.Path(".zshrc"), filepath.Join(zshShare(), "hyprtrixie.zsh"))
+}
+
+func (context *Context) shellChosen() string {
+	return context.Person.Path(filepath.Join(yourDefaults, shellStamp))
+}
+
 func (context *Context) zshSetup(log *runlog.Log) error {
 	if err := fetch.Git(log, "oh-my-zsh", filepath.Join(env.ShareDir(), "oh-my-zsh")); err != nil {
 		return err
@@ -97,20 +106,35 @@ func (context *Context) zshSetup(log *runlog.Log) error {
 	if err := context.Deploy.File("config/zsh/hyprtrixie.zsh", filepath.Join(zshShare(), "hyprtrixie.zsh")); err != nil {
 		return err
 	}
+	setBefore := context.zshLoaded()
 	if err := context.zshrcSetup(log); err != nil {
 		return err
 	}
-	if loginShell(context.Person.Name) == loginZsh {
+	return context.loginShellOnce(log, setBefore)
+}
+
+func (context *Context) loginShellOnce(log *runlog.Log, setBefore bool) error {
+	if fsutil.IsFile(context.shellChosen()) {
 		return nil
 	}
-	return run.Logged(log, "chsh", "-s", loginZsh, context.Person.Name)
+	shell := loginShell(context.Person.Name)
+	if !setBefore && shell != loginZsh {
+		if err := run.Logged(log, "chsh", "-s", loginZsh, context.Person.Name); err != nil {
+			return err
+		}
+		shell = loginZsh
+	}
+	if err := context.userFolder(log, yourDefaults); err != nil {
+		return err
+	}
+	return context.Person.Write(log, context.shellChosen(), shell+"\n")
 }
 
 func (context *Context) zshReady(*runlog.Log) error {
-	if shell := loginShell(context.Person.Name); shell != loginZsh {
+	if shell := loginShell(context.Person.Name); shell != loginZsh && !fsutil.IsFile(context.shellChosen()) {
 		return errors.New("your login shell is " + shell)
 	}
-	return expect(mentions(context.Person.Path(".zshrc"), filepath.Join(zshShare(), "hyprtrixie.zsh")), ".zshrc doesn't load hyprtrixie.zsh")
+	return expect(context.zshLoaded(), ".zshrc doesn't load hyprtrixie.zsh")
 }
 
 func (context *Context) promptSetup(log *runlog.Log) error {
@@ -199,5 +223,5 @@ func terminalChecks(context *Context) {
 	context.Run.Check("The "+context.Config.Get("SHELL_PROMPT")+" prompt is set up", context.promptReady)
 	context.Run.Check("kitty, zsh and tmux are installed", commands("kitty", "zsh", "tmux"))
 	context.Run.Check("tmux is set up with its plugins", context.tmuxReady)
-	context.Run.Check("zsh is the login shell", context.zshReady)
+	context.Run.Check("zsh is set up", context.zshReady)
 }
