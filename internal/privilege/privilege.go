@@ -2,6 +2,7 @@ package privilege
 
 import (
 	"errors"
+	"io"
 	"os"
 	"strings"
 
@@ -44,12 +45,12 @@ func Spawn(environment []string, name string, args ...string) (*run.Child, error
 	return run.Spawn(nil, sudo, append(append(words, name), args...)...)
 }
 
-func Copy(source, target string) error {
-	words := []string{"install", "-D", "-m", "0644", source, target}
+func Save(text, target string) error {
+	words := []string{"install", "-D", "-m", "0644", "/dev/stdin", target}
 	if !isRoot() {
 		words = append([]string{sudo, "-n"}, words...)
 	}
-	if run.Quiet(run.Minute, words[0], words[1:]...) != 0 {
+	if run.Supply(run.Minute, io.Discard, text, words[0], words[1:]...) != nil {
 		return errors.New("cannot write " + target)
 	}
 	return nil

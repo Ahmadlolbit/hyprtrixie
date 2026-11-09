@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"os"
-
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
@@ -22,12 +20,7 @@ func (flow *wizard) jumpRow(title, key string, index int) row {
 }
 
 func (flow *wizard) writeConfiguration() error {
-	temporary := settingsFile()
-	if err := flow.settings.Save(temporary); err != nil {
-		return err
-	}
-	defer os.Remove(temporary)
-	return privilege.Copy(temporary, config.Path())
+	return privilege.Save(flow.settings.Text(), config.Path())
 }
 
 func (flow *wizard) saveConfiguration() tea.Cmd {
