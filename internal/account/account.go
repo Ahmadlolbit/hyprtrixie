@@ -20,6 +20,11 @@ const (
 	firstSystem  = 60000
 )
 
+var keptNames = []string{
+	"TERM", "COLORTERM", "LANGUAGE", "TZ",
+	"http_proxy", "https_proxy", "ftp_proxy", "no_proxy", "all_proxy", "HTTP_PROXY", "HTTPS_PROXY", "FTP_PROXY", "NO_PROXY", "ALL_PROXY",
+}
+
 type Account struct {
 	Name  string
 	UID   string
@@ -152,9 +157,28 @@ func (person Account) SessionRunning() bool {
 	return err == nil && info.Mode()&os.ModeSocket != 0
 }
 
+func kept(name string) bool {
+	return strings.HasPrefix(name, "LC_") || strings.HasPrefix(name, "HYPRTRIXIE_") || slices.Contains(keptNames, name)
+}
+
+func unset(own []string) []string {
+	var names []string
+	for _, entry := range os.Environ() {
+		name, _, _ := strings.Cut(entry, "=")
+		if name != "" && !kept(name) && !slices.ContainsFunc(own, func(setting string) bool { return strings.HasPrefix(setting, name+"=") }) {
+			names = append(names, name)
+		}
+	}
+	slices.Sort(names)
+	var args []string
+	for _, name := range slices.Compact(names) {
+		args = append(args, "-u", name)
+	}
+	return args
+}
+
 func (person Account) RunuserArgs(args ...string) []string {
-	command := []string{
-		"-u", person.Name, "--", "env", "-C", person.Home,
+	own := []string{
 		"HOME=" + person.Home,
 		"USER=" + person.Name,
 		"LOGNAME=" + person.Name,
@@ -163,7 +187,9 @@ func (person Account) RunuserArgs(args ...string) []string {
 		"LANG=" + env.Or("LANG", "C.UTF-8"),
 	}
 	if fsutil.IsDir(person.Runtime()) {
-		command = append(command, "XDG_RUNTIME_DIR="+person.Runtime(), "DBUS_SESSION_BUS_ADDRESS=unix:path="+person.Runtime()+"/bus")
+		own = append(own, "XDG_RUNTIME_DIR="+person.Runtime(), "DBUS_SESSION_BUS_ADDRESS=unix:path="+person.Runtime()+"/bus")
 	}
-	return append(command, args...)
+	command := append([]string{"-u", person.Name, "--", "env"}, unset(own)...)
+	command = append(command, "-C", person.Home)
+	return append(append(command, own...), args...)
 }
