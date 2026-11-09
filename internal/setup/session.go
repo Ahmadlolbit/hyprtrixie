@@ -191,7 +191,7 @@ func hypridleConfig(lock, suspend, saver int) string {
 	text.WriteString("general {\n    lock_cmd = pidof hyprlock || hyprlock\n    before_sleep_cmd = loginctl lock-session\n")
 	text.WriteString("    after_sleep_cmd = " + dpmsOn + "\n}\n")
 	if saver > 0 && (lock == 0 || saver < lock) {
-		text.WriteString(idleListener(saver, "hyprtrixie-screensaver start", ""))
+		text.WriteString(idleListener(saver, "hyprtrixie-screensaver start --idle", ""))
 	}
 	if lock > 0 {
 		text.WriteString(lockListeners(lock))
