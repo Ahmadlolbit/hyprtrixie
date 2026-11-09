@@ -56,9 +56,9 @@ USAGE
   hyprtrixie db start|stop|remove NAME
                                    Postgres, MySQL or Redis in a container on localhost (run it without sudo);
                                      stop keeps the data, remove deletes it
-  hyprtrixie dotfiles [REPOSITORY] Apply your dotfiles with chezmoi, which sends what you change back there
-                                     (run it without sudo; chezmoi runs that repository's scripts). Without one,
-                                     show what chezmoi would change
+  hyprtrixie dotfiles [REPOSITORY] Apply your dotfiles with chezmoi, which commits what you change there;
+                                     chezmoi git push sends it (run it without sudo; chezmoi runs that
+                                     repository's scripts). Without one, show what chezmoi would change
   hyprtrixie fingerprint add|list|remove
                                    Add, list or remove your fingerprints (run it without sudo), once
                                      Fingerprint is on in the setup

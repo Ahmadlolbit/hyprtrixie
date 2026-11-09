@@ -265,6 +265,7 @@ func appSteps(context *Context) {
 		})
 	}
 	context.Run.Step("Choose the apps that open images, PDFs, videos and archives", context.defaultApps)
+	chezmoiSteps(context)
 	extrasSteps(context)
 }
 
