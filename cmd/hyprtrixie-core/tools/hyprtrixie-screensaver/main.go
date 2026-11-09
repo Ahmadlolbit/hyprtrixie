@@ -21,10 +21,13 @@ import (
 
 const usage = `Usage: hyprtrixie-screensaver start|stop|toggle|status
 
-start   shows the screensaver on every monitor (the idle timer runs this)
+start   shows the screensaver on every monitor
 stop    ends it (the idle timer runs this when it turns the screens off)
-toggle  turns the screensaver off or back on for your account
+toggle  turns the screensaver off or back on for your account: off keeps
+        it from starting while you're away, and start still shows it
 status  prints on or off
+
+The idle timer runs start --idle, which does nothing while it's off.
 
 The text comes from ~/.config/hyprtrixie/screensaver.txt when it exists,
 otherwise from /usr/share/hyprtrixie/screensaver.txt.
@@ -92,8 +95,8 @@ func dispatch(command string) int {
 	return run.Report(err)
 }
 
-func start() int {
-	if fsutil.Exists(offFile()) || running() || locked() {
+func start(idle bool) int {
+	if (idle && fsutil.Exists(offFile())) || running() || locked() {
 		return 0
 	}
 	code := 0
@@ -194,7 +197,7 @@ func toggle() int {
 func Main() {
 	switch env.Arg(1) {
 	case "start":
-		os.Exit(start())
+		os.Exit(start(env.Arg(2) == "--idle"))
 	case "run":
 		saver()
 	case "stop":
