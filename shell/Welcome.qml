@@ -224,11 +224,6 @@ Scope {
             }
 
             Action {
-              label: "Read the guide"
-              command: "hyprtrixie-terminal --wait hyprtrixie guide"
-            }
-
-            Action {
               label: "Project page"
               command: "xdg-open https://github.com/Ahmadlolbit/hyprtrixie"
             }

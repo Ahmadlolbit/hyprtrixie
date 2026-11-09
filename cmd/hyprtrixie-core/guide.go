@@ -10,7 +10,10 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/ui"
 )
 
-const guideLeave = "Leave the guide"
+const (
+	guideLeave   = "Leave the guide"
+	guideMissing = "The guide isn't written yet. Until then, Super+K shows every key.\n"
+)
 
 func guideTitle(page string) string {
 	for _, line := range strings.Split(fsutil.Optional(page), "\n") {
@@ -50,10 +53,9 @@ func guideMenu(pages []string) int {
 }
 
 func guide() int {
-	dir := filepath.Join(root(), "docs", "guide")
-	pages, _ := filepath.Glob(filepath.Join(dir, "*.md"))
+	pages, _ := filepath.Glob(filepath.Join(root(), "docs", "guide", "*.md"))
 	if len(pages) == 0 {
-		return say("The guide has no pages yet. They go in " + dir + ", one Markdown file per topic.\n")
+		return say(guideMissing)
 	}
 	if !term.IsTerminal(os.Stdout) {
 		return say(guideText(pages))
