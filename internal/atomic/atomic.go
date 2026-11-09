@@ -16,7 +16,10 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 )
 
-const maxLinks = 40
+const (
+	maxLinks  = 40
+	maxCopies = 100
+)
 
 var signalWait = 10 * time.Second
 
@@ -61,6 +64,28 @@ func Symlink(target, link string) error {
 		return err
 	}
 	return syncDir(filepath.Dir(link))
+}
+
+func Fresh(dir, name, extension string, perm os.FileMode) (string, error) {
+	for number := 1; number <= maxCopies; number++ {
+		path := filepath.Join(dir, numbered(name, number)+extension)
+		file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, perm)
+		if errors.Is(err, fs.ErrExist) {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		return path, file.Close()
+	}
+	return "", fmt.Errorf("%s: %d files with this name are there already", filepath.Join(dir, name+extension), maxCopies)
+}
+
+func numbered(name string, number int) string {
+	if number == 1 {
+		return name
+	}
+	return name + " (" + strconv.Itoa(number) + ")"
 }
 
 func follow(path string) (string, error) {

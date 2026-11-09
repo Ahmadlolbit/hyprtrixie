@@ -54,6 +54,14 @@ func remember(file string) {
 	}
 }
 
+func newFile() (string, error) {
+	dir := filepath.Join(run.UserDir("VIDEOS", filepath.Join(env.Home(), "Videos")), "Recordings")
+	if err := os.MkdirAll(dir, 0o777); err != nil {
+		return "", err
+	}
+	return atomic.Fresh(dir, "Recording from "+time.Now().Format("2006-01-02 15-04-05"), ".mp4", 0o666)
+}
+
 func start(mode string) int {
 	if recording() {
 		fmt.Fprintln(os.Stderr, "already recording; stop it with hyprtrixie-record stop")
@@ -63,19 +71,20 @@ func start(mode string) int {
 	if !ok {
 		return 0
 	}
-	dir := filepath.Join(run.UserDir("VIDEOS", filepath.Join(env.Home(), "Videos")), "Recordings")
-	file := filepath.Join(dir, "Recording from "+time.Now().Format("2006-01-02 15-04-05")+".mp4")
-	if err := os.MkdirAll(dir, 0o777); err != nil {
+	file, err := newFile()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
 	remember(file)
 	args := append([]string{"-f", recorder, "-y", "-f", file}, where...)
 	code := run.Quiet(run.Quick, "setsid", args...)
-	if code == 0 {
-		look.CallShell("recording", "started")
+	if code != 0 {
+		os.Remove(file)
+		return code
 	}
-	return code
+	look.CallShell("recording", "started")
+	return 0
 }
 
 func saved() string {

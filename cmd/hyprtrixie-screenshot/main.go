@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/hypr"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/notify"
@@ -18,6 +19,8 @@ const usage = `Usage: hyprtrixie-screenshot [region|window|screen]
 Saves a screenshot to ~/Pictures/Screenshots, copies it to the clipboard and
 shows a notification. Click the notification to annotate it.
 `
+
+const cancelled = 2
 
 func windowArea() (string, bool) {
 	window, ok := hypr.ActiveWindow()
@@ -31,27 +34,44 @@ func windowArea() (string, bool) {
 	return fmt.Sprintf("%d,%d %dx%d", window.At[0], window.At[1], window.Size[0], window.Size[1]), true
 }
 
-func capture(mode, file string) int {
+func target(mode string) ([]string, int) {
 	switch mode {
 	case "region":
 		area, err := run.Output("slurp", "-d")
 		if err != nil {
-			return 2
+			return nil, cancelled
 		}
-		return run.Within(run.Quick, "grim", "-g", area, file)
+		return []string{"-g", area}, 0
 	case "window":
 		area, ok := windowArea()
 		if !ok {
-			return 1
+			return nil, 1
 		}
-		return run.Within(run.Quick, "grim", "-g", area, file)
+		return []string{"-g", area}, 0
 	default:
 		output, ok := hypr.FocusedOutput()
 		if !ok {
-			return 1
+			return nil, 1
 		}
-		return run.Within(run.Quick, "grim", "-o", output, file)
+		return []string{"-o", output}, 0
 	}
+}
+
+func capture(mode, dir string) (string, int) {
+	where, code := target(mode)
+	if code != 0 {
+		return "", code
+	}
+	file, err := atomic.Fresh(dir, "Screenshot from "+time.Now().Format("2006-01-02 15-04-05"), ".png", 0o666)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return "", 1
+	}
+	if run.Within(run.Quick, "grim", append(where, file)...) != 0 {
+		os.Remove(file)
+		return "", 1
+	}
+	return file, 0
 }
 
 func copyImage(file string) {
@@ -66,14 +86,14 @@ func copyImage(file string) {
 
 func shoot(mode string) int {
 	dir := filepath.Join(run.UserDir("PICTURES", filepath.Join(env.Home(), "Pictures")), "Screenshots")
-	file := filepath.Join(dir, "Screenshot from "+time.Now().Format("2006-01-02 15-04-05")+".png")
 	if err := os.MkdirAll(dir, 0o777); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	switch capture(mode, file) {
+	file, code := capture(mode, dir)
+	switch code {
 	case 0:
-	case 2:
+	case cancelled:
 		return 0
 	default:
 		return 1
