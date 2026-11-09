@@ -82,6 +82,18 @@ func withKDESettings(lines, settings []string) []string {
 	return append(append(lines, "[General]"), append(settings, "")...)
 }
 
+func KDEGivenBack(current, before string) string {
+	lines := strings.Split(strings.TrimRight(current, "\n"), "\n")
+	if name := kdeValue(before, "[General]", "ColorScheme="); name != "" {
+		lines = withKDESettings(lines, []string{"ColorScheme=" + name})
+	}
+	text := strings.TrimRight(strings.Join(lines, "\n"), "\n")
+	if yours := ownKDELines(before); len(yours) > 0 {
+		text += "\n\n" + strings.TrimRight(strings.Join(yours, "\n"), "\n")
+	}
+	return strings.TrimLeft(text+"\n", "\n")
+}
+
 func KDEGlobals(current, scheme, font string, scale float64) string {
 	have := kdeValue(current, "[General]", kdeFontKey)
 	yours := font == "" && have != "" && have != kdeValue(current, kdeRecord, kdeRecordKey)

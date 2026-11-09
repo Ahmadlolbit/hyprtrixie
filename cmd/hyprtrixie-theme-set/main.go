@@ -333,8 +333,10 @@ func desktopSettings(colors, apps theme.Colors) {
 	if settings.Get("apps") == appsOff {
 		releaseGTK(mode)
 	} else {
+		rememberGTK()
 		desktop("set", "color-scheme", "prefer-"+mode)
 		desktop("set", "gtk-theme", gtkTheme(mode))
+		desktop("set", "icon-theme", iconTheme(mode))
 	}
 	desktop("set", "monospace-font-name", colors["font"]+" 11")
 	if ui := settings.Get("ui_font"); ui == "default" {
@@ -347,7 +349,6 @@ func desktopSettings(colors, apps theme.Colors) {
 	} else if ourScaling() {
 		desktop("reset", "text-scaling-factor")
 	}
-	desktop("set", "icon-theme", iconTheme(mode))
 	desktop("set", "cursor-theme", "Bibata-Modern-Ice")
 }
 

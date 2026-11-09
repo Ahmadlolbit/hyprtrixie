@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
@@ -18,11 +19,16 @@ const (
 	appsOff     = "off"
 	gtkOne      = "hyprtrixie-one"
 	gtkTwo      = "hyprtrixie-two"
+	gtkOurs     = "hyprtrixie-"
 	gtkThemes   = "/usr/share/themes"
 	gtkUserFile = "gtk.css"
+	kdeBackup   = ".before-hyprtrixie"
 )
 
-var toolkitFiles = []string{"gtk3.css", "gtk4.css", "kde.colors"}
+var (
+	toolkitFiles = []string{"gtk3.css", "gtk4.css", "kde.colors"}
+	gtkKept      = []string{"color-scheme", "gtk-theme", "icon-theme"}
+)
 
 func appColors(colors theme.Colors) theme.Colors {
 	name := settings.Get("apps")
@@ -108,7 +114,7 @@ func linkUnlessYours(file, link string) {
 }
 
 func keepKDEGlobals(globals, text string) {
-	backup := globals + ".before-hyprtrixie"
+	backup := globals + kdeBackup
 	if text == "" || strings.Contains(text, theme.KDEScheme) || fsutil.Exists(backup) {
 		return
 	}
@@ -128,6 +134,9 @@ func writeKDEGlobals(scheme string) {
 	globals := filepath.Join(env.ConfigHome(), "kdeglobals")
 	current := fsutil.Optional(globals)
 	merged := theme.KDEGlobals(current, scheme, appsFont(), theme.TextScale(settings.Get("text")))
+	if scheme == "" && strings.Contains(current, theme.KDEScheme) {
+		merged = theme.KDEGivenBack(merged, fsutil.Optional(globals+kdeBackup))
+	}
 	if strings.TrimSpace(merged) == strings.TrimSpace(current) {
 		return
 	}
@@ -156,13 +165,51 @@ func unlinkToolkits() {
 	writeKDEGlobals("")
 }
 
-func releaseGTK(mode string) {
-	used := filepath.Join(state(), "gtk.name")
-	if !fsutil.Exists(used) {
+func gtkBefore() string {
+	return filepath.Join(state(), "gtk.before")
+}
+
+func rememberGTK() {
+	if fsutil.Exists(gtkBefore()) {
 		return
 	}
-	desktop("set", "gtk-theme", gtkFallback(mode))
+	var text strings.Builder
+	for _, key := range gtkKept {
+		value := desktopValue(key)
+		if value == "" || strings.Contains(value, gtkOurs) {
+			return
+		}
+		fmt.Fprintf(&text, "%s\t%s\n", key, value)
+	}
+	if err := atomic.Write(gtkBefore(), []byte(text.String()), 0o666); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+}
+
+func rememberedGTK() map[string]string {
+	lines, _ := fsutil.Lines(gtkBefore())
+	before := map[string]string{}
+	for _, line := range lines {
+		if key, value, found := strings.Cut(line, "\t"); found && slices.Contains(gtkKept, key) && value != "" {
+			before[key] = value
+		}
+	}
+	return before
+}
+
+func releaseGTK(mode string) {
+	used := filepath.Join(state(), "gtk.name")
+	before := rememberedGTK()
+	if len(before) == 0 && fsutil.Exists(used) {
+		desktop("set", "gtk-theme", gtkFallback(mode))
+	}
+	for _, key := range gtkKept {
+		if value, ok := before[key]; ok {
+			desktop("set", key, value)
+		}
+	}
 	os.Remove(used)
+	os.Remove(gtkBefore())
 }
 
 func tellKDEApps() {
