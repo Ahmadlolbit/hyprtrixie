@@ -40,6 +40,7 @@ const (
 	accountMode  = "account"
 	appMode      = "app-"
 	noModule     = "none"
+	configLimit  = 64 << 10
 )
 
 var (
@@ -156,7 +157,32 @@ func packages() []string {
 	return run.Lines(strings.TrimSuffix(output, "\n"))
 }
 
+func callers() []int {
+	allowed := []int{0}
+	if uid, err := strconv.Atoi(os.Getenv("SUDO_UID")); err == nil {
+		allowed = append(allowed, uid)
+	}
+	return allowed
+}
+
+func settingsFor(options Options) (*config.Config, error) {
+	settings := config.Read(config.Path())
+	if options.Config == "" {
+		return settings, nil
+	}
+	text, err := fsutil.ReadPlain(options.Config, configLimit, callers()...)
+	if err != nil {
+		return nil, err
+	}
+	settings.LoadText(options.Config, string(text))
+	return settings, nil
+}
+
 func start(mode string, options Options, args []string) (*session, error) {
+	settings, err := settingsFor(options)
+	if err != nil {
+		return nil, err
+	}
 	log, err := runlog.Start(mode + " " + strings.Join(args, " "))
 	if err != nil {
 		return nil, errors.New("cannot write logs to " + env.LogDir())
@@ -165,7 +191,7 @@ func start(mode string, options Options, args []string) (*session, error) {
 		mode: mode, options: options, log: log, started: time.Now(), results: map[string]string{},
 		canAsk: ui.CanAsk() && !options.Yes, before: packages(),
 		runner:   step.New(log, "", askMode),
-		settings: config.Read(config.Path(), options.Config),
+		settings: settings,
 	}
 	for _, note := range work.settings.Notes {
 		log.Line(note.Level, note.Text)

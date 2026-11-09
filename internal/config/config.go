@@ -65,9 +65,13 @@ func (current *Config) Load(path string) bool {
 	if !fsutil.IsFile(path) {
 		return false
 	}
-	current.migrate(current.apply(path, fsutil.Optional(path)))
-	current.validate()
+	current.LoadText(path, fsutil.Optional(path))
 	return true
+}
+
+func (current *Config) LoadText(path, text string) {
+	current.migrate(current.apply(path, text))
+	current.validate()
 }
 
 func (current *Config) Merge(path string) bool {
