@@ -38,6 +38,9 @@ Scope {
       "up": "Up",
       "down": "Down"
     })
+  readonly property var codes: ({
+      "49": "the key left of 1"
+    })
 
   function show() {
     filter = "";
@@ -51,17 +54,19 @@ Scope {
     open = false;
   }
 
-  function keyName(bind) {
+  function codeName(code) {
     const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
-    let key = bind.key || "";
-    if (!key && bind.keycode >= 10 && bind.keycode <= 19)
-      return digits[bind.keycode - 10];
+    if (code >= 10 && code <= 19)
+      return digits[code - 10];
+    return codes[code] || "Key " + code;
+  }
+
+  function keyName(bind) {
+    const key = bind.key || "";
     if (!key && bind.keycode)
-      return "Key " + bind.keycode;
-    if (key.startsWith("code:")) {
-      const code = parseInt(key.slice(5));
-      return code >= 10 && code <= 19 ? digits[code - 10] : "Key " + code;
-    }
+      return codeName(bind.keycode);
+    if (key.startsWith("code:"))
+      return codeName(parseInt(key.slice(5)));
     return names[key.toLowerCase()] || (key.length === 1 ? key.toUpperCase() : key);
   }
 
