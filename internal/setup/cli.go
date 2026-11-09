@@ -42,10 +42,16 @@ func cliNames(*runlog.Log) error {
 func cliSteps(context *Context) {
 	context.Run.Step("Install command-line tools", packages("cli"))
 	context.Run.Step("Add short names for bat and fd", cliNames)
-	context.Run.Step("Install lazydocker", func(log *runlog.Log) error {
-		ledger.Note(ledger.Made, filepath.Join(env.BinDir(), "lazydocker"))
-		return fetch.ReleaseExtract(log, "lazydocker", "lazydocker", filepath.Join(env.BinDir(), "lazydocker"), programMode)
-	})
+	context.Run.Step("Install lazydocker", lazydockerInstall)
+}
+
+func lazydockerInstall(log *runlog.Log) error {
+	program := filepath.Join(env.BinDir(), "lazydocker")
+	if leftAlone(log, program, "lazydocker", "a lazydocker") {
+		return nil
+	}
+	ledger.Note(ledger.Made, program)
+	return fetch.ReleaseExtract(log, "lazydocker", "lazydocker", program, programMode)
 }
 
 func cliChecks(context *Context) {

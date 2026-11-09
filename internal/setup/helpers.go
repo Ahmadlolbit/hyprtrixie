@@ -14,6 +14,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/files"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/step"
@@ -134,6 +135,21 @@ func unpackedRelease(log *runlog.Log, name string) (string, error) {
 		return "", err
 	}
 	return dir, nil
+}
+
+func ours(path, release string) bool {
+	if _, err := os.Lstat(path); err != nil {
+		return true
+	}
+	return ledger.Recorded(ledger.Made, path) || release != "" && fetch.Released(release)
+}
+
+func leftAlone(log *runlog.Log, path, release, what string) bool {
+	if ours(path, release) {
+		return false
+	}
+	log.Line("info", path+" is "+what+" you installed yourself, so it stays as it is")
+	return true
 }
 
 func removeFiles(paths ...string) error {

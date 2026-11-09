@@ -78,7 +78,16 @@ func planUndo(id string) (undoPlan, error) {
 
 func removable(path string) bool {
 	clean := filepath.Clean(path)
-	return filepath.IsAbs(clean) && strings.Count(clean, "/") >= 2 && clean != filepath.Clean(env.Home())
+	if !filepath.IsAbs(clean) || strings.Count(clean, "/") < 2 {
+		return false
+	}
+	homes := []string{env.Home()}
+	for _, person := range account.Humans() {
+		homes = append(homes, person.Home)
+	}
+	return !slices.ContainsFunc(homes, func(home string) bool {
+		return strings.HasPrefix(filepath.Clean(home)+"/", clean+"/")
+	})
 }
 
 func named(noun string, names []string) string {
