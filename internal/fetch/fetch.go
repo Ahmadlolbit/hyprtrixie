@@ -129,6 +129,32 @@ func keepOnly(log *runlog.Log, name, file string) {
 	}
 }
 
+func claimed() map[string]bool {
+	files := map[string]bool{filepath.Base(keptIndex()): true}
+	for _, line := range strings.Split(fsutil.Optional(filepath.Join(env.Manifests(), "releases")), "\n") {
+		if fields := strings.Fields(line); len(fields) >= releaseFields {
+			files[fields[0]+"-"+fields[1]+"-"+fileName(fields[2])] = true
+		}
+	}
+	for _, file := range readKept() {
+		files[file] = true
+	}
+	return files
+}
+
+func tidy(log *runlog.Log) {
+	files := claimed()
+	for _, entry := range fsutil.Entries(downloads()) {
+		name := entry.Name()
+		if !entry.Type().IsRegular() || files[name] || strings.HasSuffix(name, ".part") {
+			continue
+		}
+		if err := os.Remove(filepath.Join(downloads(), name)); err != nil {
+			log.Line("warn", "cannot remove the old download "+name+": "+err.Error())
+		}
+	}
+}
+
 func fetchChecked(log *runlog.Log, release Release, file string) error {
 	log.Line("info", "downloading "+release.URL)
 	if err := download(log, release.URL, file+".part"); err != nil {
@@ -150,6 +176,7 @@ func FetchRelease(log *runlog.Log, name string) (string, error) {
 	if err := os.MkdirAll(downloads(), folderMode); err != nil {
 		return "", err
 	}
+	tidy(log)
 	if !sumOK(file, release.SHA256) {
 		if err := fetchChecked(log, release, file); err != nil {
 			return "", err
