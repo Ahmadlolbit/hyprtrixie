@@ -131,6 +131,9 @@ func finishSetup(upToDate string) int {
 		return say(upToDate)
 	}
 	fmt.Println("The setup hasn't finished at this version yet, so it runs now.")
+	if status := snapshotFirst(); status != 0 {
+		return status
+	}
 	return afterUpdate(from, head)
 }
 
@@ -159,6 +162,9 @@ func updateHyprtrixie() int {
 		return finishSetup("Hyprtrixie is up to date (" + tag + ").\n")
 	}
 	from := git("rev-parse", "HEAD")
+	if status := snapshotFirst(); status != 0 {
+		return status
+	}
 	if gitWrite("merge", "--ff-only", target) != 0 {
 		return fail("moving to %s failed: the folder has local changes, or its branch has gone its own way", tag)
 	}
