@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/btrfs"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/snapshots"
@@ -13,6 +14,8 @@ import (
 const (
 	cleanGoal   = 85
 	deleteLimit = 30 * time.Minute
+	freeWindow  = 2
+	topMount    = "/btrfsroot"
 )
 
 func stopped(deleted int, format string, args ...any) int {
@@ -22,8 +25,37 @@ func stopped(deleted int, format string, args ...any) int {
 	return fail(format, args...)
 }
 
-func deleteUntilClean(numbers []string) int {
-	deleted, use := 0, 0
+func freesLittle(uses []int) bool {
+	last := len(uses) - 1
+	return last >= freeWindow && uses[last-freeWindow]-uses[last] < 1
+}
+
+func oldRoots() string {
+	listing, err := run.CaptureQuiet(run.Minute, "btrfs", "subvolume", "list", "/")
+	if err != nil {
+		return ""
+	}
+	roots := snapshots.OldRoots(btrfs.RootSubvolume(), listing)
+	if len(roots) == 0 {
+		return ""
+	}
+	text := "Old roots kept after a restore take space too. To delete them:\n  sudo mount -o subvolid=5 " + btrfs.RootDevice() + " " + topMount + "\n"
+	for _, root := range roots {
+		text += "  sudo btrfs subvolume delete " + topMount + "/" + root + "\n"
+	}
+	return text + "  sudo umount " + topMount + "\n"
+}
+
+func elsewhere(stalled bool) string {
+	text := "The space is used by files outside the snapshots, most likely your own in /home.\n"
+	if stalled {
+		text = "Deleting more snapshots would free little, so the rest stay. " + text
+	}
+	return text + oldRoots()
+}
+
+func deleteUntilClean(numbers []string, use int) int {
+	deleted, uses := 0, []int{use}
 	for _, number := range numbers {
 		if run.Within(deleteLimit, "snapper", "--no-dbus", "-c", "root", "delete", "--sync", number) != 0 {
 			return stopped(deleted, "snapshot %s could not be deleted", number)
@@ -33,11 +65,16 @@ func deleteUntilClean(numbers []string) int {
 		if use, ok = snapshots.DiskUse(); !ok {
 			return stopped(deleted, "cannot tell how full / is")
 		}
-		if use < cleanGoal {
+		uses = append(uses, use)
+		if use < cleanGoal || freesLittle(uses) {
 			break
 		}
 	}
-	return say(fmt.Sprintf("Deleted %s. / is %d%% full.\n", snapshots.Count(deleted, "snapshot"), use))
+	text := fmt.Sprintf("Deleted %s. / is %d%% full.\n", snapshots.Count(deleted, "snapshot"), use)
+	if use >= cleanGoal {
+		text += elsewhere(deleted < len(numbers))
+	}
+	return say(text)
 }
 
 func cleanUp(yes bool) int {
@@ -57,7 +94,7 @@ func cleanUp(yes bool) int {
 	}
 	numbers := snapshots.Disposable(all)
 	if len(numbers) == 0 {
-		return say(fmt.Sprintf("/ is %d%% full, but there are no old automatic snapshots to delete.\n", use))
+		return say(fmt.Sprintf("/ is %d%% full, but there are no old automatic snapshots to delete.\n", use) + elsewhere(false))
 	}
 	say(fmt.Sprintf("/ is %d%% full. Up to %s can go, oldest first, until it is under %d%%.\n"+
 		"The newest three and the ones with your own description stay.\n", use, snapshots.Count(len(numbers), "old automatic snapshot"), cleanGoal))
@@ -67,7 +104,7 @@ func cleanUp(yes bool) int {
 	if !yes && !ui.Confirm("Delete them?") {
 		return 0
 	}
-	return deleteUntilClean(numbers)
+	return deleteUntilClean(numbers, use)
 }
 
 func cleanupCommand() int {

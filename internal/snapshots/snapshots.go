@@ -18,6 +18,7 @@ import (
 const (
 	dateLayout  = "2006-01-02 15:04:05"
 	shownLayout = "Mon 2 Jan 2006 15:04"
+	keptLayout  = "2006-01-02T15:04"
 	maxFolders  = 8
 	keptNewest  = 3
 )
@@ -125,6 +126,18 @@ func Disposable(all []Snapshot) []string {
 		}
 	}
 	return numbers
+}
+
+func OldRoots(root, listing string) []string {
+	var found []string
+	for _, line := range run.Lines(listing) {
+		_, name, listed := strings.Cut(line, " path ")
+		stamp, ours := strings.CutPrefix(name, root)
+		if _, err := time.Parse(keptLayout, stamp); listed && ours && root != "" && err == nil {
+			found = append(found, name)
+		}
+	}
+	return found
 }
 
 func DiskUse() (int, bool) {
