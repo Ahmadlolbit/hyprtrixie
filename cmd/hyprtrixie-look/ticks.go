@@ -16,7 +16,9 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/look"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/notify"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/theme"
 )
 
 var moment = sync.OnceValues(look.Now)
@@ -151,31 +153,69 @@ func period(mode string) (string, bool) {
 	return "night", true
 }
 
+func retryDue(name string) bool {
+	retry, known := look.WholeNumber(stored(lookState(name)))
+	at, ok := moment()
+	return !known || !ok || at.Unix() >= retry
+}
+
+func lastLine(text string) string {
+	lines := run.Lines(strings.TrimSpace(text))
+	if len(lines) == 0 {
+		return ""
+	}
+	return strings.TrimSpace(lines[len(lines)-1])
+}
+
+func switchTheme(name, retry string) int {
+	var messages strings.Builder
+	output, err := run.CaptureTo(run.Slow, &messages, run.Sibling("hyprtrixie-theme-set"), name)
+	if output != "" {
+		fmt.Println(output)
+	}
+	fmt.Fprint(os.Stderr, messages.String())
+	if err == nil {
+		return 0
+	}
+	first := stored(lookState(retry)) == ""
+	if at, ok := moment(); ok {
+		save(lookState(retry), strconv.FormatInt(at.Unix()+retryAfter, 10))
+	}
+	if first {
+		notify.Post([]string{"--app-name=Theme"}, "Couldn't switch to "+theme.Pretty(name), strings.TrimLeft(lastLine(messages.String())+"\nIt tries again in an hour.", "\n"))
+	}
+	return max(run.Code(err), 1)
+}
+
 func autoTick() int {
 	mode := settings.Get("auto")
 	if mode != "sun" && mode != "times" {
 		return 0
 	}
 	now, ok := period(mode)
-	if !ok || stored(lookState("period")) == now {
+	if !ok || stored(lookState("period")) == now || !retryDue("period-retry") {
 		return 0
 	}
-	save(lookState("period"), now)
 	wanted := settings.Get("dark")
 	if now == "day" {
 		wanted = settings.Get("light")
 	}
-	if currentTheme() == wanted {
-		return 0
+	if currentTheme() != wanted {
+		if err := os.Setenv("HYPRTRIXIE_LOOK_AUTO", "1"); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		if code := switchTheme(wanted, "period-retry"); code != 0 {
+			return code
+		}
 	}
-	if err := os.Setenv("HYPRTRIXIE_LOOK_AUTO", "1"); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	}
-	return run.Within(run.Slow, run.Sibling("hyprtrixie-theme-set"), wanted)
+	save(lookState("period"), now)
+	remove(lookState("period-retry"))
+	return 0
 }
 
 func retick() int {
 	remove(lookState("period"))
+	remove(lookState("period-retry"))
 	return autoTick()
 }
 
@@ -207,14 +247,8 @@ func weatherFresh() bool {
 	return ok && at.Unix()-info.ModTime().Unix() < weatherStale
 }
 
-func weatherDue() bool {
-	retry, known := look.WholeNumber(stored(lookState("weather-retry")))
-	at, ok := moment()
-	return !known || !ok || at.Unix() >= retry
-}
-
 func weatherTick() {
-	if settings.Get("weather") != "yes" || weatherFresh() || !weatherDue() {
+	if settings.Get("weather") != "yes" || weatherFresh() || !retryDue("weather-retry") {
 		return
 	}
 	if run.Quiet(weatherLimit, run.Sibling("hyprtrixie-weather"), "update") == 0 {
@@ -434,16 +468,16 @@ func dailyTick() {
 		return
 	}
 	today, last := at.Format(time.DateOnly), stored(lookState("daily"))
-	if last == today {
+	if last == today || !retryDue("daily-retry") {
 		return
+	}
+	if last != "" {
+		if next := themeAfter(currentTheme()); next != "" && switchTheme(next, "daily-retry") != 0 {
+			return
+		}
 	}
 	save(lookState("daily"), today)
-	if last == "" {
-		return
-	}
-	if next := themeAfter(currentTheme()); next != "" {
-		run.Within(run.Slow, run.Sibling("hyprtrixie-theme-set"), next)
-	}
+	remove(lookState("daily-retry"))
 }
 
 func tick([]string) int {

@@ -245,6 +245,7 @@ func glass(args []string) int {
 func daily(args []string) int {
 	fresh := func() int {
 		remove(lookState("daily"))
+		remove(lookState("daily-retry"))
 		return 0
 	}
 	return onOff{"daily", putThen("daily", "yes", fresh), putThen("daily", "no", nothing)}.run(args)
