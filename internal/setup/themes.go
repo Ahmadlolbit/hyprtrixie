@@ -11,6 +11,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/bootimage"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
@@ -49,6 +50,7 @@ const (
 
 var (
 	consoleFont = [][2]string{{"FONTFACE", `"Terminus"`}, {"FONTSIZE", `"16x32"`}}
+	debianFont  = map[string]string{"FONTFACE": `"Fixed"`, "FONTSIZE": `"8x16"`}
 	themeFiles  = []string{"colors.toml", "icons.theme", "preview.png"}
 	themeTools  = []string{"hyprtrixie-look", "hyprtrixie-theme-install", "hyprtrixie-weather", "hyprtrixie-background", themeSetter}
 	lookOptions = [][2]string{
@@ -64,6 +66,7 @@ type themeRun struct {
 	lookChanged bool
 	bootImage   followUp
 	grubUpdate  followUp
+	consoleFont followUp
 }
 
 func oldThemeRoot() string {
@@ -562,18 +565,50 @@ func settingIn(path, key string) string {
 	return ""
 }
 
-func consoleFontBack() error {
+func savedFont() map[string]string {
 	saved := consoleSetup() + ".hyprtrixie-old"
+	values := map[string]string{}
+	ours := true
 	for _, setting := range consoleFont {
-		old := settingIn(saved, setting[0])
-		if old == "" || settingIn(consoleSetup(), setting[0]) != setting[1] {
+		values[setting[0]] = settingIn(saved, setting[0])
+		ours = ours && values[setting[0]] == setting[1]
+	}
+	if ours {
+		return debianFont
+	}
+	return values
+}
+
+func consoleFontBack() (bool, error) {
+	old := savedFont()
+	changed := false
+	for _, setting := range consoleFont {
+		value := old[setting[0]]
+		if value == "" || value == setting[1] || settingIn(consoleSetup(), setting[0]) != setting[1] {
 			continue
 		}
-		if err := files.ConfSet(consoleSetup(), setting[0], old); err != nil {
+		if err := files.ConfSet(consoleSetup(), setting[0], value); err != nil {
+			return changed, err
+		}
+		changed = true
+	}
+	return changed, nil
+}
+
+func (theme *themeRun) consoleFontApply(log *runlog.Log) error {
+	return theme.consoleFont.do(func() error {
+		if apt.Commands("setupcon") != nil {
+			return nil
+		}
+		if err := run.Logged(log, "setupcon", "--save-only"); err != nil {
 			return err
 		}
-	}
-	return nil
+		rebuild := bootimage.Rebuild(false)
+		if apt.Commands(rebuild[0]) != nil {
+			return nil
+		}
+		return run.Logged(log, rebuild[0], rebuild[1:]...)
+	})
 }
 
 func keepConsoleSetup(log *runlog.Log) error {
@@ -587,7 +622,12 @@ func (theme *themeRun) consoleOff(log *runlog.Log) error {
 	if err := theme.Deploy.Remove(consoleBanner); err != nil {
 		return err
 	}
-	if err := consoleFontBack(); err != nil {
+	changed, err := consoleFontBack()
+	if err != nil {
+		return err
+	}
+	theme.consoleFont.need(changed)
+	if err := theme.consoleFontApply(log); err != nil {
 		return err
 	}
 	return service.Disable(log, consoleService)
@@ -651,7 +691,7 @@ func (theme *themeRun) ready(*runlog.Log) error {
 }
 
 func themeSteps(context *Context) {
-	theme := &themeRun{Context: context, bootImage: followUp{name: "boot-image"}, grubUpdate: followUp{name: "update-grub"}}
+	theme := &themeRun{Context: context, bootImage: followUp{name: "boot-image"}, grubUpdate: followUp{name: "update-grub"}, consoleFont: followUp{name: "console-font"}}
 	context.Run.Step("Install theme packages", packages("themes"))
 	context.Run.Step("Move your themes to their new folders", theme.migrate)
 	context.Run.Step("Install the themes", theme.themesInstall)
