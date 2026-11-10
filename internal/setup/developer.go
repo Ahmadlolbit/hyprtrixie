@@ -148,8 +148,10 @@ func (context *Context) engineInstall(log *runlog.Log) error {
 	if err := context.Deploy.Tool(engineSwitch); err != nil {
 		return err
 	}
+	shim := filepath.Join(env.BinDir(), "docker")
+	ledger.Note(ledger.Made, shim, filepath.Join(env.StateDir(), "container-engine"))
 	engine := context.engineWanted()
-	if engineInUse() == engine && fsutil.Exists(filepath.Join(env.BinDir(), "docker")) {
+	if engineInUse() == engine && fsutil.Exists(shim) {
 		return nil
 	}
 	return run.Logged(log, "env", "SUDO_USER="+context.Person.Name, filepath.Join(env.BinDir(), engineSwitch), engine)

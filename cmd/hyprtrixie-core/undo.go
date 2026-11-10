@@ -69,7 +69,7 @@ func planUndo(id string) (undoPlan, error) {
 		}
 	}
 	for _, path := range record.Values(ledger.Made) {
-		if removable(path) && fsutil.Exists(path) {
+		if removable(path) && (fsutil.Exists(path) || fsutil.IsLink(path)) {
 			plan.made = append(plan.made, path)
 		}
 	}
