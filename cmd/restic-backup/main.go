@@ -101,14 +101,16 @@ func initialize(args []string) int {
 		fmt.Fprint(os.Stderr, usage)
 		return 2
 	}
+	folder, _ := os.Getwd()
+	location := restic.Absolute(args[0], env.Home(), folder)
 	if err := prepare(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	if !keysReady(args[0]) {
+	if !keysReady(location) {
 		return 1
 	}
-	if err := atomic.Write(repositoryFile(), []byte(args[0]+"\n"), 0o666); err != nil {
+	if err := atomic.Write(repositoryFile(), []byte(location+"\n"), 0o666); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
@@ -128,7 +130,8 @@ func backup() int {
 	if !useRepository() {
 		return 1
 	}
-	if repository, inside := restic.InsideHome(os.Getenv("RESTIC_REPOSITORY"), home); inside {
+	folder, _ := os.Getwd()
+	if repository, inside := restic.InsideHome(os.Getenv("RESTIC_REPOSITORY"), home, folder); inside {
 		args = append(args, "--exclude", repository)
 	}
 	excludes := filepath.Join(configDir(), "excludes")
