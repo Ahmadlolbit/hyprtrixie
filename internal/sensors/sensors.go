@@ -16,7 +16,7 @@ const shortFile = 256
 
 var (
 	cpuSensors = []string{"coretemp", "k10temp", "zenpower", "cpu_thermal", "thinkpad", "acpitz"}
-	cpuLabels  = map[string]string{"coretemp": "Package id 0", "k10temp": "Tctl", "zenpower": "Tdie"}
+	cpuLabels  = map[string][]string{"coretemp": {"Package id 0"}, "k10temp": {"Tdie", "Tctl"}, "zenpower": {"Tdie"}}
 )
 
 type Temp struct {
@@ -182,7 +182,7 @@ func labelled(dir, want string) (string, bool) {
 }
 
 func cpuInput(dir, name string) string {
-	if want, ok := cpuLabels[name]; ok {
+	for _, want := range cpuLabels[name] {
 		if input, ok := labelled(dir, want); ok {
 			return input
 		}
