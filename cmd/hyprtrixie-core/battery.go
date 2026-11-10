@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 
-	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/battery"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
@@ -40,19 +38,12 @@ func setLimit(value string) int {
 }
 
 func keepLimit(folders []string, limit int) int {
+	if err := battery.Save(folders, limit); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
 	if limit == battery.Full {
-		if remove(battery.Keep()) != 0 {
-			return 1
-		}
 		return say("The battery charges to 100%.\n")
-	}
-	if err := os.MkdirAll(filepath.Dir(battery.Keep()), 0o755); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return 1
-	}
-	if err := atomic.Write(battery.Keep(), []byte(battery.KeepLines(folders, limit)), 0o644); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return 1
 	}
 	return say(fmt.Sprintf("The battery stops charging at %d%%.\n", limit))
 }

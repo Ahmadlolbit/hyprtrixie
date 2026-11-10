@@ -11,6 +11,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/battery"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
@@ -41,6 +42,9 @@ func interfacesFile() string {
 
 func (context *Context) powerInstall(log *runlog.Log) error {
 	if err := context.Deploy.File("system/systemd/"+batteryUnit, unitFolder+batteryUnit); err != nil {
+		return err
+	}
+	if err := battery.Upgrade(); err != nil {
 		return err
 	}
 	if err := run.Logged(log, "systemctl", "enable", batteryUnit); err != nil {

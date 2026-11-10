@@ -1,11 +1,11 @@
 [Unit]
 Description=Set the battery charge limit
-ConditionPathExists=/etc/tmpfiles.d/hyprtrixie-battery.conf
+ConditionPathExists=/etc/udev/rules.d/90-hyprtrixie-battery.rules
 After=systemd-user-sessions.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/systemd-tmpfiles --create /etc/tmpfiles.d/hyprtrixie-battery.conf
+ExecStart=/usr/bin/udevadm trigger --action=change --subsystem-match=power_supply --sysname-match=BAT*
 
 [Install]
 WantedBy=multi-user.target
