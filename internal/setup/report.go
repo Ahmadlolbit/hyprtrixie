@@ -78,7 +78,7 @@ func checkedModules() []string {
 	var ids []string
 	for _, module := range modules.All {
 		result, _ := modules.StatusOf(status, module.ID)
-		if _, known := Modules[module.ID]; known && module.ID != lastModule && result != modules.Undone {
+		if _, known := Modules[module.ID]; known && module.ID != lastModule && result != "" && result != modules.Undone {
 			ids = append(ids, module.ID)
 		}
 	}
