@@ -28,6 +28,8 @@ const (
 	loopbackOnly   = "source /etc/network/interfaces.d/*\n\nauto lo\niface lo inet loopback\n"
 	trustScript    = "90-hyprtrixie-trust"
 	trustTarget    = "/etc/NetworkManager/dispatcher.d/" + trustScript
+	sshPort        = "22/tcp"
+	sshRule        = "hyprtrixie ssh"
 )
 
 type wifiNetwork struct {
@@ -129,6 +131,17 @@ func sshServerOff(log *runlog.Log) error {
 
 func sshServerDisabled(*runlog.Log) error {
 	return holds(!service.Enabled("ssh.service") && !service.Enabled("ssh.socket"))
+}
+
+func sshServerOn() bool {
+	if installed, _ := apt.Installed(); !installed["openssh-server"] {
+		return false
+	}
+	return service.Enabled("ssh.service") || service.Enabled("ssh.socket")
+}
+
+func sshThrough(log *runlog.Log) error {
+	return run.Logged(log, "ufw", "allow", sshPort, "comment", sshRule)
 }
 
 func wordsOf(line string) []string {
@@ -247,6 +260,9 @@ func securitySteps(context *Context) {
 	context.Run.Step("Set up power profiles", context.powerInstall)
 	if settings.Get("FIREWALL") == "yes" {
 		context.Run.Step("Turn on the firewall", firewallSetup)
+		if settings.Get("SSH_POLICY") == "leave" && sshServerOn() {
+			context.Run.Step("Let SSH in through the firewall", sshThrough)
+		}
 		context.Run.Step("Open LocalSend only on networks you trust", context.trustSetup)
 	}
 	context.Run.Step("Set up automatic security updates", context.autoUpdatesSetup)
