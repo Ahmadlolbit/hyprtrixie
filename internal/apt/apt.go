@@ -537,14 +537,39 @@ func ExtrepoTry(log *runlog.Log, name string) error {
 	return errors.New("the " + name + " repository can't be reached")
 }
 
+func upstream(version string) string {
+	if _, rest, found := strings.Cut(version, ":"); found {
+		version = rest
+	}
+	if cut := strings.LastIndexByte(version, '-'); cut > 0 {
+		version = version[:cut]
+	}
+	return version
+}
+
+func releaseInPlace(log *runlog.Log, packageName, pinned string) bool {
+	if installed, _ := Installed(); !installed[packageName] {
+		return false
+	}
+	version := Version(packageName)
+	if run.Quiet(run.Quick, "dpkg", "--compare-versions", version, "lt", pinned) == 0 {
+		return false
+	}
+	if upstream(version) == pinned {
+		log.Line("info", packageName+" "+pinned+" already installed")
+	} else {
+		log.Line("info", packageName+" "+version+" is newer than "+pinned+", the version pinned here, so it stays as it is")
+	}
+	return true
+}
+
 func InstallRelease(log *runlog.Log, name, packageName string) error {
 	ledger.Note(ledger.Wants, packageName)
 	release, err := fetch.GetRelease(log, name)
 	if err != nil {
 		return err
 	}
-	if installed, _ := Installed(); installed[packageName] && strings.HasPrefix(Version(packageName), release.Version) {
-		log.Line("info", packageName+" "+release.Version+" already installed")
+	if releaseInPlace(log, packageName, release.Version) {
 		return nil
 	}
 	file, err := fetch.FetchRelease(log, name)
