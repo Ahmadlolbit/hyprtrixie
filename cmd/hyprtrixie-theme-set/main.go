@@ -21,6 +21,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/look"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/theme"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/wallpaper"
 )
 
 const usage = `Usage: hyprtrixie-theme-set <theme>
@@ -264,14 +265,34 @@ func symlink(target, link string) {
 	}
 }
 
-func pickBackground(name, previous string) {
+func drawnBackground() string {
+	return filepath.Join(state(), "drawn.jpg")
+}
+
+func drawBackground(name string, colors theme.Colors, link string) {
+	data, err := wallpaper.JPEG(wallpaper.Contours(colors, wallpaper.Seed(name), wallpaper.Width, wallpaper.Height))
+	if err == nil {
+		err = atomic.Write(drawnBackground(), data, 0o666)
+	}
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+	symlink(drawnBackground(), link)
+}
+
+func pickBackground(name, previous string, colors theme.Colors) {
 	link := filepath.Join(state(), "background")
 	if previous == name && fsutil.Exists(link) {
 		return
 	}
 	found := fsutil.Images(filepath.Join(state(), "theme", "backgrounds"), filepath.Join(env.AppConfig(), "backgrounds", name))
-	if len(found) > 0 {
+	target, _ := os.Readlink(link)
+	switch {
+	case len(found) > 0:
 		symlink(found[0], link)
+	case !fsutil.Exists(link) || target == drawnBackground():
+		drawBackground(name, colors, link)
 	}
 }
 
@@ -403,7 +424,7 @@ func apply(name string) bool {
 	if err := atomic.Write(filepath.Join(state(), "theme.name"), []byte(name+"\n"), 0o666); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
-	pickBackground(name, previous)
+	pickBackground(name, previous, colors)
 	linkApps()
 	desktopSettings(colors, apps)
 	rememberPick(name, colors["mode"])
