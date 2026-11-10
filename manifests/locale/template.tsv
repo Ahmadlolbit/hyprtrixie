@@ -427,6 +427,7 @@ The computer can hibernate
 The computer's name takes only small letters, digits and -	
 The disk password	
 The disk password needs at least 8 characters	
+The firewall is off	
 The firewall is on	
 The firmware list is refreshed	
 The first start finishes the setup before the login screen, which takes a few minutes.	
@@ -482,6 +483,7 @@ Tips in new terminals
 Tips on the welcome screen	
 To keep Windows: %s. In Windows, Disk Management's Shrink Volume on C: makes room; then start this again.	
 Tune swappiness	
+Turn off the firewall	
 Turn on printing and finding printers on the network	
 Turn on the firewall	
 Turn on the snapshot timers	

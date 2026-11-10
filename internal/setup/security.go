@@ -15,6 +15,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/service"
@@ -30,6 +31,7 @@ const (
 	trustTarget    = "/etc/NetworkManager/dispatcher.d/" + trustScript
 	sshPort        = "22/tcp"
 	sshRule        = "hyprtrixie ssh"
+	securityModule = "15"
 )
 
 type wifiNetwork struct {
@@ -82,9 +84,29 @@ func firewallSetup(log *runlog.Log) error {
 	return run.Logged(log, "ufw", "--force", "enable")
 }
 
-func firewallReady(*runlog.Log) error {
+func firewallActive() bool {
 	output, _ := run.CaptureInEnglish(run.Minute, "ufw", "status")
-	return holds(lineHasPrefix(output, "Status: active"))
+	return lineHasPrefix(output, "Status: active")
+}
+
+func firewallReady(*runlog.Log) error {
+	return holds(firewallActive())
+}
+
+func firewallSetUp() bool {
+	return slices.Contains(ledger.Load(securityModule).Values(ledger.Wants), "ufw")
+}
+
+func firewallOff(log *runlog.Log) error {
+	if !firewallActive() {
+		log.Line("info", "the firewall is off already")
+		return nil
+	}
+	return run.Logged(log, "ufw", "disable")
+}
+
+func firewallOffReady(*runlog.Log) error {
+	return holds(!firewallActive())
 }
 
 func (context *Context) trustSetup(*runlog.Log) error {
@@ -264,6 +286,8 @@ func securitySteps(context *Context) {
 			context.Run.Step("Let SSH in through the firewall", sshThrough)
 		}
 		context.Run.Step("Open LocalSend only on networks you trust", context.trustSetup)
+	} else if firewallSetUp() {
+		context.Run.Step("Turn off the firewall", firewallOff)
 	}
 	context.Run.Step("Set up automatic security updates", context.autoUpdatesSetup)
 	if settings.Get("SSH_POLICY") == "client" {
@@ -284,6 +308,8 @@ func securityChecks(context *Context) {
 	if settings.Get("FIREWALL") == "yes" {
 		context.Run.Check("The firewall is on", firewallReady)
 		context.Run.Check("LocalSend opens only on networks you trust", trustReady)
+	} else if firewallSetUp() {
+		context.Run.Check("The firewall is off", firewallOffReady)
 	}
 	if settings.Get("NM_HANDOVER") == "yes" {
 		context.Run.Check("NetworkManager manages every connection", networkReady)
