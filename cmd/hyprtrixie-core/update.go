@@ -30,12 +30,23 @@ func gitLog(args ...string) string {
 	return git(append([]string{"log", "--no-show-signature"}, args...)...)
 }
 
+var snapshotTaken bool
+
+func snapshotFirst() int {
+	if snapshotTaken || !installed("snapper") || !fsutil.IsFile(env.Or("HYPRTRIXIE_SNAPPER_CONFIG", "/etc/snapper/configs/root")) {
+		return 0
+	}
+	fmt.Println("Taking a snapshot first")
+	if run.Status("sudo", "snapper", "--no-dbus", "-c", "root", "create", "--description", "before hyprtrixie update", "--cleanup-algorithm", "number") != 0 {
+		return fail("the snapshot failed, so nothing was updated")
+	}
+	snapshotTaken = true
+	return 0
+}
+
 func updateSystem() int {
-	if installed("snapper") && fsutil.IsFile(env.Or("HYPRTRIXIE_SNAPPER_CONFIG", "/etc/snapper/configs/root")) {
-		fmt.Println("Taking a snapshot first")
-		if run.Status("sudo", "snapper", "--no-dbus", "-c", "root", "create", "--description", "before hyprtrixie update", "--cleanup-algorithm", "number") != 0 {
-			return fail("the snapshot failed, so nothing was updated")
-		}
+	if status := snapshotFirst(); status != 0 {
+		return status
 	}
 	if apt.Interrupted() {
 		fmt.Println("dpkg was interrupted, finishing what it left")
