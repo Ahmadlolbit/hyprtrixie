@@ -24,6 +24,10 @@ const (
 	packageFiles   = "/var/lib/dpkg/info/linux-image-"
 	nvidiaSettings = "/etc/modprobe.d/hyprtrixie-nvidia.conf"
 	hybridPower    = " NVreg_DynamicPowerManagement=0x02"
+	kernelKept     = "The backports kernel stays installed, because the setup never removes a kernel."
+	kernelBack     = "To go back to Debian's own: sudo apt install linux-image-amd64/trixie linux-headers-amd64/trixie " +
+		"(leave out the headers if you don't have them) and say yes to going back, restart into Debian's kernel from " +
+		"Advanced options in the boot menu, then sudo apt remove the backports kernel: dpkg -l 'linux-image-*' | grep bpo shows its name."
 )
 
 var nvidiaUnits = []string{"nvidia-suspend.service", "nvidia-resume.service", "nvidia-hibernate.service"}
@@ -45,8 +49,26 @@ func (context *Context) kernelSpecs(specs ...string) []string {
 	return plain
 }
 
+func backportsKernel() bool {
+	return strings.Contains(apt.Version(kernelPackage), "bpo")
+}
+
+func (context *Context) driverSpecs(specs ...string) []string {
+	if backportsKernel() {
+		return specs
+	}
+	return context.kernelSpecs(specs...)
+}
+
 func (context *Context) kernelInstall(log *runlog.Log) error {
 	return apt.Install(log, context.kernelSpecs(kernelSpec)...)
+}
+
+func (context *Context) kernelNotes() []string {
+	if context.Config.Get("KERNEL") != "stable" || !backportsKernel() {
+		return nil
+	}
+	return []string{kernelKept, kernelBack}
 }
 
 func newestKernel() string {
@@ -102,7 +124,7 @@ func (driver *nvidiaDriver) install(log *runlog.Log) error {
 	if err != nil {
 		return err
 	}
-	return apt.Install(log, driver.kernelSpecs(listed...)...)
+	return apt.Install(log, driver.driverSpecs(listed...)...)
 }
 
 func (driver *nvidiaDriver) configure(log *runlog.Log) error {
@@ -131,7 +153,7 @@ func (context *Context) webcamInstall(log *runlog.Log) error {
 	if err != nil {
 		return err
 	}
-	return apt.Install(log, context.kernelSpecs(listed...)...)
+	return apt.Install(log, context.driverSpecs(listed...)...)
 }
 
 func webcamReady(*runlog.Log) error {
@@ -141,6 +163,9 @@ func webcamReady(*runlog.Log) error {
 func kernelSteps(context *Context) {
 	driver := nvidiaDriver{Context: context, hardware: detect.ReadHardware(), initramfs: followUp{name: "nvidia-initramfs"}}
 	context.Run.Step("Install the "+context.Config.Get("KERNEL")+" kernel", context.kernelInstall)
+	for _, note := range context.kernelNotes() {
+		context.Run.Note(note)
+	}
 	if driver.wanted() {
 		context.Run.Step("Install the NVIDIA driver", driver.install)
 		context.Run.Step("Configure the NVIDIA driver", driver.configure)
