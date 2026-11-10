@@ -20,7 +20,8 @@ Singleton {
   readonly property real keyboardLevel: keyboardAvailable ? keyboardCurrent / keyboardMaximum : 0
 
   function adjust(step) {
-    Quickshell.execDetached(["brightnessctl", "-e4", "-n2", "set", step]);
+    if (device)
+      Quickshell.execDetached(["brightnessctl", "-d", device, "-e4", "-n2", "set", step]);
   }
 
   function setLevel(level) {
@@ -41,14 +42,14 @@ Singleton {
     id: apply
 
     interval: 50
-    onTriggered: Quickshell.execDetached(["brightnessctl", "-n2", "set", String(root.target)])
+    onTriggered: Quickshell.execDetached(["brightnessctl", "-d", root.device, "-n2", "set", String(root.target)])
   }
 
   Process {
     running: true
-    command: ["sh", "-c", "ls /sys/class/backlight | head -n 1"]
+    command: ["brightnessctl", "-m", "-c", "backlight", "info"]
     stdout: StdioCollector {
-      onStreamFinished: root.device = text.trim()
+      onStreamFinished: root.device = text.trim().split(",")[0]
     }
   }
 
