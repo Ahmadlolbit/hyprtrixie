@@ -10,8 +10,10 @@ import (
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
@@ -20,9 +22,15 @@ const usage = `engine-switch - choose which container engine answers to "docker"
   engine-switch docker    use Docker CE
   engine-switch podman    use Podman; docker commands are passed to podman
   engine-switch status    show the engine in use
+
+The engine you switch to becomes the setup's "Docker command uses" setting,
+so the next install or update keeps it.
 `
 
-const shimScript = "#!/bin/sh\nexec /usr/bin/podman \"$@\"\n"
+const (
+	shimScript    = "#!/bin/sh\nexec /usr/bin/podman \"$@\"\n"
+	engineSetting = "CONTAINER_ENGINE"
+)
 
 var (
 	stateFile    = "/var/lib/hyprtrixie/container-engine"
@@ -80,10 +88,26 @@ func units(action string, names ...string) []string {
 	return append([]string{action, "--now"}, names...)
 }
 
+func chosen(engine string) error {
+	path := config.Path()
+	if !fsutil.IsFile(path) {
+		return nil
+	}
+	settings := config.Read(path)
+	if settings.Get(engineSetting) == engine {
+		return nil
+	}
+	settings.Set(engineSetting, engine)
+	return settings.Save(path)
+}
+
 func remember(engine string) {
 	err := os.MkdirAll(filepath.Dir(stateFile), 0o777)
 	if err == nil {
 		err = atomic.Write(stateFile, []byte(engine+"\n"), 0o666)
+	}
+	if err == nil {
+		err = chosen(engine)
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
