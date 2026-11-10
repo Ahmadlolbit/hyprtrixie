@@ -14,7 +14,6 @@ Singleton {
   property string keyboard: ""
   property int keyboardCurrent: 0
   property int keyboardMaximum: 0
-  property int keyboardTarget: -1
   readonly property bool available: device !== "" && maximum > 0
   readonly property real level: available ? current / maximum : 0
   readonly property bool keyboardAvailable: keyboard !== "" && keyboardMaximum > 0
@@ -32,9 +31,9 @@ Singleton {
 
   function setKeyboardLevel(level) {
     const value = Math.round(level * keyboardMaximum);
-    if (value === keyboardTarget)
+    if (value === keyboardCurrent)
       return;
-    keyboardTarget = value;
+    keyboardCurrent = value;
     Quickshell.execDetached(["brightnessctl", "-d", keyboard, "set", String(value)]);
   }
 
