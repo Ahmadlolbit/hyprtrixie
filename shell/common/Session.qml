@@ -14,6 +14,7 @@ Singleton {
   property real until: 0
   property real now: Date.now()
   readonly property int minutesLeft: awake && until > 0 ? Math.max(1, Math.ceil((until - now) / 60000)) : 0
+  readonly property string runtime: Quickshell.env("XDG_RUNTIME_DIR") || ""
 
   function stayAwake(minutes) {
     now = Date.now();
@@ -21,9 +22,44 @@ Singleton {
     awake = true;
   }
 
+  function restore(text) {
+    if (awake)
+      return;
+    try {
+      const state = JSON.parse(text);
+      now = Date.now();
+      if (state.awake && !(state.until > 0 && state.until <= now)) {
+        until = state.until || 0;
+        awake = true;
+      }
+    } catch (error) {
+      return;
+    }
+  }
+
   onAwakeChanged: {
     if (!awake)
       until = 0;
+    keeper.restart();
+  }
+  onUntilChanged: keeper.restart()
+
+  FileView {
+    id: kept
+
+    path: root.runtime ? root.runtime + "/hyprtrixie-awake" : ""
+    printErrors: false
+    onLoaded: root.restore(text())
+  }
+
+  Timer {
+    id: keeper
+
+    interval: 100
+    onTriggered: kept.setText(JSON.stringify({
+        awake: root.awake,
+        until: root.until
+      }))
   }
 
   Process {
