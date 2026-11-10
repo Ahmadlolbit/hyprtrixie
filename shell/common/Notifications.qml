@@ -16,6 +16,11 @@ Singleton {
   readonly property var shownItems: items.filter(item => item.id > cleared)
   readonly property int newest: items.length ? Math.max(...items.map(item => item.id)) : 0
   readonly property int unread: items.filter(item => item.id > Math.max(seen, cleared)).length
+  readonly property string runtime: Quickshell.env("XDG_RUNTIME_DIR") || ""
+
+  onSeenChanged: keeper.restart()
+  onClearedChanged: keeper.restart()
+  onNewestChanged: startedAgain()
 
   function character(match, name) {
     const named = {
@@ -52,6 +57,24 @@ Singleton {
   function merged(current, past) {
     const ids = current.map(item => item.id);
     return current.concat(past.filter(item => !ids.includes(item.id))).sort((first, second) => second.id - first.id);
+  }
+
+  function startedAgain() {
+    if (newest > 0 && newest < Math.max(seen, cleared)) {
+      seen = 0;
+      cleared = 0;
+    }
+  }
+
+  function restore(text) {
+    try {
+      const state = JSON.parse(text);
+      seen = Math.max(seen, state.seen || 0);
+      cleared = Math.max(cleared, state.cleared || 0);
+    } catch (error) {
+      return;
+    }
+    startedAgain();
   }
 
   function refresh() {
@@ -110,6 +133,24 @@ Singleton {
 
     command: ["makoctl", "mode", "-t", "do-not-disturb"]
     onExited: modes.running = true
+  }
+
+  FileView {
+    id: kept
+
+    path: root.runtime ? root.runtime + "/hyprtrixie-notifications" : ""
+    printErrors: false
+    onLoaded: root.restore(text())
+  }
+
+  Timer {
+    id: keeper
+
+    interval: 100
+    onTriggered: kept.setText(JSON.stringify({
+        seen: root.seen,
+        cleared: root.cleared
+      }))
   }
 
   Timer {
