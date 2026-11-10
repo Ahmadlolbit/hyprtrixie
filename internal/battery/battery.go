@@ -1,12 +1,16 @@
 package battery
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"math"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 )
@@ -17,6 +21,7 @@ const (
 	lowest    = 50
 	Full      = 100
 	headroom  = 5
+	keptWords = 7
 )
 
 func root() string {
@@ -24,7 +29,11 @@ func root() string {
 }
 
 func Keep() string {
-	return env.Or("HYPRTRIXIE_BATTERY_KEEP", "/etc/tmpfiles.d/hyprtrixie-battery.conf")
+	return env.Or("HYPRTRIXIE_BATTERY_KEEP", "/etc/udev/rules.d/90-hyprtrixie-battery.rules")
+}
+
+func older() string {
+	return env.Or("HYPRTRIXIE_BATTERY_OLD", "/etc/tmpfiles.d/hyprtrixie-battery.conf")
 }
 
 func Batteries() []string {
@@ -72,16 +81,55 @@ func Writes(folder string, limit int) []Write {
 	return writes
 }
 
-func KeepLines(folders []string, limit int) string {
-	var lines strings.Builder
+func Rules(folders []string, limit int) string {
+	var rules strings.Builder
 	for _, folder := range folders {
+		fmt.Fprintf(&rules, `ACTION=="add|change", SUBSYSTEM=="power_supply", KERNEL=="%s", ATTR{%s}!="%d"`, filepath.Base(folder), endFile, limit)
 		for _, write := range Writes(folder, limit) {
-			if write.Value != "0" {
-				fmt.Fprintf(&lines, "w %s - - - - %s\n", write.File, write.Value)
-			}
+			fmt.Fprintf(&rules, `, ATTR{%s}="%s"`, filepath.Base(write.File), write.Value)
+		}
+		rules.WriteString("\n")
+	}
+	return rules.String()
+}
+
+func gone(path string) error {
+	if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	return nil
+}
+
+func Save(folders []string, limit int) error {
+	if limit == Full {
+		return errors.Join(gone(Keep()), gone(older()))
+	}
+	if err := os.MkdirAll(filepath.Dir(Keep()), 0o755); err != nil {
+		return err
+	}
+	if err := atomic.Write(Keep(), []byte(Rules(folders, limit)), 0o644); err != nil {
+		return err
+	}
+	return gone(older())
+}
+
+func kept(text string) (int, bool) {
+	for _, line := range strings.Split(text, "\n") {
+		words := strings.Fields(line)
+		if len(words) == keptWords && words[0] == "w" && filepath.Base(words[1]) == endFile {
+			return Parse(words[keptWords-1])
 		}
 	}
-	return lines.String()
+	return 0, false
+}
+
+func Upgrade() error {
+	limit, found := kept(fsutil.Optional(older()))
+	folders := Batteries()
+	if !found || len(folders) == 0 {
+		return nil
+	}
+	return Save(folders, limit)
 }
 
 type Reading struct {
