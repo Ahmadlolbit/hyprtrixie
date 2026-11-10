@@ -50,13 +50,21 @@ func signedByRelease(signers, tag string) bool {
 	return slices.Contains(run.Lines(header), "tag "+tag)
 }
 
+func related(older, newer string) bool {
+	return run.Quiet(run.Quick, "git", "-C", root(), "merge-base", "--is-ancestor", older, newer) == 0
+}
+
 func newestSigned(signers string) (string, []string) {
 	var skipped []string
-	for _, tag := range run.Lines(git("tag", "--list", "v*", "--sort=-v:refname")) {
-		if signedByRelease(signers, tag) {
+	for _, tag := range run.Lines(git("-c", "versionsort.suffix=-", "tag", "--list", "v*", "--sort=-v:refname")) {
+		switch {
+		case !related("HEAD", tag) && !related(tag, "HEAD"):
+			skipped = append(skipped, tag+" is on a branch this copy doesn't follow, so it's left alone")
+		case signedByRelease(signers, tag):
 			return tag, skipped
+		default:
+			skipped = append(skipped, tag+" isn't signed with the release key, so it's left alone")
 		}
-		skipped = append(skipped, tag)
 	}
 	return "", skipped
 }
@@ -77,8 +85,8 @@ func releaseTarget() (string, string, error) {
 		return "", "", errors.New("git fetch failed: no network, the clone has no origin, or a release tag was moved")
 	}
 	tag, skipped := newestSigned(signers)
-	for _, name := range skipped {
-		fmt.Printf("%s isn't signed with the release key, so it's left alone\n", name)
+	for _, line := range skipped {
+		fmt.Println(line)
 	}
 	if tag == "" {
 		return "", "", errors.New("no release tag is signed with the release key yet")
