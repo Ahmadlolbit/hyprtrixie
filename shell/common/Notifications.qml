@@ -8,12 +8,14 @@ Singleton {
   id: root
 
   property var history: []
+  property var opened: []
+  property var items: []
   property bool quiet: false
   property int seen: 0
   property int cleared: 0
-  readonly property var shownItems: history.filter(item => item.id > cleared)
-  readonly property int newest: history.length ? Math.max(...history.map(item => item.id)) : 0
-  readonly property int unread: history.filter(item => item.id > Math.max(seen, cleared)).length
+  readonly property var shownItems: items.filter(item => item.id > cleared)
+  readonly property int newest: items.length ? Math.max(...items.map(item => item.id)) : 0
+  readonly property int unread: items.filter(item => item.id > Math.max(seen, cleared)).length
 
   function character(match, name) {
     const named = {
@@ -47,8 +49,13 @@ Singleton {
     }
   }
 
+  function merged(current, past) {
+    const ids = current.map(item => item.id);
+    return current.concat(past.filter(item => !ids.includes(item.id))).sort((first, second) => second.id - first.id);
+  }
+
   function refresh() {
-    lister.running = true;
+    openLister.running = true;
     modes.running = true;
   }
 
@@ -66,11 +73,26 @@ Singleton {
   }
 
   Process {
+    id: openLister
+
+    command: ["busctl", "--user", "-j", "call", "org.freedesktop.Notifications", "/fr/emersion/Mako", "fr.emersion.Mako", "ListNotifications"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        root.opened = root.parse(text);
+        lister.running = true;
+      }
+    }
+  }
+
+  Process {
     id: lister
 
     command: ["busctl", "--user", "-j", "call", "org.freedesktop.Notifications", "/fr/emersion/Mako", "fr.emersion.Mako", "ListHistory"]
     stdout: StdioCollector {
-      onStreamFinished: root.history = root.parse(text)
+      onStreamFinished: {
+        root.history = root.parse(text);
+        root.items = root.merged(root.opened, root.history);
+      }
     }
   }
 
