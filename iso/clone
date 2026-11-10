@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+from="$1"
+target="$2"
+record="$3"
+signers="$(mktemp)"
+trap 'rm -f "$signers"' EXIT
+git -C "$from" show HEAD:manifests/release-signers >"$signers" 2>/dev/null || :
+
+signed() {
+  local object
+  [[ -s $signers ]] || return 1
+  git -C "$from" -c gpg.ssh.allowedSignersFile="$signers" -c gpg.openpgp.program=false -c gpg.x509.program=false \
+    verify-tag "$1" >/dev/null 2>&1 || return 1
+  object="$(git -C "$from" cat-file tag "$1")"
+  grep -qx "tag $1" <<<"${object%%$'\n\n'*}"
+}
+
+tag=""
+while IFS= read -r name; do
+  if signed "$name"; then
+    tag="$name"
+    break
+  fi
+done < <(git -C "$from" tag --points-at HEAD --list 'v*')
+git -c advice.detachedHead=false clone --quiet --no-local --single-branch --no-tags "$from" "$target"
+[[ -z $tag ]] || git -C "$target" fetch --quiet --no-tags "$from" "refs/tags/$tag:refs/tags/$tag"
+git -C "$target" remote set-url origin https://github.com/Ahmadlolbit/hyprtrixie.git
+printf 'commit %s\n' "$(git -C "$target" rev-parse HEAD)" >"$record"
+[[ -z $tag ]] || printf 'tag %s\n' "$tag" >>"$record"

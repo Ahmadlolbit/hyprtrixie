@@ -3,7 +3,7 @@ set -euo pipefail
 
 sed -i 's|http://deb.debian.org|https://deb.debian.org|' /etc/apt/sources.list.d/debian.sources
 apt-get -o Acquire::https::CAInfo=/run/host-ca.pem update
-apt-get -o Acquire::https::CAInfo=/run/host-ca.pem install -y --no-install-recommends live-build git ca-certificates
+apt-get -o Acquire::https::CAInfo=/run/host-ca.pem install -y --no-install-recommends live-build git ca-certificates openssh-client
 git config --global --add safe.directory /src
 work=/work
 downloads=var/cache/hyprtrixie/downloads
@@ -18,8 +18,7 @@ cp /src/iso/burst.png "$theme/burst.png"
 sed -i -e 's|^desktop-image: .*|desktop-color: "#000000"|' -e 's|^title-text: .*|title-text: ""|' "$theme/theme.txt"
 cat /src/iso/burst.theme >>"$theme/theme.txt"
 cp -a "$kept/." "$work/config/includes.chroot_after_packages/$downloads/"
-git clone --quiet /src "$work/config/includes.chroot_after_packages/opt/hyprtrixie"
-git -C "$work/config/includes.chroot_after_packages/opt/hyprtrixie" remote set-url origin https://github.com/Ahmadlolbit/hyprtrixie.git
+bash /src/iso/clone /src "$work/config/includes.chroot_after_packages/opt/hyprtrixie" "$work/commit"
 ln -s /cache "$work/cache"
 cd "$work"
 lb config
@@ -32,3 +31,4 @@ mv "chroot/$downloads" "$kept"
 rm -f chroot/var/cache/apt/*.bin
 lb binary
 cp ./*.iso /out/
+cp "$work/commit" /out/commit

@@ -17,6 +17,12 @@ built="${2:-$root/build/iso/live-image-amd64.hybrid.iso}"
   echo "no release key at $key (set HYPRTRIXIE_RELEASE_KEY)" >&2
   exit 1
 }
+record="$(dirname "$built")/commit"
+if [[ ! -f $record ]]; then
+  echo "There's no record of the commit $built was built from ($record), so it can't be tied to v$version." >&2
+elif ! grep -qx "tag v$version" "$record"; then
+  echo "$built was built from $(sed -n 's/^commit //p' "$record"), which has no tag v$version signed with the release key." >&2
+fi
 out="$(dirname "$built")/$version"
 name="hyprtrixie-$version-amd64.iso"
 mkdir -p "$out"
@@ -32,4 +38,5 @@ rsync -e ssh --progress "$out/$name" "$out/SHA256SUMS" "$out/SHA256SUMS.sig" "$u
 echo
 echo "Download: https://sourceforge.net/projects/$project/files/$version/$name/download"
 echo "SHA-256:  $(cut -d' ' -f1 "$out/SHA256SUMS")"
+[[ ! -f $record ]] || echo "Built from: $(paste -sd' ' "$record")"
 echo "Check:    sha256sum -c SHA256SUMS && ssh-keygen -Y verify -f manifests/release-signers -I release -n file -s SHA256SUMS.sig <SHA256SUMS"

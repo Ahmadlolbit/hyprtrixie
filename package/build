@@ -29,3 +29,4 @@ docker run --rm --platform linux/amd64 -e TAG="$tag" \
   -v "$root:/src:ro" -v "$out:/out" -v "$ca:/run/host-ca.pem:ro" -v hyprtrixie-package-cache:/var/cache/apt/archives \
   debian:trixie bash /src/package/inside
 ls -l "$out"
+echo "Built from $tag, commit $(git -C "$root" rev-parse "refs/tags/$tag^{commit}")"

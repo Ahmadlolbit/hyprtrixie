@@ -20,6 +20,7 @@ for tool in "$work/src"/cmd/hyprtrixie-core/tools/*/; do
 done
 git -C "$work/src" bundle create --quiet "$lib/hyprtrixie.bundle" "refs/tags/$TAG"
 printf '%s\n' "$TAG" >"$lib/tag"
+git -C "$work/src" rev-parse "refs/tags/$TAG^{commit}" >"$lib/commit"
 ln -s /opt/hyprtrixie/hyprtrixie "$pkg/usr/bin/hyprtrixie"
 cat "$work/src/LICENSE" "$work/src/THIRD-PARTY-LICENSES" >"$pkg/usr/share/doc/hyprtrixie/copyright"
 cp "$work/src/package/postinst" "$work/src/package/postrm" "$pkg/DEBIAN/"
