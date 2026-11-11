@@ -1,5 +1,6 @@
 [Unit]
 Description=Paint the text consoles in the theme's colours
+ConditionPathExists=/etc/hyprtrixie/vtrgb
 After=console-setup.service
 
 [Service]
