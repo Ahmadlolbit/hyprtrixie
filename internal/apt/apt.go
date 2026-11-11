@@ -466,7 +466,10 @@ func ExtrepoDisable(log *runlog.Log, name string) error {
 }
 
 func extrepoEnable(log *runlog.Log, name string) (bool, error) {
-	if err := Install(log, "extrepo"); err != nil || ExtrepoEnabled(name) {
+	if ExtrepoEnabled(name) {
+		return false, nil
+	}
+	if err := Install(log, "extrepo"); err != nil {
 		return false, err
 	}
 	return true, run.LoggedWithin(extrepoLimit, log, "extrepo", "enable", name)
