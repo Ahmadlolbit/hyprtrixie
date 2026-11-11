@@ -33,6 +33,10 @@ uuid=$(blkid "$target_dev" | sed -n 's/.* UUID="\([^"]*\)".*/\1/p')
 [ -n "$uuid" ] || fail "could not read the filesystem UUID of $target_dev."
 boot_dev=$(mounted_on /target/boot)
 efi_dev=$(mounted_on /target/boot/efi)
+for dir in home .snapshots var/log swap; do
+  dev=$(mounted_on "/target/$dir")
+  [ -z "$dev" ] || [ "$dev" = "$target_dev" ] || fail "/$dir is on a partition of its own ($dev), and this layout would leave it out. Skip this step: Hyprtrixie works without it, and /$dir stays out of the snapshots as it is."
+done
 say "Filesystem $target_dev ($uuid)"
 
 for dir in boot/efi boot home .snapshots var/log swap; do
