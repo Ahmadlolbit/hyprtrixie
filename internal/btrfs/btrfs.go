@@ -108,6 +108,22 @@ func writeTable(lines []string) error {
 	return nil
 }
 
+func entries(lines []string, spec, target string) []int {
+	var found []int
+	for index, line := range lines {
+		if matches(line, spec, target) {
+			found = append(found, index)
+		}
+	}
+	return found
+}
+
+func listed(spec, target, kind, options string) bool {
+	lines, err := fsutil.Lines(table())
+	found := entries(lines, spec, target)
+	return err == nil && len(found) == 1 && lines[found[0]] == spec+" "+target+" "+kind+" "+options+" 0 0"
+}
+
 func FstabEnsure(log *runlog.Log, spec, target, kind, options string) error {
 	lines, err := fsutil.Lines(table())
 	if err != nil {
@@ -149,17 +165,21 @@ func FstabDrop(spec, target string) error {
 }
 
 func MountSubvolume(log *runlog.Log, name, target string) error {
+	uuid := rootUUID()
+	if uuid == "" {
+		return log.Failed("cannot find the root filesystem's UUID")
+	}
+	spec, options := "UUID="+uuid, "subvol="+name+",noatime"
+	if fsutil.IsDir(target) && listed(spec, target, "btrfs", options) && Mounted(target) {
+		return nil
+	}
 	if err := ensureSubvolume(log, name); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(target, folderMode); err != nil {
 		return err
 	}
-	uuid := rootUUID()
-	if uuid == "" {
-		return log.Failed("cannot find the root filesystem's UUID")
-	}
-	if err := FstabEnsure(log, "UUID="+uuid, target, "btrfs", "subvol="+name+",noatime"); err != nil {
+	if err := FstabEnsure(log, spec, target, "btrfs", options); err != nil {
 		return err
 	}
 	if Mounted(target) {
