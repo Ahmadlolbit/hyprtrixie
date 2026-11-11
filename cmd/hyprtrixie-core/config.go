@@ -9,6 +9,7 @@ import (
 	"unicode"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
@@ -59,7 +60,11 @@ func presetFile(source string) (string, func(), error) {
 	if err != nil {
 		return "", nil, err
 	}
-	done := func() { os.RemoveAll(dir) }
+	forget := cleanup.OnSignal(func() { os.RemoveAll(dir) })
+	done := func() {
+		forget()
+		os.RemoveAll(dir)
+	}
 	path := filepath.Join(dir, "preset.conf")
 	if err := presets.Fetch(source, path); err != nil {
 		done()
