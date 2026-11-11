@@ -5,13 +5,15 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/words"
 )
 
 const (
-	labelWidth = 34
-	pageJump   = 10
+	labelWidth  = 34
+	markColumns = 3
+	pageJump    = 10
 )
 
 const emptyRefused = "That row can't be empty, so it keeps what it had"
@@ -316,7 +318,7 @@ func (view *page) pressEscape() tea.Cmd {
 	return view.wizard.backward()
 }
 
-func (view *page) text(line row, focused bool) string {
+func (view *page) text(line row, focused bool, width int) string {
 	if line.heading {
 		return headingStyle.Render(words.T(line.label))
 	}
@@ -324,22 +326,22 @@ func (view *page) text(line row, focused bool) string {
 		return "  " + words.T(line.label)
 	}
 	label := strings.TrimSpace(line.mark + " " + words.T(line.label))
-	value := line.value
 	if focused && view.draft != nil {
-		value = view.draft.shown()
+		label = fmt.Sprintf("%-*s ", labelWidth, label)
+		return marked(focused, label+tail(view.draft.shown(), width-lipgloss.Width(label)-markColumns))
 	}
-	if value != "" {
-		label = fmt.Sprintf("%-*s %s", labelWidth, label, value)
+	if line.value != "" {
+		label = fmt.Sprintf("%-*s %s", labelWidth, label, line.value)
 	}
 	return marked(focused, label)
 }
 
-func (view *page) draw(_, height int) string {
+func (view *page) draw(width, height int) string {
 	rows := view.shown()
 	view.scroll(height, len(rows))
 	lines := make([]string, 0, height)
 	for index := view.top; index < min(view.top+height, len(rows)); index++ {
-		lines = append(lines, view.text(rows[index], index == view.cursor))
+		lines = append(lines, view.text(rows[index], index == view.cursor, width))
 	}
 	return strings.Join(lines, "\n")
 }

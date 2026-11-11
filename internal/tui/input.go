@@ -5,6 +5,7 @@ import (
 	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type input struct {
@@ -44,6 +45,25 @@ func (field *input) insert(characters []rune) {
 func (field *input) erase() {
 	_, size := utf8.DecodeLastRuneInString(field.text)
 	field.text = field.text[:len(field.text)-size]
+}
+
+func tail(text string, room int) string {
+	if len(text) <= room || room < 2 {
+		return text
+	}
+	start, used, kept := len(text), 0, len(text)
+	for start > 0 {
+		character, size := utf8.DecodeLastRuneInString(text[:start])
+		used += lipgloss.Width(string(character))
+		if used > room {
+			return "…" + text[kept:]
+		}
+		start -= size
+		if used < room {
+			kept = start
+		}
+	}
+	return text
 }
 
 func (field *input) shown() string {
