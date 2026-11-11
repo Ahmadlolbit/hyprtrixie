@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Wayland
 import qs.common
 
@@ -10,6 +11,9 @@ Variants {
     id: display
 
     required property var modelData
+    readonly property var monitor: Hyprland.monitorFor(modelData)
+    readonly property bool covered: monitor && monitor.activeWorkspace ? monitor.activeWorkspace.hasFullscreen : false
+    readonly property bool shown: Theme.corners && !covered
 
     component Corner: PanelWindow {
       id: corner
@@ -18,7 +22,7 @@ Variants {
       readonly property int size: 12
 
       screen: display.modelData
-      visible: Theme.corners
+      visible: display.shown
       implicitWidth: size
       implicitHeight: size
       color: "transparent"
