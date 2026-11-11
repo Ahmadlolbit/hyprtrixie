@@ -9,6 +9,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -46,6 +47,7 @@ var (
 	grubDir      = env.Or("HYPRTRIXIE_GRUB_THEME_DIR", "/boot/grub/themes/hyprtrixie")
 	vtrgb        = env.Or("HYPRTRIXIE_VTRGB", "/etc/hyprtrixie/vtrgb")
 	sddmDir      = env.Or("HYPRTRIXIE_SDDM_THEME_DIR", "/usr/share/sddm/themes/hyprtrixie")
+	owedImage    = filepath.Join(env.StateDir(), "owed", "boot-image")
 )
 
 type theme struct {
@@ -92,40 +94,66 @@ func render(template, dest string, pairs ...string) (bool, error) {
 }
 
 func splash(current theme, initramfs bool) bool {
-	changed, err := render(filepath.Join(templates, "hyprtrixie.script"), filepath.Join(plymouthDir, "hyprtrixie.script"),
-		"BACKGROUND="+follow.Floats(current.background), "FOREGROUND="+follow.Floats(current.foreground), "ACCENT="+follow.Floats(current.accent))
+	files, err := splashFiles(current)
+	if err == nil {
+		err = owe(files)
+	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return false
 	}
-	drawn, err := burstImages(current.accent)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+	if !initramfs && !fsutil.Exists(owedImage) {
+		return true
+	}
+	rebuild := bootimage.Rebuild(false)
+	if run.Within(initramfsLimit, rebuild[0], rebuild[1:]...) != 0 {
 		return false
 	}
-	if changed || drawn || initramfs {
-		rebuild := bootimage.Rebuild(false)
-		return run.Within(initramfsLimit, rebuild[0], rebuild[1:]...) == 0
+	if err := os.Remove(owedImage); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		fmt.Fprintln(os.Stderr, err)
 	}
 	return true
 }
 
-func burstImages(accent string) (bool, error) {
-	channels := follow.Channels(accent)
+func splashFiles(current theme) ([][2]string, error) {
+	data, err := os.ReadFile(filepath.Join(templates, "hyprtrixie.script"))
+	if err != nil {
+		return nil, err
+	}
+	script := follow.Fill(string(data), "BACKGROUND="+follow.Floats(current.background), "FOREGROUND="+follow.Floats(current.foreground), "ACCENT="+follow.Floats(current.accent))
+	files := [][2]string{{filepath.Join(plymouthDir, "hyprtrixie.script"), script}}
+	channels := follow.Channels(current.accent)
 	paint := color.NRGBA{R: uint8(channels[0]), G: uint8(channels[1]), B: uint8(channels[2]), A: 255}
-	drawn := false
 	for _, scale := range []int{4, 8} {
 		picture, err := burst.PNG(scale, paint)
 		if err != nil {
-			return drawn, err
+			return nil, err
 		}
-		changed, err := refresh(filepath.Join(plymouthDir, fmt.Sprintf("burst-%d.png", scale)), string(picture))
-		drawn = drawn || changed
-		if err != nil {
-			return drawn, err
+		files = append(files, [2]string{filepath.Join(plymouthDir, fmt.Sprintf("burst-%d.png", scale)), string(picture)})
+	}
+	return files, nil
+}
+
+func owe(files [][2]string) error {
+	stale := slices.ContainsFunc(files, func(file [2]string) bool {
+		current, err := os.ReadFile(file[0])
+		return err != nil || string(current) != file[1]
+	})
+	if !stale {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(owedImage), 0o755); err != nil {
+		return err
+	}
+	if err := atomic.Install(owedImage, nil, 0o644); err != nil {
+		return err
+	}
+	for _, file := range files {
+		if _, err := refresh(file[0], file[1]); err != nil {
+			return err
 		}
 	}
-	return drawn, nil
+	return nil
 }
 
 func menu(current theme) bool {
