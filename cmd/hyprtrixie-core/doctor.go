@@ -170,14 +170,10 @@ func (visit *checkup) failedUnits() ([]string, []string, bool, bool) {
 	system := firstWords(output)
 	output, userErr := run.CaptureQuiet(visit.limit, "runuser", visit.userSystemctl("--failed", "--no-legend", "--plain")...)
 	user := firstWords(output)
-	if run.TimedOut(err) || run.TimedOut(userErr) {
-		tooLong("Checking the services")
-		return nil, nil, false, false
-	}
 	if unchecked("the services", "Checking the services", "systemctl", err) {
 		return nil, nil, false, false
 	}
-	return system, user, !unchecked("your own services", "Checking the services", "systemctl --user", userErr), true
+	return system, user, !unchecked("your own services", "Checking your own services", "systemctl --user", userErr), true
 }
 
 func (visit *checkup) services() {
