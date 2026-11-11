@@ -27,7 +27,7 @@ func top() string {
 }
 
 func rootField(name string) string {
-	output, err := run.CaptureQuiet(run.Minute, "findmnt", "-no", name, "/")
+	output, err := run.CaptureOnce(run.Minute, "findmnt", "-no", name, "/")
 	if err != nil {
 		return ""
 	}

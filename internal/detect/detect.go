@@ -226,7 +226,7 @@ func laptop() bool {
 }
 
 func findmnt(column string) string {
-	output, _ := run.CaptureQuiet(run.Quick, "findmnt", "-no", column, "/")
+	output, _ := run.CaptureOnce(run.Quick, "findmnt", "-no", column, "/")
 	return output
 }
 

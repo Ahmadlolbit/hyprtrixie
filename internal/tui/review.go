@@ -1,9 +1,14 @@
 package tui
 
 import (
+	"os"
+	"strings"
+
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/presets"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/privilege"
@@ -43,7 +48,24 @@ func readable(path string) bool {
 	return err == nil
 }
 
+func personHome() string {
+	if os.Geteuid() == 0 {
+		if person, found := account.Target(); found && person.Home != "" {
+			return person.Home
+		}
+	}
+	return env.Home()
+}
+
+func fromHome(path string) string {
+	if rest, found := strings.CutPrefix(path, "~/"); found {
+		return strings.TrimSuffix(personHome(), "/") + "/" + rest
+	}
+	return path
+}
+
 func (flow *wizard) load(path string) tea.Cmd {
+	path = fromHome(path)
 	before := len(flow.settings.Notes)
 	if !readable(path) {
 		flow.notice = "Could not read " + path

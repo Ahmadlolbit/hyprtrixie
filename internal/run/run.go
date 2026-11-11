@@ -36,6 +36,7 @@ var (
 	ErrStopped = errors.New("stopped before it started")
 	stopped    atomic.Bool
 	traced     atomic.Pointer[io.Writer]
+	answers    atomic.Pointer[sync.Map]
 	english    = []string{"LC_ALL=C.UTF-8", "LANGUAGE="}
 )
 
@@ -258,6 +259,26 @@ func CaptureTo(limit time.Duration, messages io.Writer, name string, args ...str
 
 func CaptureQuiet(limit time.Duration, name string, args ...string) (string, error) {
 	return captureQuiet(limit, nil, name, args)
+}
+
+func Remember() func() {
+	answers.Store(&sync.Map{})
+	return func() { answers.Store(nil) }
+}
+
+func CaptureOnce(limit time.Duration, name string, args ...string) (string, error) {
+	known := answers.Load()
+	key := strings.Join(append([]string{name}, args...), "\x00")
+	if known != nil {
+		if output, found := known.Load(key); found {
+			return output.(string), nil
+		}
+	}
+	output, err := CaptureQuiet(limit, name, args...)
+	if known != nil && err == nil {
+		known.Store(key, output)
+	}
+	return output, err
 }
 
 func CaptureInEnglish(limit time.Duration, name string, args ...string) (string, error) {
