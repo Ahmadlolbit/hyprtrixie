@@ -15,11 +15,11 @@ as_root() {
     "$@"
     return
   fi
-  if command -v sudo >/dev/null && sudo "$@"; then
-    return
+  if ! command -v sudo >/dev/null || ! sudo -v; then
+    printf 'This needs root, and this account cannot use sudo yet. Log in as root and run: %s\n' "$0" >&2
+    exit 1
   fi
-  printf 'This needs root, and this account cannot use sudo yet. Log in as root and run: %s\n' "$0" >&2
-  exit 1
+  sudo "$@"
 }
 
 needs_root() {
