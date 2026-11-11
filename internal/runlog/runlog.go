@@ -79,12 +79,12 @@ func Start(what string) (*Log, error) {
 		return nil, err
 	}
 	hideOldSecrets(dir)
-	name := "run-" + time.Now().Format(runStamp) + ".log"
-	log := &Log{file: filepath.Join(dir, name)}
-	if err := add(log.file, os.O_CREATE, nil); err != nil {
+	path, err := atomic.Fresh(dir, "run-"+time.Now().Format(runStamp), ".log", fileMode)
+	if err != nil {
 		return nil, err
 	}
-	if err := atomic.Symlink(name, filepath.Join(dir, "latest.log")); err != nil {
+	log := &Log{file: path}
+	if err := atomic.Symlink(filepath.Base(path), filepath.Join(dir, "latest.log")); err != nil {
 		log.Line("warn", "cannot point latest.log at this run: "+err.Error())
 	}
 	log.Line("info", "hyprtrixie "+env.Version+" started ("+what+")")
