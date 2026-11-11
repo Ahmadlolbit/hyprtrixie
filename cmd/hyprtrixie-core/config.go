@@ -116,11 +116,11 @@ func configCommand() int {
 	case "edit":
 		return asRoot("config edit", configEdit)
 	case "reset":
-		return asRoot("config reset", configReset)
+		return asRoot("config reset", alone(configReset))
 	case "export":
 		return say(presets.Export(config.Read(config.Path())))
 	case "import":
-		return asRoot("config import", configImport)
+		return asRoot("config import", alone(configImport))
 	}
 	return fail("usage: hyprtrixie config [show|path|edit|reset|export|import FILE|URL]")
 }
