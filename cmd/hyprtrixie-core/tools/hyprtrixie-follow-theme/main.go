@@ -272,19 +272,21 @@ func paint(initramfs bool) int {
 }
 
 func paintOnce(current theme, initramfs bool) int {
-	if follow.Setting(current.settings, "splash") == "yes" && !splash(current, initramfs) {
-		return 1
-	}
-	if follow.Setting(current.settings, "menu") == "yes" && fsutil.IsDir(grubDir) && !menu(current) {
-		return 1
+	painted := true
+	if follow.Setting(current.settings, "menu") == "yes" && fsutil.IsDir(grubDir) {
+		painted = menu(current)
 	}
 	if follow.Setting(current.settings, "console") == "yes" {
 		console(current)
 	}
-	if fsutil.IsDir(sddmDir) && !loginScreen(current) {
-		return 1
+	if fsutil.IsDir(sddmDir) {
+		painted = loginScreen(current) && painted
 	}
-	if !paintBrowsers(current) {
+	painted = paintBrowsers(current) && painted
+	if follow.Setting(current.settings, "splash") == "yes" {
+		painted = splash(current, initramfs) && painted
+	}
+	if !painted {
 		return 1
 	}
 	return 0
