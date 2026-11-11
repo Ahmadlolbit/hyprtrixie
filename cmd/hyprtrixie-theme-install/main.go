@@ -68,6 +68,7 @@ func install(url, dir string) bool {
 	part := dir + ".part"
 	os.RemoveAll(part)
 	defer os.RemoveAll(part)
+	os.Setenv("GIT_TERMINAL_PROMPT", "0")
 	if run.Status("git", "-c", "http.lowSpeedLimit=1000", "-c", "http.lowSpeedTime=60", "clone", "--quiet", "--depth", "1", "--", url, part) != 0 {
 		return false
 	}

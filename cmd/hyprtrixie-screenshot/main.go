@@ -29,6 +29,7 @@ func windowArea() (string, bool) {
 	}
 	if window.Size[0] == 0 || window.Size[1] == 0 {
 		fmt.Fprintln(os.Stderr, "no active window")
+		notify.Post([]string{"--app-name=Screenshot"}, "No window to capture", "")
 		return "", false
 	}
 	return fmt.Sprintf("%d,%d %dx%d", window.At[0], window.At[1], window.Size[0], window.Size[1]), true
