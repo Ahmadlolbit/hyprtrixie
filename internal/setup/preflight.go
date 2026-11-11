@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
@@ -26,8 +27,8 @@ const (
 )
 
 var (
-	accountName = regexp.MustCompile(`^[a-z_][a-z0-9_-]{0,31}$`)
-	adminRule   = regexp.MustCompile(`\(ALL( : ALL)?\) ALL`)
+	accountName = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[a-z_][a-z0-9_-]{0,31}$`) })
+	adminRule   = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`\(ALL( : ALL)?\) ALL`) })
 	errNoAnswer = errors.New("no answer")
 )
 
@@ -132,7 +133,7 @@ func (context *Context) makeAccount(log *runlog.Log) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if !accountName.MatchString(name) {
+	if !accountName().MatchString(name) {
 		fmt.Fprintln(log, "Account names use lowercase letters, digits, - and _.")
 		return "", holds(false)
 	}
@@ -298,7 +299,7 @@ func (context *Context) userIsAdmin(*runlog.Log) error {
 		return holds(false)
 	}
 	output, err := run.CaptureQuiet(run.Quick, "sudo", "-l", "-U", context.Person.Name)
-	return holds(err == nil && adminRule.MatchString(output))
+	return holds(err == nil && adminRule().MatchString(output))
 }
 
 func preflightChecks(context *Context) {

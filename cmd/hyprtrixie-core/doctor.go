@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -24,6 +26,9 @@ const (
 	failedFull  = 95
 	wornBattery = 70
 	maxShown    = 3
+	noMatch     = 1
+	inactive    = 3
+	unknownUnit = 4
 )
 
 var desktopPrograms = [][2]string{
@@ -62,13 +67,36 @@ func tooLong(check string) {
 	ui.Skip(check + " took longer than a minute")
 }
 
+func couldNot(what, program string, err error) {
+	reason := program + " failed"
+	if errors.Is(err, exec.ErrNotFound) {
+		reason = program + " isn't installed"
+	}
+	ui.Warn("Couldn't check " + what + ": " + reason)
+}
+
+func unchecked(what, doing, program string, err error) bool {
+	switch {
+	case err == nil:
+		return false
+	case run.TimedOut(err):
+		tooLong(doing)
+	default:
+		couldNot(what, program, err)
+	}
+	return true
+}
+
 func (visit *checkup) offer(question string, apply func() bool) {
 	visit.fixes = append(visit.fixes, fix{question, apply})
 }
 
-func (visit *checkup) running(args ...string) error {
+func (visit *checkup) running(args ...string) (bool, error) {
 	_, err := run.Capture(visit.limit, "pgrep", append([]string{"-u", visit.person.UID}, args...)...)
-	return err
+	if err != nil && !run.TimedOut(err) && run.Code(err) == noMatch {
+		return false, nil
+	}
+	return err == nil, err
 }
 
 func succeeded(name string, args ...string) bool {
@@ -87,11 +115,11 @@ func (visit *checkup) restart(name string) bool {
 func (visit *checkup) missingPrograms() ([]string, error) {
 	var missing []string
 	for _, program := range desktopPrograms {
-		err := visit.running("-f", program[1])
-		if run.TimedOut(err) {
+		found, err := visit.running("-f", program[1])
+		if err != nil {
 			return nil, err
 		}
-		if err != nil {
+		if !found {
 			missing = append(missing, program[0])
 		}
 	}
@@ -99,8 +127,8 @@ func (visit *checkup) missingPrograms() ([]string, error) {
 }
 
 func (visit *checkup) desktop() {
-	err := visit.running("-x", "Hyprland")
-	if err != nil && !run.TimedOut(err) {
+	up, err := visit.running("-x", "Hyprland")
+	if err == nil && !up {
 		ui.Skip("Desktop programs: Hyprland isn't running for " + visit.person.Name)
 		return
 	}
@@ -108,8 +136,7 @@ func (visit *checkup) desktop() {
 	if err == nil {
 		missing, err = visit.missingPrograms()
 	}
-	if run.TimedOut(err) {
-		tooLong("Checking the desktop programs")
+	if unchecked("the desktop programs", "Checking the desktop programs", "pgrep", err) {
 		return
 	}
 	if len(missing) == 0 {
@@ -137,17 +164,32 @@ func (visit *checkup) userSystemctl(args ...string) []string {
 	return visit.person.RunuserArgs(append([]string{"env", "XDG_RUNTIME_DIR=" + visit.person.Runtime(), "systemctl", "--user"}, args...)...)
 }
 
-func (visit *checkup) services() {
+func (visit *checkup) failedUnits() ([]string, []string, bool, bool) {
 	output, err := run.CaptureQuiet(visit.limit, "systemctl", "--failed", "--no-legend", "--plain")
 	system := firstWords(output)
 	output, userErr := run.CaptureQuiet(visit.limit, "runuser", visit.userSystemctl("--failed", "--no-legend", "--plain")...)
 	user := firstWords(output)
 	if run.TimedOut(err) || run.TimedOut(userErr) {
 		tooLong("Checking the services")
+		return nil, nil, false, false
+	}
+	if unchecked("the services", "Checking the services", "systemctl", err) {
+		return nil, nil, false, false
+	}
+	return system, user, !unchecked("your own services", "Checking the services", "systemctl --user", userErr), true
+}
+
+func (visit *checkup) services() {
+	system, user, ownChecked, ok := visit.failedUnits()
+	if !ok {
+		return
+	}
+	if len(system)+len(user) == 0 && ownChecked {
+		ui.OK("No service has failed")
 		return
 	}
 	if len(system)+len(user) == 0 {
-		ui.OK("No service has failed")
+		ui.OK("No system service has failed")
 		return
 	}
 	names := slices.Clone(system)
@@ -168,23 +210,31 @@ func (visit *checkup) services() {
 	}
 }
 
-func (visit *checkup) timers() error {
+func (visit *checkup) timers() (bool, error) {
 	for _, unit := range []string{"snapper-timeline.timer", "snapper-cleanup.timer"} {
-		if _, err := run.CaptureQuiet(visit.limit, "systemctl", "is-active", "--quiet", unit); err != nil {
-			return err
+		_, err := run.CaptureQuiet(visit.limit, "systemctl", "is-active", "--quiet", unit)
+		if err == nil {
+			continue
 		}
+		if code := run.Code(err); !run.TimedOut(err) && (code == inactive || code == unknownUnit) {
+			return false, nil
+		}
+		return false, err
 	}
-	return nil
+	return true, nil
 }
 
 func newestSnapshot(limit time.Duration) (int64, bool, error) {
 	output, err := run.CaptureQuiet(limit, "snapper", "--csvout", "--no-headers", "-c", "root", "list", "--columns", "date")
 	last := output[strings.LastIndexByte(output, '\n')+1:]
-	if last == "" || run.TimedOut(err) {
+	if last == "" || err != nil {
 		return 0, false, err
 	}
 	stamp, err := run.CaptureQuiet(limit, "date", "-d", last, "+%s")
 	seconds, problem := strconv.ParseInt(stamp, 10, 64)
+	if !run.TimedOut(err) {
+		err = nil
+	}
 	return seconds, problem == nil, err
 }
 
@@ -193,12 +243,11 @@ func (visit *checkup) snapshots(setting string) {
 		ui.Skip("Snapshots are turned off")
 		return
 	}
-	err := visit.timers()
-	if run.TimedOut(err) {
-		tooLong("Checking the snapshots")
+	active, err := visit.timers()
+	if unchecked("the snapshot timers", "Checking the snapshots", "systemctl", err) {
 		return
 	}
-	if err != nil {
+	if !active {
 		ui.Fail("The snapshot timers aren't running")
 		ui.Note("Fix: systemctl enable --now snapper-timeline.timer snapper-cleanup.timer")
 		visit.offer("Turn the snapshot timers back on", func() bool {
@@ -207,8 +256,7 @@ func (visit *checkup) snapshots(setting string) {
 		return
 	}
 	last, ok, err := newestSnapshot(visit.limit)
-	if run.TimedOut(err) {
-		tooLong("Checking the snapshots")
+	if unchecked("the snapshots", "Checking the snapshots", "snapper", err) {
 		return
 	}
 	if !ok {
@@ -268,6 +316,10 @@ func (visit *checkup) disk() {
 	found, err := filesystems(visit.limit)
 	if run.TimedOut(err) {
 		tooLong("Checking the disks")
+		return
+	}
+	if len(found) == 0 {
+		couldNot("the disks", "df", err)
 		return
 	}
 	offered := false
@@ -335,8 +387,7 @@ func checkBatteries() {
 
 func (visit *checkup) firmware() {
 	output, err := run.CaptureQuiet(visit.limit, "journalctl", "-k", "-b", "-p", "3", "--no-pager", "-q", "-o", "cat")
-	if run.TimedOut(err) {
-		tooLong("Reading the kernel log")
+	if unchecked("the kernel log", "Reading the kernel log", "journalctl", err) {
 		return
 	}
 	lines := slices.Compact(run.Sorted(run.Lines(output)))
@@ -359,8 +410,7 @@ func (visit *checkup) firmware() {
 
 func (visit *checkup) updates() {
 	output, err := run.CaptureInEnglish(visit.limit, "apt", "list", "--upgradable")
-	if run.TimedOut(err) {
-		tooLong("Checking for updates")
+	if unchecked("for updates", "Checking for updates", "apt", err) {
 		return
 	}
 	count := 0
@@ -398,6 +448,8 @@ func (visit *checkup) files() {
 		ui.Note("Fix: sudo hyprtrixie install puts them back")
 	case run.TimedOut(err):
 		tooLong("Comparing the installed files")
+	case err != nil:
+		couldNot("the installed files", "sha256sum", err)
 	default:
 		ui.OK(fmt.Sprintf("Every installed file is in place (%d edited by you)", edited))
 	}

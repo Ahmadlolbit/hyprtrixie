@@ -12,7 +12,11 @@ var (
 )
 
 func USBMount(location string) (string, bool) {
-	mount := driveMount.FindString(location)
+	_, path, ok := local(location)
+	if !ok {
+		return "", false
+	}
+	mount := driveMount.FindString(path)
 	return mount, mount != ""
 }
 

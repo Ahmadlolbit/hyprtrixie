@@ -78,11 +78,15 @@ func (current *Config) Merge(path string) bool {
 	if !fsutil.IsFile(path) {
 		return false
 	}
-	text := strings.ReplaceAll(fsutil.Optional(path), "\r\n", "\n")
+	current.MergeText(path, fsutil.Optional(path))
+	return true
+}
+
+func (current *Config) MergeText(path, text string) {
+	text = strings.ReplaceAll(text, "\r\n", "\n")
 	loaded := current.apply(path, strings.TrimSuffix(text, "\r"))
 	current.migrate(cmp.Or(loaded, strconv.Itoa(version)))
 	current.validate()
-	return true
 }
 
 func (current *Config) Get(key string) string {

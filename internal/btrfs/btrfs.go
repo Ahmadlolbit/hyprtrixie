@@ -114,23 +114,26 @@ func FstabEnsure(log *runlog.Log, spec, target, kind, options string) error {
 		return err
 	}
 	wanted := spec + " " + target + " " + kind + " " + options + " 0 0"
-	var found []int
-	for index, line := range lines {
-		if matches(line, spec, target) {
-			found = append(found, index)
+	var kept []string
+	found := 0
+	for _, line := range lines {
+		if !matches(line, spec, target) {
+			kept = append(kept, line)
+			continue
 		}
+		if found == 0 {
+			kept = append(kept, wanted)
+		}
+		found++
 	}
-	if len(found) == 1 && lines[found[0]] == wanted {
+	if found == 1 && slices.Contains(lines, wanted) {
 		return nil
 	}
-	for _, index := range found {
-		lines[index] = wanted
-	}
-	if len(found) == 0 {
-		lines = append(lines, wanted)
+	if found == 0 {
+		kept = append(kept, wanted)
 	}
 	log.Line("info", "fstab: "+wanted)
-	return writeTable(lines)
+	return writeTable(kept)
 }
 
 func FstabDrop(spec, target string) error {

@@ -62,16 +62,17 @@ type Options struct {
 }
 
 type session struct {
-	mode     string
-	options  Options
-	log      *runlog.Log
-	runner   *step.Runner
-	person   account.Account
-	settings *config.Config
-	canAsk   bool
-	before   []string
-	started  time.Time
-	results  map[string]string
+	mode      string
+	options   Options
+	log       *runlog.Log
+	runner    *step.Runner
+	person    account.Account
+	settings  *config.Config
+	canAsk    bool
+	before    []string
+	started   time.Time
+	results   map[string]string
+	installed map[string]bool
 }
 
 func setConfig(options *Options, value string) error {
@@ -186,7 +187,7 @@ func settingsFor(options Options) (*config.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	settings.LoadText(options.Config, string(text))
+	settings.MergeText(options.Config, string(text))
 	return settings, nil
 }
 
@@ -288,7 +289,10 @@ func (work *session) recordStart(id string) recording {
 	if !work.changesFiles() {
 		return recording{}
 	}
-	before := work.packagesNow(id)
+	before := work.installed
+	if before == nil {
+		before = work.packagesNow(id)
+	}
 	ledger.Begin(id, before)
 	return recording{true, before}
 }
@@ -301,6 +305,7 @@ func (work *session) recordEnd(id string, record recording) {
 	if record.before != nil {
 		after = work.packagesNow(id)
 	}
+	work.installed = after
 	if err := ledger.End(id, record.before, after); err != nil {
 		work.log.Line("warn", "cannot record what module "+id+" did: "+err.Error())
 	}
