@@ -77,6 +77,7 @@ Label {
     owner: root
 
     RowLayout {
+      visible: root.shown
       Layout.preferredWidth: Theme.size(260)
       spacing: 12
 
@@ -117,6 +118,7 @@ Label {
     }
 
     Label {
+      Layout.preferredWidth: Theme.size(260)
       text: "Power mode"
       font.bold: true
     }
