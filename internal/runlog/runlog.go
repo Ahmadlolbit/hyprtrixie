@@ -60,6 +60,7 @@ func hideOldSecrets(dir string) {
 type Log struct {
 	file        string
 	copy        string
+	copied      *os.File
 	mirror      func([]byte)
 	fileWarning sync.Once
 	copyWarning sync.Once
@@ -114,24 +115,38 @@ func hideInCopy(file *os.File) error {
 	if err := file.Truncate(0); err != nil {
 		return err
 	}
-	_, err = file.WriteAt([]byte(hidden), 0)
+	_, err = file.Write([]byte(hidden))
 	return err
 }
 
-func startCopy(target string, earlier []byte) error {
-	file, err := private(target, os.O_RDWR|os.O_CREATE, privateFile)
+func openCopy(folder *os.File, name string) (*os.File, error) {
+	how := os.O_RDWR | os.O_APPEND | os.O_CREATE | syscall.O_NOFOLLOW | syscall.O_NONBLOCK | syscall.O_CLOEXEC
+	handle, err := syscall.Openat(int(folder.Fd()), name, how, privateFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer file.Close()
-	if err := hideInCopy(file); err != nil {
-		return err
+	file := os.NewFile(uintptr(handle), filepath.Join(folder.Name(), name))
+	if err := file.Chmod(privateFile); err != nil {
+		file.Close()
+		return nil, err
 	}
-	if _, err := file.Seek(0, io.SeekEnd); err != nil {
-		return err
+	return file, nil
+}
+
+func startCopy(folder *os.File, earlier []byte) (*os.File, error) {
+	file, err := openCopy(folder, "runbook.log")
+	if err != nil {
+		return nil, err
 	}
-	_, err = file.Write(append([]byte("\n"), earlier...))
-	return err
+	err = hideInCopy(file)
+	if err == nil {
+		_, err = file.Write(append([]byte("\n"), earlier...))
+	}
+	if err != nil {
+		file.Close()
+		return nil, err
+	}
+	return file, nil
 }
 
 func (log *Log) Attach(home, owner string) error {
@@ -143,16 +158,16 @@ func (log *Log) Attach(home, owner string) error {
 	if err != nil {
 		return fmt.Errorf("%s is not a folder", dir)
 	}
-	folder.Close()
+	defer folder.Close()
 	earlier, err := os.ReadFile(log.file)
 	if err != nil {
 		return err
 	}
-	target := filepath.Join(dir, "runbook.log")
-	if err := startCopy(target, earlier); err != nil {
+	copied, err := startCopy(folder, earlier)
+	if err != nil {
 		return err
 	}
-	log.copy = target
+	log.copy, log.copied = copied.Name(), copied
 	run.Quiet(run.Quick, "chown", "-R", owner+":", dir)
 	return nil
 }
@@ -186,6 +201,14 @@ func add(path string, how int, data []byte) error {
 	return err
 }
 
+func (log *Log) toCopy(data []byte) error {
+	if log.copied == nil {
+		return add(log.copy, syscall.O_NOFOLLOW|syscall.O_NONBLOCK, data)
+	}
+	_, err := log.copied.Write(data)
+	return err
+}
+
 func warn(once *sync.Once, err error) {
 	if err != nil {
 		once.Do(func() { fmt.Fprintln(os.Stderr, "cannot write to the log:", err) })
@@ -198,7 +221,7 @@ func (log *Log) Mirror(to func([]byte)) {
 
 func (log *Log) Write(data []byte) (int, error) {
 	warn(&log.fileWarning, add(log.file, os.O_CREATE, data))
-	warn(&log.copyWarning, add(log.copy, syscall.O_NOFOLLOW|syscall.O_NONBLOCK, data))
+	warn(&log.copyWarning, log.toCopy(data))
 	if log.mirror != nil {
 		log.mirror(data)
 	}
