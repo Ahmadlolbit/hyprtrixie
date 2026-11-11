@@ -58,6 +58,7 @@ func Holders(root string) []string {
 }
 
 func Follow(root string, out io.Writer) error {
+	endWithParent()
 	watch, err := watchDevices(root)
 	if err != nil {
 		return follow(root, out, poller{})
