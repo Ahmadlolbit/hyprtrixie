@@ -210,7 +210,14 @@ func everySnapshotTimer() []string {
 }
 
 func aptSnapshotsOff() bool {
-	return strings.Trim(settingIn(snapperDefaults(), aptSnapshots), `"'`) == "yes"
+	lines, _ := fsutil.Lines(snapperDefaults())
+	value := ""
+	for _, line := range lines {
+		if rest, found := strings.CutPrefix(strings.TrimSpace(line), aptSnapshots+"="); found {
+			value = rest
+		}
+	}
+	return strings.Trim(value, `"'`) == "yes"
 }
 
 func anyTimerOn(timers []string) bool {
