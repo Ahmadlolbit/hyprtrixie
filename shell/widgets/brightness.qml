@@ -14,7 +14,10 @@ Label {
     anchors.fill: parent
     cursorShape: Qt.PointingHandCursor
     onClicked: popup.toggle()
-    onWheel: wheel => Brightness.adjust(wheel.angleDelta.y > 0 ? "5%+" : "5%-")
+    onWheel: wheel => {
+      if (wheel.angleDelta.y !== 0)
+        Brightness.adjust(wheel.angleDelta.y > 0 ? "5%+" : "5%-");
+    }
   }
 
   BarPopup {
@@ -69,6 +72,7 @@ Label {
       Slider {
         Layout.fillWidth: true
         value: Brightness.keyboardLevel
+        step: Math.max(0.05, 1 / Math.max(1, Brightness.keyboardMaximum))
         onMoved: level => Brightness.setKeyboardLevel(level)
       }
 

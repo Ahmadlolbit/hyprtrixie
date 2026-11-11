@@ -16,7 +16,7 @@ Singleton {
 
     path: "/proc/stat"
     onLoaded: {
-      const fields = text().split("\n")[0].trim().split(/\s+/).slice(1).map(Number);
+      const fields = text().split("\n")[0].trim().split(/\s+/).slice(1, 9).map(Number);
       const idle = fields[3] + fields[4];
       const total = fields.reduce((sum, value) => sum + value, 0);
       if (root.last)
@@ -46,7 +46,7 @@ Singleton {
 
   Timer {
     interval: 2000
-    running: true
+    running: !Screens.dark && !Theme.zen
     repeat: true
     triggeredOnStart: true
     onTriggered: stat.reload()
@@ -54,7 +54,7 @@ Singleton {
 
   Timer {
     interval: 5000
-    running: true
+    running: !Screens.dark && !Theme.zen
     repeat: true
     triggeredOnStart: true
     onTriggered: meminfo.reload()

@@ -98,7 +98,7 @@ Singleton {
   function heard() {
     if (settle.running)
       return;
-    settle.interval = Math.max(300, refreshed + 2000 - Date.now());
+    settle.interval = Math.max(300, Math.min(2000, refreshed + 2000 - Date.now()));
     settle.start();
   }
 

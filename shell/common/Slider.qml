@@ -4,6 +4,7 @@ Item {
   id: root
 
   property real value: 0
+  property real step: 0.05
   readonly property real shown: Math.max(0, Math.min(1, value))
 
   signal moved(real level)
@@ -47,6 +48,9 @@ Item {
     cursorShape: Qt.PointingHandCursor
     onPressed: mouse => place(mouse.x)
     onPositionChanged: mouse => place(mouse.x)
-    onWheel: wheel => root.moved(wheel.angleDelta.y > 0 ? Math.max(root.value, Math.min(1, root.value + 0.05)) : Math.max(0, root.value - 0.05))
+    onWheel: wheel => {
+      if (wheel.angleDelta.y !== 0)
+        root.moved(wheel.angleDelta.y > 0 ? Math.max(root.value, Math.min(1, root.value + root.step)) : Math.max(0, root.value - root.step));
+    }
   }
 }

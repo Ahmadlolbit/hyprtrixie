@@ -18,6 +18,10 @@ type devices struct {
 	root       string
 }
 
+func endWithParent() {
+	syscall.RawSyscall(syscall.SYS_PRCTL, syscall.PR_SET_PDEATHSIG, uintptr(syscall.SIGTERM), 0)
+}
+
 func watchDevices(root string) (changes, error) {
 	descriptor, err := syscall.InotifyInit1(syscall.IN_NONBLOCK | syscall.IN_CLOEXEC)
 	if err != nil {
