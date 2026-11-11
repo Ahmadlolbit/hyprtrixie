@@ -26,7 +26,7 @@ type program struct {
 }
 
 var programs = map[string]program{
-	"bar":       {[]string{"qs", "-p", "/usr/share/hyprtrixie/shell"}, []string{"-vv", "--log-times"}},
+	"bar":       {[]string{"qs", "-p", "/usr/share/hyprtrixie/shell", "-n"}, []string{"-vv", "--log-times"}},
 	"hypridle":  {[]string{"hypridle"}, []string{"--verbose"}},
 	"hyprpaper": {[]string{"hyprpaper"}, []string{"--verbose"}},
 	"elephant":  {[]string{"elephant"}, []string{"--debug"}},
