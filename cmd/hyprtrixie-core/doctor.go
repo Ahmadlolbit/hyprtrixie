@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/btrfs"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/deployed"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
@@ -241,6 +242,10 @@ func newestSnapshot(limit time.Duration) (int64, bool, error) {
 func (visit *checkup) snapshots(setting string) {
 	if setting != "yes" {
 		ui.Skip("Snapshots are turned off")
+		return
+	}
+	if kind := btrfs.RootType(); kind != "" && kind != "btrfs" {
+		ui.Skip("Snapshots need a btrfs root; this system uses " + kind)
 		return
 	}
 	active, err := visit.timers()
