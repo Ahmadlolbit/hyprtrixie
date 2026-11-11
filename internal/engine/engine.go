@@ -37,6 +37,7 @@ const (
 	askMode      = "ask"
 	continueMode = "continue"
 	installMode  = "install"
+	verifyMode   = "verify"
 	accountMode  = "account"
 	appMode      = "app-"
 	noModule     = "none"
@@ -255,8 +256,22 @@ func (work *session) context() (*setup.Context, error) {
 	return context, err
 }
 
+func (work *session) kept() map[string]string {
+	if work.mode != verifyMode {
+		return work.results
+	}
+	statuses := fsutil.Optional(modules.StatusFile())
+	kept := map[string]string{}
+	for id, result := range work.results {
+		if status, _ := modules.StatusOf(statuses, id); status != modules.Undone {
+			kept[id] = result
+		}
+	}
+	return kept
+}
+
 func (work *session) save() {
-	if err := modules.SaveStatus(work.results); err != nil {
+	if err := modules.SaveStatus(work.kept()); err != nil {
 		work.log.Line("warn", "cannot save the status: "+err.Error())
 	}
 }
@@ -509,7 +524,7 @@ func Account(args []string) int {
 }
 
 func Verify(args []string) int {
-	return parsed("verify", args, (*session).verify)
+	return parsed(verifyMode, args, (*session).verify)
 }
 
 func (work *session) changeApp(app apps.App, change func(*config.Config), steps func(*setup.Context, apps.App)) int {
