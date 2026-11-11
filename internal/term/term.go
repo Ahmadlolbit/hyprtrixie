@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync/atomic"
 	"syscall"
 	"unsafe"
 
@@ -11,6 +12,8 @@ import (
 )
 
 const discardTyped = 0x540b
+
+var asking atomic.Pointer[syscall.Termios]
 
 func attributes(file *os.File, request uintptr, state *syscall.Termios) error {
 	_, _, failed := syscall.Syscall(syscall.SYS_IOCTL, file.Fd(), request, uintptr(unsafe.Pointer(state)))
@@ -50,21 +53,29 @@ func noEcho() (func(), bool) {
 }
 
 func adjust(change func(*syscall.Termios)) (func(), bool) {
-	var saved syscall.Termios
-	if attributes(os.Stdin, syscall.TCGETS, &saved) != nil {
+	saved := &syscall.Termios{}
+	if attributes(os.Stdin, syscall.TCGETS, saved) != nil {
 		return nil, false
 	}
 	allowQuit := cleanup.IgnoreQuit()
-	restore := func() { attributes(os.Stdin, syscall.TCSETS, &saved) }
+	restore := func() { attributes(os.Stdin, syscall.TCSETS, saved) }
 	stop := cleanup.OnSignal(restore)
-	changed := saved
+	changed := *saved
 	change(&changed)
 	attributes(os.Stdin, syscall.TCSETS, &changed)
+	asking.Store(saved)
 	return func() {
+		asking.CompareAndSwap(saved, nil)
 		stop()
 		restore()
 		allowQuit()
 	}, true
+}
+
+func Restore() {
+	if saved := asking.Load(); saved != nil {
+		attributes(os.Stdin, syscall.TCSETS, saved)
+	}
 }
 
 func ReadKey() {
