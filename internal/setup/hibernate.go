@@ -175,5 +175,6 @@ func resumeReady(*runlog.Log) error {
 	if _, err := os.Stat(resumeGrub()); err != nil {
 		return err
 	}
-	return nil
+	rebuild := followUp{name: resumeFollowUp}
+	return expect(!rebuild.due(), "the boot image and the boot menu don't have the resume settings yet")
 }
