@@ -13,6 +13,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/lock"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
@@ -137,6 +138,9 @@ func update() int {
 	}
 	if os.Geteuid() == 0 {
 		return fail("run it as yourself, without sudo: hyprtrixie update")
+	}
+	if lock.Busy() {
+		return fail("a Hyprtrixie run is still going, so nothing was updated: run hyprtrixie update once it ends")
 	}
 	wanted := func(name string) bool { return part == "all" || part == name }
 	if wanted("hyprtrixie") && run.Quiet(run.Quick, "git", "-C", root(), "rev-parse", "--git-dir") != 0 {
