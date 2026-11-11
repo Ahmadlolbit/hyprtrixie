@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
@@ -67,6 +68,15 @@ func presetFile(source string) (string, func(), error) {
 	return path, done, nil
 }
 
+func printable(text string) string {
+	return strings.Map(func(letter rune) rune {
+		if unicode.IsControl(letter) {
+			return -1
+		}
+		return letter
+	}, text)
+}
+
 func configImport() int {
 	source := env.Arg(3)
 	if source == "" {
@@ -81,7 +91,7 @@ func configImport() int {
 	seen := len(current.Notes)
 	changes := presets.Import(current, path)
 	for _, note := range current.Notes[seen:] {
-		fmt.Fprintln(os.Stderr, note.Text)
+		fmt.Fprintln(os.Stderr, printable(note.Text))
 	}
 	if err := current.Save(config.Path()); err != nil {
 		return fail("%v", err)
