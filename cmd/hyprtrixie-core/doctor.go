@@ -108,7 +108,7 @@ func (visit *checkup) restart(name string) bool {
 	instance := hyprInstance(visit.person)
 	if instance == "" {
 		ui.Print("Hyprland is not running\n")
-		return true
+		return false
 	}
 	return succeeded("runuser", hyprCommand(visit.person, instance, "hyprctl", "dispatch", "hl.dsp.exec_cmd([[hyprtrixie-start "+name+"]])")...)
 }
