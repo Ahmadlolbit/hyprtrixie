@@ -163,7 +163,7 @@ func removePackages(log *runlog.Log, app apps.App) error {
 	}
 	kept, err := apt.Remove(log, present...)
 	if err == nil && len(kept) > 0 {
-		err = log.Failed(strings.Join(kept, " ") + " stays installed, because other packages need it")
+		err = log.Failed(strings.Join(kept, " ") + " stays installed, because other installed packages depend on it or recommend it")
 	}
 	return err
 }
