@@ -308,8 +308,8 @@
   "toggle.bluetooth": {
     "glyph": "\udb80\udcaf",
     "label": "Bluetooth",
-    "action": "if bluetoothctl show | grep -q 'Powered: yes'; then bluetoothctl power off; else bluetoothctl power on; fi",
-    "state": "bluetoothctl show | grep -q 'Powered: yes'",
+    "action": "if timeout 2 bluetoothctl show | grep -q 'Powered: yes'; then timeout 5 bluetoothctl power off; else timeout 5 bluetoothctl power on; fi",
+    "state": "timeout 2 bluetoothctl show | grep -q 'Powered: yes'",
     "keywords": [
       "bluetooth"
     ]
