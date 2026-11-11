@@ -72,6 +72,7 @@ Label {
       Slider {
         Layout.fillWidth: true
         value: Brightness.keyboardLevel
+        step: Math.max(0.05, 1 / Math.max(1, Brightness.keyboardMaximum))
         onMoved: level => Brightness.setKeyboardLevel(level)
       }
 
