@@ -376,6 +376,11 @@ func (theme *themeRun) btopFirstConfig(log *runlog.Log, conf string) error {
 	return theme.Person.Write(log, conf, btopTheme+"\n")
 }
 
+func btopThemed(conf string) bool {
+	lines, err := fsutil.Lines(conf)
+	return err == nil && !slices.ContainsFunc(lines, func(line string) bool { return strings.HasPrefix(line, btopSetting) && line != btopTheme })
+}
+
 func (theme *themeRun) btopSetup(log *runlog.Log) error {
 	conf := theme.Person.Path(".config/btop/btop.conf")
 	if !fsutil.IsFile(conf) {
@@ -383,6 +388,9 @@ func (theme *themeRun) btopSetup(log *runlog.Log) error {
 	}
 	if !fileLineHasPrefix(conf, btopSetting) {
 		return files.EnsureUserLine(log, theme.Person, conf, btopTheme)
+	}
+	if btopThemed(conf) {
+		return nil
 	}
 	return theme.Person.Run(log, "sed", "-i", "--follow-symlinks", "s|^"+btopSetting+".*|"+btopTheme+"|", conf)
 }
