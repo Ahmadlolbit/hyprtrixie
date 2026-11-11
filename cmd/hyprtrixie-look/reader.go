@@ -21,6 +21,14 @@ func readerSaid(text string) {
 }
 
 func readerOn() int {
+	return startReader(readerRunning)
+}
+
+func stopped() bool {
+	return false
+}
+
+func startReader(running func() bool) int {
 	if _, err := exec.LookPath(screenReader); err != nil {
 		fmt.Fprintln(os.Stderr, "The screen reader isn't installed: turn it on in Setup, under Look and feel.")
 		readerSaid("Not installed: turn it on in Setup, under Look and feel")
@@ -29,7 +37,7 @@ func readerOn() int {
 	if !put("reader", "yes") {
 		return 1
 	}
-	if !readerRunning() {
+	if !running() {
 		run.Quiet(run.Quick, "setsid", "-f", "hyprtrixie-start", screenReader)
 	}
 	readerSaid("Screen reader on")
@@ -52,5 +60,5 @@ func reader(args []string) int {
 	if readerRunning() {
 		return readerOff()
 	}
-	return readerOn()
+	return startReader(stopped)
 }
