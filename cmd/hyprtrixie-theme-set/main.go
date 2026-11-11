@@ -136,7 +136,10 @@ func stageFile(source, target string) error {
 	if err != nil {
 		return err
 	}
-	return atomic.Install(target, data, 0o644)
+	if err := os.Remove(target); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	return atomic.Stage(target, data, 0o644)
 }
 
 func stageImages(source, target string) error {
@@ -163,7 +166,7 @@ func stage(name, next string) error {
 		return err
 	}
 	if shipped := filepath.Join(systemRoot, "themes", name); fsutil.IsDir(shipped) {
-		if err := fsutil.CopyTree(shipped, next); err != nil {
+		if err := fsutil.StageTree(shipped, next); err != nil {
 			return err
 		}
 	}
@@ -248,7 +251,7 @@ func templates(dir string) []string {
 func renderOne(template, target string, replacer *strings.Replacer, scale float64) {
 	data, err := os.ReadFile(template)
 	if err == nil {
-		err = atomic.Write(target, []byte(theme.Sized(replacer.Replace(string(data)), scale)), 0o666)
+		err = atomic.Stage(target, []byte(theme.Sized(replacer.Replace(string(data)), scale)), 0o666)
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -470,6 +473,10 @@ func apply(name string) (paper, bool) {
 	before := shownBackground()
 	colors, apps, ok := prepare(name, next)
 	if !ok {
+		return paperKept, false
+	}
+	if err := atomic.SyncFolders(next); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		return paperKept, false
 	}
 	if err := swap(next, filepath.Join(state(), "theme")); err != nil {

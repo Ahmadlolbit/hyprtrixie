@@ -53,6 +53,30 @@ func InstallAs(path string, data []byte, perm os.FileMode, uid, gid int) error {
 	})
 }
 
+func Stage(path string, data []byte, perm os.FileMode) error {
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, perm)
+	if err != nil {
+		return err
+	}
+	_, err = file.Write(data)
+	if err == nil {
+		err = file.Sync()
+	}
+	if closed := file.Close(); err == nil {
+		err = closed
+	}
+	return err
+}
+
+func SyncFolders(root string) error {
+	return filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil || !entry.IsDir() {
+			return err
+		}
+		return syncDir(path)
+	})
+}
+
 func Symlink(target, link string) error {
 	temp := temporary(link)
 	defer guarded(temp)()
