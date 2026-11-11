@@ -16,6 +16,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/files"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/modules"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
@@ -34,6 +35,9 @@ const (
 	grubDaemon        = "grub-btrfsd.service"
 	rollbackTool      = "/usr/local/sbin/snapper-rollback"
 	rollbackMount     = "/btrfsroot"
+	aptSnapshots      = "DISABLE_APT_SNAPSHOT"
+	bootSnapshots     = "snapper-boot.timer"
+	snapshotsModule   = "05"
 )
 
 var (
@@ -195,6 +199,91 @@ func snapperReady(*runlog.Log) error {
 	return quietly("snapper can't list the snapshots of /", "snapper", snapperArgs("list")...)
 }
 
+func snapshotsStopped() string {
+	return filepath.Join(env.StateDir(), "snapshots-stopped")
+}
+
+func everySnapshotTimer() []string {
+	return append(slices.Clone(snapshotTimers), bootSnapshots)
+}
+
+func aptSnapshotsOff() bool {
+	return strings.Trim(settingIn(snapperDefaults(), aptSnapshots), `"'`) == "yes"
+}
+
+func anyTimerOn(timers []string) bool {
+	for _, state := range []string{"is-enabled", "is-active"} {
+		if run.Quiet(run.Minute, "systemctl", append([]string{state, "--quiet"}, timers...)...) == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func snapshotsTurnOn(log *runlog.Log) error {
+	stopped, _ := fsutil.Lines(snapshotsStopped())
+	timers := slices.Clone(snapshotTimers)
+	if slices.Contains(stopped, bootSnapshots) {
+		timers = append(timers, bootSnapshots)
+	}
+	if err := service.Start(log, timers...); err != nil {
+		return err
+	}
+	if slices.Contains(stopped, aptSnapshots) {
+		if err := files.ConfSet(snapperDefaults(), aptSnapshots, `"no"`); err != nil {
+			return err
+		}
+	}
+	return removeFiles(snapshotsStopped())
+}
+
+func snapshotsStillTaken() bool {
+	setUp := slices.Contains(ledger.Load(snapshotsModule).Values(ledger.Wants), "snapper")
+	return setUp && fsutil.IsFile(snapperDefaults()) && (!aptSnapshotsOff() || anyTimerOn(everySnapshotTimer()))
+}
+
+func noteStopped(names []string) error {
+	kept, _ := fsutil.Lines(snapshotsStopped())
+	for _, name := range names {
+		if !slices.Contains(kept, name) {
+			kept = append(kept, name)
+		}
+	}
+	if err := os.MkdirAll(env.StateDir(), programMode); err != nil {
+		return err
+	}
+	return atomic.Write(snapshotsStopped(), []byte(strings.Join(kept, "\n")+"\n"), plainMode)
+}
+
+func snapshotsStop(log *runlog.Log) error {
+	timers := slices.DeleteFunc(everySnapshotTimer(), func(timer string) bool { return !service.Enabled(timer) && !service.Active(timer) })
+	changed := slices.Clone(timers)
+	if !aptSnapshotsOff() {
+		changed = append(changed, aptSnapshots)
+	}
+	if err := noteStopped(changed); err != nil {
+		return err
+	}
+	if err := service.Disable(log, timers...); err != nil {
+		return err
+	}
+	if slices.Contains(changed, aptSnapshots) {
+		if err := files.ConfSet(snapperDefaults(), aptSnapshots, `"yes"`); err != nil {
+			return err
+		}
+	}
+	log.Line("info", "no new snapshots are taken from now on; the ones taken so far stay, and sudo hyprtrixie cleanup or snapper delete removes them")
+	return nil
+}
+
+func snapshotsOff(context *Context) {
+	if !snapshotsStillTaken() {
+		context.Run.SkipModule("Snapshots are turned off in the configuration")
+		return
+	}
+	context.Run.Step("Stop taking new snapshots", snapshotsStop)
+}
+
 func timersActive(*runlog.Log) error {
 	for _, timer := range snapshotTimers {
 		if !service.Active(timer) {
@@ -313,7 +402,7 @@ func snapshotSteps(context *Context) {
 		context.Run.SkipModule("Snapshots need a btrfs root; this system uses " + btrfs.RootType())
 		return
 	case context.Config.Get("SNAPSHOTS") != "yes":
-		context.Run.SkipModule("Snapshots are turned off in the configuration")
+		snapshotsOff(context)
 		return
 	}
 	if btrfs.RootSubvolume() == installerRoot {
@@ -323,7 +412,7 @@ func snapshotSteps(context *Context) {
 	context.Run.Step("Install snapper", packages("snapshots"))
 	context.Run.Step("Mount the snapshots subvolume", snapshotsMount)
 	context.Run.Step("Configure snapper", context.snapperConfigure)
-	context.Run.Step("Turn on the snapshot timers", func(log *runlog.Log) error { return service.Start(log, snapshotTimers...) })
+	context.Run.Step("Turn on the snapshot timers", snapshotsTurnOn)
 	context.Run.Step("Take the first snapshot", snapperFirst)
 	context.Run.Step("Keep container storage out of snapshots", containerStorage)
 	context.Run.Step("Install grub-btrfs", menu.install)
