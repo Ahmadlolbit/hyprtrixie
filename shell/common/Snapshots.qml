@@ -17,7 +17,7 @@ Singleton {
   Process {
     id: check
 
-    command: ["sh", "-c", "command -v snapper >/dev/null || exit 0; snapper --csvout --no-headers -c root list --columns date 2>/dev/null | tail -n 1; systemctl is-active --quiet snapper-timeline.timer && echo timers-on || echo timers-off"]
+    command: ["sh", "-c", "command -v snapper >/dev/null || exit 0; ! grep -qx 'SNAPSHOTS=.no.' /etc/hyprtrixie/hyprtrixie.conf 2>/dev/null || exit 0; snapper --csvout --no-headers -c root list --columns date 2>/dev/null | tail -n 1; systemctl is-active --quiet snapper-timeline.timer && echo timers-on || echo timers-off"]
     stdout: StdioCollector {
       onStreamFinished: {
         const lines = text.trim().split("\n").filter(line => line !== "");
