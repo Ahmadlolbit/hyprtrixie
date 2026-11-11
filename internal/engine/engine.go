@@ -506,6 +506,7 @@ func entered(mode string, options Options, args []string, body func(*session) in
 	}
 	defer held.Close()
 	defer term.Keep()()
+	defer run.Remember()()
 	cleanup.SurviveBrokenPipes()
 	if options.Events {
 		cleanup.OwnGroup()
