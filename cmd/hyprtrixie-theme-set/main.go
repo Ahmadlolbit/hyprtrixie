@@ -281,8 +281,35 @@ func drawBackground(name string, colors theme.Colors, link string) {
 	symlink(drawnBackground(), link)
 }
 
+type paper int
+
+const (
+	paperKept paper = iota
+	paperShown
+	paperReloaded
+)
+
+func backgroundLink() string {
+	return filepath.Join(state(), "background")
+}
+
+func shownBackground() string {
+	target, _ := os.Readlink(backgroundLink())
+	return target
+}
+
+func paperChange(otherTheme bool, before string) paper {
+	switch {
+	case shownBackground() != before:
+		return paperShown
+	case otherTheme:
+		return paperReloaded
+	}
+	return paperKept
+}
+
 func pickBackground(name, previous string, colors theme.Colors) {
-	link := filepath.Join(state(), "background")
+	link := backgroundLink()
 	if previous == name && fsutil.Exists(link) {
 		return
 	}
@@ -409,17 +436,18 @@ func prepare(name, next string) (theme.Colors, theme.Colors, bool) {
 	return colors, apps, true
 }
 
-func apply(name string) bool {
+func apply(name string) (paper, bool) {
 	next := filepath.Join(filepath.Dir(state()), "next-theme")
 	defer cleanup.OnSignal(func() { os.RemoveAll(next) })()
 	previous, _ := fsutil.Text(filepath.Join(state(), "theme.name"))
+	before := shownBackground()
 	colors, apps, ok := prepare(name, next)
 	if !ok {
-		return false
+		return paperKept, false
 	}
 	if err := swap(next, filepath.Join(state(), "theme")); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		return false
+		return paperKept, false
 	}
 	if err := atomic.Write(filepath.Join(state(), "theme.name"), []byte(name+"\n"), 0o666); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -428,7 +456,7 @@ func apply(name string) bool {
 	linkApps()
 	desktopSettings(colors, apps)
 	rememberPick(name, colors["mode"])
-	return true
+	return paperChange(previous != name, before), true
 }
 
 func detached(args ...string) {
@@ -446,12 +474,21 @@ func restartPaper() {
 	}
 }
 
-func retint() {
+func refreshPaper(change paper) {
+	switch change {
+	case paperShown:
+		run.Within(run.Quick, "hyprtrixie-background", shownBackground())
+	case paperReloaded:
+		restartPaper()
+	}
+}
+
+func retint(change paper) {
 	if os.Getenv("HYPRLAND_INSTANCE_SIGNATURE") == "" {
 		return
 	}
 	run.Quiet(run.Quick, "hyprctl", "reload")
-	restartPaper()
+	refreshPaper(change)
 	run.Quiet(run.Quick, "makoctl", "reload")
 	tellKDEApps()
 	look.ReloadShell()
@@ -490,11 +527,12 @@ func set(argument string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	if !apply(name) {
+	change, ok := apply(name)
+	if !ok {
 		return 1
 	}
 	held.Close()
-	retint()
+	retint(change)
 	return refreshEditors()
 }
 
