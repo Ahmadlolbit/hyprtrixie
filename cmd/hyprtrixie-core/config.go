@@ -29,7 +29,9 @@ func configEdit() int {
 }
 
 func configReset() int {
-	remove(config.Path())
+	if code := remove(config.Path()); code != 0 {
+		return code
+	}
 	return say("Configuration reset; defaults apply on the next run.\n")
 }
 

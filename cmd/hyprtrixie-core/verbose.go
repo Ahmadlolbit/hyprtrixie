@@ -40,7 +40,9 @@ func verbose() int {
 	case "on":
 		return verboseOn(flag)
 	case "off":
-		remove(flag)
+		if code := remove(flag); code != 0 {
+			return code
+		}
 		return say("Verbose logging is off from the next login.\n")
 	case "status":
 		return verboseStatus(flag)
