@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
@@ -169,14 +170,14 @@ func followSetting(path, key, value string) {
 	}
 }
 
-func followCode(name string, palettes []palette) {
+func followCode(name string, palettes func() []palette) {
 	var pack *editorPack
 	for _, editor := range codeEditors {
 		if _, err := exec.LookPath(editor.command); err != nil {
 			continue
 		}
 		if pack == nil {
-			if pack = buildPack(palettes); pack == nil {
+			if pack = buildPack(palettes()); pack == nil {
 				return
 			}
 		}
@@ -189,7 +190,7 @@ func followEditors(name string) {
 	if settings.Get("editors") != "yes" {
 		return
 	}
-	palettes := editorPalettes()
+	palettes := sync.OnceValue(editorPalettes)
 	followCode(name, palettes)
 	followZed(name, palettes)
 }
