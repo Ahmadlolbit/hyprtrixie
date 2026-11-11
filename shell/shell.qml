@@ -3,7 +3,7 @@ import Quickshell
 import qs.common
 
 ShellRoot {
-  Component.onCompleted: [Focus.phase, Session.awake]
+  Component.onCompleted: [Focus.phase, Session.awake, Screens.dark]
 
   Variants {
     model: Quickshell.screens

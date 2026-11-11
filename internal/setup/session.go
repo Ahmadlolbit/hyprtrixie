@@ -35,8 +35,9 @@ const (
 	userUnits    = "/etc/systemd/user/"
 	verdictLine  = "Config parsing result:"
 	verdictShown = 20
-	dpmsOn       = `hyprctl dispatch 'hl.dsp.dpms({action = "on"})'`
-	dpmsOff      = `hyprctl dispatch 'hl.dsp.dpms({action = "off"})'`
+	screensCall  = "qs -p /usr/share/hyprtrixie/shell ipc call screens "
+	dpmsOn       = `hyprctl dispatch 'hl.dsp.dpms({action = "on"})'; ` + screensCall + "on"
+	dpmsOff      = screensCall + `off; hyprctl dispatch 'hl.dsp.dpms({action = "off"})'`
 	secondsAMin  = 60
 	dimAhead     = 30
 	screenOff    = 10 * secondsAMin
