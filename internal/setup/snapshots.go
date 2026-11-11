@@ -405,7 +405,7 @@ func snapshotSteps(context *Context) {
 		snapshotsOff(context)
 		return
 	}
-	if btrfs.RootSubvolume() == installerRoot {
+	if btrfs.RootSubvolume() == installerRoot && !btrfs.Mounted("/home") {
 		context.Run.Note("Root is the installer's " + installerRoot + "; /home is inside root snapshots.")
 	}
 	menu := grubMenu{}
