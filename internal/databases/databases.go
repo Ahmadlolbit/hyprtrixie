@@ -92,6 +92,7 @@ func (database Database) Password() (string, error) {
 		if password, ok := database.saved(); ok {
 			return password, nil
 		}
+		return database.fresh()
 	}
 	if err != nil {
 		return "", err
@@ -99,6 +100,14 @@ func (database Database) Password() (string, error) {
 	password := rand.Text()
 	_, err = file.WriteString(password + "\n")
 	return password, errors.Join(err, file.Close())
+}
+
+func (database Database) fresh() (string, error) {
+	password := rand.Text()
+	if err := atomic.Install(database.secret(""), []byte(password+"\n"), secretMode); err != nil {
+		return "", err
+	}
+	return password, nil
 }
 
 func Engine() error {
