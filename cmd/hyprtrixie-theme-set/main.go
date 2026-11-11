@@ -498,10 +498,9 @@ func detached(args ...string) {
 }
 
 func restartPaper() {
-	if run.Within(run.Quick, "pkill", "-x", "hyprpaper") != 0 {
-		return
+	if run.Within(run.Quick, "pkill", "-x", "hyprpaper") == 0 {
+		run.Quiet(3*time.Second, "pidwait", "-x", "hyprpaper")
 	}
-	run.Quiet(3*time.Second, "pidwait", "-x", "hyprpaper")
 	detached("hyprtrixie-start", "hyprpaper")
 	if self, err := os.Executable(); err == nil {
 		detached(self, wallpapers)
