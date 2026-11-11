@@ -158,8 +158,12 @@ func stale(active []Connection) []string {
 	return devices
 }
 
+func networks(connections []Connection) []Connection {
+	return slices.DeleteFunc(connections, func(connection Connection) bool { return connection.Kind != wired && connection.Kind != wifi })
+}
+
 func Refresh(out io.Writer) error {
-	active := Active()
+	active := networks(Active())
 	var problems []error
 	for _, connection := range active {
 		problems = append(problems, Apply(out, connection.Device, connection.UUID, "up"))
