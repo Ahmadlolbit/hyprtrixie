@@ -29,14 +29,40 @@ Scope {
   Variants {
     model: Theme.looks.workspaces === "yes" ? Hyprland.monitors.values : []
 
-    Connections {
+    Scope {
+      id: wall
+
       required property HyprlandMonitor modelData
+      property bool again: false
 
-      target: modelData
+      function follow() {
+        if (setter.running) {
+          again = true;
+          return;
+        }
+        if (!modelData.activeWorkspace)
+          return;
+        setter.command = ["hyprtrixie-background", "workspace", modelData.name, String(modelData.activeWorkspace.id)];
+        setter.running = true;
+      }
 
-      function onActiveWorkspaceChanged() {
-        if (modelData.activeWorkspace)
-          Quickshell.execDetached(["hyprtrixie-background", "workspace", modelData.name, String(modelData.activeWorkspace.id)]);
+      Connections {
+        target: wall.modelData
+
+        function onActiveWorkspaceChanged() {
+          wall.follow();
+        }
+      }
+
+      Process {
+        id: setter
+
+        onExited: {
+          if (!wall.again)
+            return;
+          wall.again = false;
+          wall.follow();
+        }
       }
     }
   }
