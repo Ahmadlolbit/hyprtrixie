@@ -156,7 +156,7 @@ func period(mode string) (string, bool) {
 func retryDue(name string) bool {
 	retry, known := look.WholeNumber(stored(lookState(name)))
 	at, ok := moment()
-	return !known || !ok || at.Unix() >= retry
+	return !known || !ok || at.Unix() >= retry || retry-at.Unix() > retryAfter
 }
 
 func lastLine(text string) string {
@@ -229,6 +229,7 @@ func rotateTick() {
 		return
 	}
 	last, known := look.WholeNumber(stored(lookState("rotated")))
+	known = known && last <= at.Unix()
 	if known && at.Unix()-last < every*60 {
 		return
 	}
@@ -244,7 +245,8 @@ func weatherFresh() bool {
 		return false
 	}
 	at, ok := moment()
-	return ok && at.Unix()-info.ModTime().Unix() < weatherStale
+	age := at.Unix() - info.ModTime().Unix()
+	return ok && age >= 0 && age < weatherStale
 }
 
 func weatherTick() {
