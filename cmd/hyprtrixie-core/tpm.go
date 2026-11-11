@@ -339,7 +339,7 @@ func tpmOn() int {
 	if !ui.Confirm("Turn on unlocking with the TPM and a PIN?") {
 		return fail("Nothing was changed.")
 	}
-	if err := snapshotBefore("before turning on TPM unlocking"); err != nil {
+	if _, err := snapshotBefore("before turning on TPM unlocking"); err != nil {
 		return fail("%v", err)
 	}
 	return turnOn(root, kernel)

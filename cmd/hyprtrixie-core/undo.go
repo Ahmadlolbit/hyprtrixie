@@ -109,19 +109,19 @@ func (plan undoPlan) describe() string {
 		"you've changed since. apt also removes other packages nothing needs any more, as apt autoremove does.\n"
 }
 
-func snapshotBefore(description string) error {
+func snapshotBefore(description string) (bool, error) {
 	if snapshotsOff() {
-		return nil
+		return false, nil
 	}
 	if !installed("snapper") || !fsutil.IsFile(env.Or("HYPRTRIXIE_SNAPPER_CONFIG", "/etc/snapper/configs/root")) {
 		fmt.Println("Snapshots aren't set up, so there's no restore point.")
-		return nil
+		return false, nil
 	}
 	fmt.Println("Taking a restore point first")
 	if run.Status("snapper", "--no-dbus", "-c", "root", "create", "--description", description, "--cleanup-algorithm", "number") != 0 {
-		return errors.New("the restore point failed, so nothing was changed")
+		return false, errors.New("the restore point failed, so nothing was changed")
 	}
-	return nil
+	return true, nil
 }
 
 func (plan undoPlan) takeFiles(log *runlog.Log) error {
@@ -194,13 +194,16 @@ func undo(id string, yes bool) int {
 	if !yes && !ui.Confirm("Undo module "+id+"?") {
 		return fail("Nothing was changed.")
 	}
-	if err := snapshotBefore("before undoing module " + id); err != nil {
+	taken, err := snapshotBefore("before undoing module " + id)
+	if err != nil {
 		return fail("%v", err)
 	}
 	log := runlog.Joined()
 	log.Mirror(func(data []byte) { os.Stdout.Write(data) })
-	if err := plan.run(log); err != nil {
+	if err := plan.run(log); err != nil && taken {
 		return fail("Undoing module %s stopped: %v. The restore point taken first can bring the system back: hyprtrixie restore.", id, err)
+	} else if err != nil {
+		return fail("Undoing module %s stopped: %v. Run it again once that's fixed: it picks up where it stopped.", id, err)
 	}
 	fmt.Printf("Module %s is undone. The setup leaves it out until you run it again: sudo hyprtrixie install --only %s\n", id, id)
 	return 0
