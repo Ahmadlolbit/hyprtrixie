@@ -10,6 +10,8 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 )
 
+var orphans = []string{"autoremove", "-o", "APT::AutoRemove::SuggestsImportant=false"}
+
 func simulated(log *runlog.Log, args ...string) (map[string]bool, error) {
 	output, err := run.CaptureTo(run.Slow, log, "apt-get", append([]string{"-s"}, args...)...)
 	taken := map[string]bool{}
@@ -75,7 +77,7 @@ func checkedRemoval(log *runlog.Log, gone []string) error {
 }
 
 func Remove(log *runlog.Log, names ...string) ([]string, error) {
-	before, err := simulated(log, "autoremove")
+	before, err := simulated(log, orphans...)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +89,7 @@ func Remove(log *runlog.Log, names ...string) ([]string, error) {
 	if err := mark(log, "auto", names); err != nil {
 		return nil, err
 	}
-	after, err := simulated(log, "autoremove")
+	after, err := simulated(log, orphans...)
 	if err != nil {
 		return nil, putBack(log, manual, err)
 	}
