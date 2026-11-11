@@ -19,6 +19,7 @@ const (
 	kibPerMib       = 1024
 	secureBootByte  = 4
 	idGroupSize     = len("[0000:0000]")
+	classDigits     = len("0300")
 	nvidiaVendor    = "0x10de"
 	displayClass    = "0x03"
 )
@@ -202,7 +203,7 @@ func SecureBoot() string {
 	if _, err := exec.LookPath("mokutil"); err != nil {
 		return secureBootVariable()
 	}
-	state, _ := run.CaptureQuiet(run.Quick, "mokutil", "--sb-state")
+	state, _ := run.CaptureOnce(run.Quick, "mokutil", "--sb-state")
 	switch {
 	case strings.Contains(state, "enabled"):
 		return "enabled"
@@ -289,9 +290,26 @@ func product() string {
 	return dmi("product_name")
 }
 
+func busListing() string {
+	devices, _ := filepath.Glob(at("/sys/bus/pci/devices/*"))
+	var lines []string
+	for _, device := range devices {
+		class := strings.TrimPrefix(fsutil.Optional(filepath.Join(device, "class")), "0x")
+		vendor := strings.TrimPrefix(fsutil.Optional(filepath.Join(device, "vendor")), "0x")
+		model := strings.TrimPrefix(fsutil.Optional(filepath.Join(device, "device")), "0x")
+		if len(class) >= classDigits {
+			lines = append(lines, fmt.Sprintf("%s Class [%s]: Device [%s:%s]", filepath.Base(device), class[:classDigits], vendor, model))
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
 func (found *machine) readChips() {
 	found.readCPU()
-	lspci, _ := run.CaptureQuiet(run.Quick, "lspci", "-nn")
+	lspci, err := run.CaptureQuiet(run.Quick, "lspci", "-nn")
+	if err != nil {
+		lspci = busListing()
+	}
 	found.readGPUs(lspci)
 	found.readWifi(lspci)
 	found.ipu6Camera = ipu6(lspci)

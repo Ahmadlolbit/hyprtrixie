@@ -32,6 +32,8 @@ const (
 	securityModule = "15"
 )
 
+var yourPowerTools = []string{"tlp", "laptop-mode-tools", "tuned-ppd"}
+
 type wifiNetwork struct {
 	device string
 	name   string
@@ -40,6 +42,16 @@ type wifiNetwork struct {
 
 func interfacesFile() string {
 	return env.Or("HYPRTRIXIE_INTERFACES", "/etc/network/interfaces")
+}
+
+func yourPowerTool() string {
+	installed, _ := apt.Installed()
+	for _, name := range yourPowerTools {
+		if installed[name] {
+			return name
+		}
+	}
+	return ""
 }
 
 func (context *Context) powerInstall(log *runlog.Log) error {
@@ -53,11 +65,21 @@ func (context *Context) powerInstall(log *runlog.Log) error {
 		return err
 	}
 	lists := []string{"power"}
+	tool := yourPowerTool()
+	if tool != "" {
+		log.Line("info", tool+" looks after the power here, so it stays, and power-profiles-daemon, which apt would put in its place, stays out")
+		lists = nil
+	}
 	if context.hardware().CPU == "intel" {
 		lists = append(lists, "power-intel")
 	}
-	if err := apt.InstallLists(log, lists...); err != nil {
-		return err
+	if len(lists) > 0 {
+		if err := apt.InstallLists(log, lists...); err != nil {
+			return err
+		}
+	}
+	if tool != "" {
+		return nil
 	}
 	return run.Logged(log, "systemctl", "enable", powerProfiles)
 }
@@ -330,7 +352,9 @@ func securityChecks(context *Context) {
 	if settings.Get("NM_HANDOVER") == "yes" {
 		context.Run.Check("NetworkManager manages every connection", networkReady)
 	}
-	context.Run.Check("Power profiles are available", powerReady)
+	if yourPowerTool() == "" {
+		context.Run.Check("Power profiles are available", powerReady)
+	}
 	if settings.Get("SSH_POLICY") == "client" {
 		context.Run.Check("The SSH server is off", sshServerDisabled)
 	}

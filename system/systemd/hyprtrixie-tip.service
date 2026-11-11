@@ -1,5 +1,6 @@
 [Unit]
 Description=Show a Hyprtrixie tip
+ConditionUser=!@system
 
 [Service]
 Type=oneshot
