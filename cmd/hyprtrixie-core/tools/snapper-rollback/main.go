@@ -13,6 +13,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	runs "github.com/Ahmadlolbit/hyprtrixie/internal/lock"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/snapshots"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/term"
@@ -280,6 +281,11 @@ func rollBack(config, number string) error {
 		return err
 	}
 	defer held.Close()
+	running, err := runs.Take()
+	if err != nil {
+		return err
+	}
+	defer running.Close()
 	return goBack(top, number)
 }
 
