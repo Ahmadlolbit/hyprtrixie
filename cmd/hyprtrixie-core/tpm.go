@@ -280,7 +280,7 @@ func switchFailed(how backedOut, err error, kernel string) int {
 }
 
 func enroll(device string) bool {
-	return run.Status("systemd-cryptenroll", "--tpm2-device=auto", "--tpm2-with-pin=yes", "--tpm2-pcrs=7", device) == 0
+	return run.Status("systemd-cryptenroll", "--wipe-slot=tpm2", "--tpm2-device=auto", "--tpm2-with-pin=yes", "--tpm2-pcrs=7", device) == 0
 }
 
 func useTPM(log *runlog.Log, root luksRoot, kernel string) error {
@@ -330,10 +330,10 @@ func tpmOn() int {
 	switch {
 	case err != nil:
 		return fail("%v", err)
-	case !changed:
-		return fail("TPM unlocking is already on. For a new PIN, turn it off and on again.")
 	case kernel == "":
 		return fail("There's no kernel in %s.", bootimage.Folder())
+	case !changed && unlocksWithTPM(root.mapper, kernel):
+		return fail("TPM unlocking is already on. For a new PIN, turn it off and on again.")
 	}
 	fmt.Printf(tpmWarning, tpm.Before(kernel))
 	if !ui.Confirm("Turn on unlocking with the TPM and a PIN?") {
@@ -384,6 +384,10 @@ func tpmTidy() int {
 		return fail("%v", err)
 	}
 	return say("The boot entry from before TPM unlocking is gone.\n")
+}
+
+func unlocksWithTPM(mapper, kernel string) bool {
+	return len(readImage(bootimage.Image(kernel)).Problems(mapper, true)) == 0
 }
 
 func imageState(root luksRoot) string {
