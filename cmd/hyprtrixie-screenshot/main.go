@@ -66,13 +66,32 @@ func capture(mode, dir string) (string, int) {
 	file, err := atomic.Fresh(dir, "Screenshot from "+time.Now().Format("2006-01-02 15-04-05"), ".png", 0o666)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		return "", 1
+		return "", notTaken(err.Error())
 	}
-	if run.Within(run.Quick, "grim", append(where, file)...) != 0 {
-		os.Remove(file)
-		return "", 1
+	if code := grab(where, file); code != 0 {
+		return "", code
 	}
 	return file, 0
+}
+
+func notTaken(reason string) int {
+	notify.Post([]string{"--app-name=Screenshot"}, "Couldn't take the screenshot", reason)
+	return 1
+}
+
+func grab(where []string, file string) int {
+	var messages strings.Builder
+	_, err := run.CaptureTo(run.Quick, &messages, "grim", append(where, file)...)
+	fmt.Fprint(os.Stderr, messages.String())
+	if err == nil {
+		return 0
+	}
+	os.Remove(file)
+	lines := run.Lines(strings.TrimSpace(messages.String()))
+	if len(lines) == 0 {
+		return notTaken("")
+	}
+	return notTaken(lines[len(lines)-1])
 }
 
 func copyImage(file string) {
@@ -89,7 +108,7 @@ func shoot(mode string) int {
 	dir := filepath.Join(run.UserDir("PICTURES", filepath.Join(env.Home(), "Pictures")), "Screenshots")
 	if err := os.MkdirAll(dir, 0o777); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		return 1
+		return notTaken(err.Error())
 	}
 	file, code := capture(mode, dir)
 	switch code {
