@@ -51,6 +51,8 @@ func snapshotFirst() int {
 		return 0
 	}
 	if !installed("snapper") || !fsutil.IsFile(env.Or("HYPRTRIXIE_SNAPPER_CONFIG", "/etc/snapper/configs/root")) {
+		fmt.Println("Snapshots aren't set up, so there's no restore point.")
+		snapshotTaken = true
 		return 0
 	}
 	fmt.Println("Taking a snapshot first")
@@ -109,12 +111,8 @@ func firstLine(text string) string {
 	return ""
 }
 
-func mergeHeading(commit string) string {
-	subject := gitLog("-1", "--format=%s", commit)
-	heading := firstLine(gitLog("-1", "--format=%b", commit))
-	if heading == "" {
-		heading = subject
-	}
+func mergeHeading(subject, body string) string {
+	heading := cmp.Or(firstLine(body), subject)
 	rest, merged := strings.CutPrefix(subject, "Merge pull request #")
 	if number, _, spaced := strings.Cut(rest, " "); merged && spaced {
 		return "#" + number + " " + heading
@@ -124,10 +122,15 @@ func mergeHeading(commit string) string {
 
 func changesBetween(from, to string) string {
 	var text strings.Builder
-	for _, line := range run.Lines(gitLog("--first-parent", "--merges", "--format=%H %P", from+".."+to)) {
-		fields := strings.Fields(line)
-		text.WriteString(mergeHeading(fields[0]) + "\n")
-		if merged := gitLog("--no-merges", "--format=  - %s", fields[1]+".."+fields[2]); merged != "" {
+	for _, merge := range strings.Split(gitLog("--first-parent", "--merges", "-z", "--format=%P%n%s%n%b", from+".."+to), "\x00") {
+		parents, message, _ := strings.Cut(merge, "\n")
+		subject, body, _ := strings.Cut(message, "\n")
+		fields := strings.Fields(parents)
+		if len(fields) < 2 {
+			continue
+		}
+		text.WriteString(mergeHeading(subject, body) + "\n")
+		if merged := gitLog("--no-merges", "--format=  - %s", fields[0]+".."+fields[1]); merged != "" {
 			text.WriteString(merged + "\n")
 		}
 	}
@@ -149,7 +152,7 @@ func writeChanges(dir, text string) error {
 
 func update() int {
 	part := cmp.Or(env.Arg(2), "all")
-	if !slices.Contains([]string{"all", "system", "apps", "hyprtrixie"}, part) {
+	if !slices.Contains([]string{"all", "system", "apps", "hyprtrixie"}, part) || env.Arg(3) != "" {
 		return fail("usage: hyprtrixie update [system | apps | hyprtrixie]")
 	}
 	if os.Geteuid() == 0 {

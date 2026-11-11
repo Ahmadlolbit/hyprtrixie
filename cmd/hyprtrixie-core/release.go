@@ -12,6 +12,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/deployed"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/lock"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
@@ -152,6 +153,9 @@ func gitWrite(args ...string) int {
 func updateHyprtrixie() int {
 	fmt.Printf("Updating %s\n", root())
 	tag, target, err := releaseTarget()
+	if lock.Busy() {
+		return fail("a Hyprtrixie run is going, so Hyprtrixie itself wasn't updated: run hyprtrixie update hyprtrixie once it ends")
+	}
 	switch {
 	case errors.Is(err, errNoReleaseKey):
 		fmt.Print("Hyprtrixie itself only updates to signed releases, and this copy has no release key yet, so it stays as it is.\n")

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/btrfs"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/deployed"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
@@ -107,7 +108,7 @@ func (visit *checkup) restart(name string) bool {
 	instance := hyprInstance(visit.person)
 	if instance == "" {
 		ui.Print("Hyprland is not running\n")
-		return true
+		return false
 	}
 	return succeeded("runuser", hyprCommand(visit.person, instance, "hyprctl", "dispatch", "hl.dsp.exec_cmd([[hyprtrixie-start "+name+"]])")...)
 }
@@ -169,14 +170,10 @@ func (visit *checkup) failedUnits() ([]string, []string, bool, bool) {
 	system := firstWords(output)
 	output, userErr := run.CaptureQuiet(visit.limit, "runuser", visit.userSystemctl("--failed", "--no-legend", "--plain")...)
 	user := firstWords(output)
-	if run.TimedOut(err) || run.TimedOut(userErr) {
-		tooLong("Checking the services")
-		return nil, nil, false, false
-	}
 	if unchecked("the services", "Checking the services", "systemctl", err) {
 		return nil, nil, false, false
 	}
-	return system, user, !unchecked("your own services", "Checking the services", "systemctl --user", userErr), true
+	return system, user, !unchecked("your own services", "Checking your own services", "systemctl --user", userErr), true
 }
 
 func (visit *checkup) services() {
@@ -238,9 +235,26 @@ func newestSnapshot(limit time.Duration) (int64, bool, error) {
 	return seconds, problem == nil, err
 }
 
+func (visit *checkup) timersOff() {
+	if !installed("snapper") {
+		ui.Fail("Snapshots aren't set up: snapper isn't installed")
+		ui.Note("Fix: sudo hyprtrixie install --only 05 sets them up")
+		return
+	}
+	ui.Fail("The snapshot timers aren't running")
+	ui.Note("Fix: systemctl enable --now snapper-timeline.timer snapper-cleanup.timer")
+	visit.offer("Turn the snapshot timers back on", func() bool {
+		return succeeded("systemctl", "enable", "--now", "snapper-timeline.timer", "snapper-cleanup.timer")
+	})
+}
+
 func (visit *checkup) snapshots(setting string) {
 	if setting != "yes" {
 		ui.Skip("Snapshots are turned off")
+		return
+	}
+	if kind := btrfs.RootType(); kind != "" && kind != "btrfs" {
+		ui.Skip("Snapshots need a btrfs root; this system uses " + kind)
 		return
 	}
 	active, err := visit.timers()
@@ -248,11 +262,7 @@ func (visit *checkup) snapshots(setting string) {
 		return
 	}
 	if !active {
-		ui.Fail("The snapshot timers aren't running")
-		ui.Note("Fix: systemctl enable --now snapper-timeline.timer snapper-cleanup.timer")
-		visit.offer("Turn the snapshot timers back on", func() bool {
-			return succeeded("systemctl", "enable", "--now", "snapper-timeline.timer", "snapper-cleanup.timer")
-		})
+		visit.timersOff()
 		return
 	}
 	last, ok, err := newestSnapshot(visit.limit)
