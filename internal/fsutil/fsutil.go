@@ -217,6 +217,9 @@ func imagesIn(dir string) []string {
 }
 
 func image(name string) bool {
+	if strings.HasPrefix(name, ".") {
+		return false
+	}
 	switch strings.ToLower(filepath.Ext(name)) {
 	case ".png", ".jpg", ".jpeg", ".webp":
 		return true
