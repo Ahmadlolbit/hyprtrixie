@@ -3,6 +3,7 @@ package record
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -23,8 +24,9 @@ Records a region or the focused screen to ~/Videos/Recordings, with no sound.
 The bar shows a mark while it records. stop ends it, and toggle stops a
 recording or starts one of a region.
 `
-	recorder = "wf-recorder"
-	settle   = 3 * time.Second
+	recorder   = "wf-recorder"
+	noRecorder = "wf-recorder isn't installed: sudo apt install wf-recorder"
+	settle     = 3 * time.Second
 )
 
 func stateFile() string {
@@ -63,6 +65,11 @@ func newFile() (string, error) {
 }
 
 func start(mode string) int {
+	if _, err := exec.LookPath(recorder); err != nil {
+		fmt.Fprintln(os.Stderr, noRecorder)
+		notify.Post([]string{"--app-name=Recording"}, "Can't record", noRecorder)
+		return 1
+	}
 	if recording() {
 		fmt.Fprintln(os.Stderr, "already recording; stop it with hyprtrixie-record stop")
 		return 1

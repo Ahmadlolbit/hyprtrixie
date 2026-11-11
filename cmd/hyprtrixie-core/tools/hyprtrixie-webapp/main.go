@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
@@ -45,6 +46,16 @@ func chooseIcon(name, address string) string {
 	return file
 }
 
+func givenIcon(icon string) string {
+	if !fsutil.IsFile(icon) {
+		return icon
+	}
+	if full, err := filepath.Abs(icon); err == nil {
+		return full
+	}
+	return icon
+}
+
 func add(args []string) int {
 	input := bufio.NewReader(os.Stdin)
 	if len(args) < 2 {
@@ -65,7 +76,7 @@ func add(args []string) int {
 	}
 	icon := ""
 	if len(args) > 2 {
-		icon = args[2]
+		icon = givenIcon(args[2])
 	} else {
 		icon = chooseIcon(name, address)
 	}

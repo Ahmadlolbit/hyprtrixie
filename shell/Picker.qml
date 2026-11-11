@@ -24,7 +24,7 @@ Scope {
   function show(kind) {
     mode = kind;
     filter = "";
-    busy = false;
+    busy = applying.running;
     items = [];
     content.forceActiveFocus();
     if (kind === "themes") {

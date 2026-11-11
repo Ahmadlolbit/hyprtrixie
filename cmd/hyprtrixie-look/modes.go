@@ -41,7 +41,9 @@ func presentationOn() int {
 
 func presentationOff() int {
 	if stored(lookState("presentation-quiet")) == "yes" {
-		run.Quiet(run.Quick, "makoctl", "mode", "-r", doNotDisturb)
+		if !quietWanted() {
+			run.Quiet(run.Quick, "makoctl", "mode", "-r", doNotDisturb)
+		}
 		remove(lookState("presentation-quiet"))
 	}
 	look.CallShell("awake", "off")

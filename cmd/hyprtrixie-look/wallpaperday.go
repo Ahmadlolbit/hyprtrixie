@@ -298,8 +298,18 @@ func dayWallpaperOff() int {
 	return code
 }
 
+func folderSetting(place string) string {
+	if strings.HasPrefix(place, "~") {
+		return place
+	}
+	if full, err := filepath.Abs(place); err == nil {
+		return full
+	}
+	return place
+}
+
 func chooseDaySource(value, place string) int {
-	if value == "folder" && place != "" && !put("wallpaper_folder", place) {
+	if value == "folder" && place != "" && !put("wallpaper_folder", folderSetting(place)) {
 		return 1
 	}
 	if !put("day_wallpaper", value) {

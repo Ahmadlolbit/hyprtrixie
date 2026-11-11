@@ -19,7 +19,7 @@ const DefaultFont = "JetBrainsMono Nerd Font"
 var kdeIcons = map[string]string{"dark": "breeze-dark", "light": "breeze"}
 
 var (
-	quoted    = pattern(`^[[:space:]]*([a-z0-9_]+)[[:space:]]*=[[:space:]]*"([^"]*)"`)
+	quoted    = pattern(`^[[:space:]]*([a-z0-9_]+)[[:space:]]*=[[:space:]]*(?:"([^"]*)"|'([^']*)')`)
 	bare      = pattern(`^[[:space:]]*([a-z0-9_]+)[[:space:]]*=[[:space:]]*([^[:space:]#"]+)`)
 	safeValue = pattern(`^[A-Za-z0-9#(),.%_ -]*$`)
 	hexColor  = pattern(`^#[0-9A-Fa-f]{6}$`)
@@ -83,9 +83,10 @@ func colourKey(key string) bool {
 
 func assignment(line string) (string, string, bool) {
 	match := quoted().FindStringSubmatch(line)
-	if match == nil {
-		match = bare().FindStringSubmatch(line)
+	if match != nil {
+		return match[1], match[2] + match[3], true
 	}
+	match = bare().FindStringSubmatch(line)
 	if match == nil {
 		return "", "", false
 	}
