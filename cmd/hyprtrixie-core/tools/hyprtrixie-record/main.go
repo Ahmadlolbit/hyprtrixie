@@ -65,12 +65,20 @@ func newFile() (string, error) {
 }
 
 func start(mode string) int {
+	return startUnless(mode, recording)
+}
+
+func stopped() bool {
+	return false
+}
+
+func startUnless(mode string, running func() bool) int {
 	if _, err := exec.LookPath(recorder); err != nil {
 		fmt.Fprintln(os.Stderr, noRecorder)
 		notify.Post([]string{"--app-name=Recording"}, "Can't record", noRecorder)
 		return 1
 	}
-	if recording() {
+	if running() {
 		fmt.Fprintln(os.Stderr, "already recording; stop it with hyprtrixie-record stop")
 		return 1
 	}
@@ -116,7 +124,7 @@ func toggle() int {
 	if recording() {
 		return stop()
 	}
-	return start("region")
+	return startUnless("region", stopped)
 }
 
 func Main() {

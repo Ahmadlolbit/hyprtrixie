@@ -10,8 +10,8 @@ import (
 
 const shellPath = "/usr/share/hyprtrixie/shell"
 
-func CallShell(target, function string) {
-	run.Quiet(run.Quick, "qs", "-p", shellPath, "ipc", "call", target, function)
+func CallShell(target, function string, args ...string) {
+	run.Quiet(run.Quick, "qs", append([]string{"-p", shellPath, "ipc", "call", target, function}, args...)...)
 }
 
 func ReloadShell() {

@@ -17,7 +17,6 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
-	"github.com/Ahmadlolbit/hyprtrixie/internal/look"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/notify"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/theme"
@@ -209,8 +208,7 @@ func dayDue() (string, time.Time, bool) {
 	if !ok || !slices.Contains(daySources[1:], source) || stored(lookState("day-wallpaper")) == dayKey(source, at) {
 		return "", at, false
 	}
-	retry, known := look.WholeNumber(stored(lookState("day-wallpaper-retry")))
-	return source, at, !known || at.Unix() >= retry
+	return source, at, retryDue("day-wallpaper-retry")
 }
 
 func dayLock() (*os.File, bool) {
