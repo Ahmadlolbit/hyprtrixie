@@ -21,10 +21,6 @@ func sourcesList() string {
 	return env.Or("HYPRTRIXIE_SOURCES_LIST", "/etc/apt/sources.list")
 }
 
-func anyEntry(line string) bool {
-	return strings.HasPrefix(strings.TrimLeft(line, blanks), "deb")
-}
-
 func debianEntry(line string) bool {
 	rest, found := strings.CutPrefix(strings.TrimLeft(line, blanks), "deb")
 	if !found {
@@ -37,7 +33,7 @@ func debianEntry(line string) bool {
 func moveDebianEntries(log *runlog.Log) error {
 	path := sourcesList()
 	lines, err := fsutil.Lines(path)
-	if err != nil || !slices.ContainsFunc(lines, anyEntry) {
+	if err != nil || !slices.ContainsFunc(lines, debianEntry) {
 		return err
 	}
 	if err := keepOld(log, path); err != nil {
