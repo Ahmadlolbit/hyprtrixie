@@ -183,26 +183,36 @@ func Version(name string) string {
 	return output
 }
 
-func backportsVersion(name string) string {
-	output, _ := run.CaptureQuiet(run.Minute, "apt-cache", "madison", name)
+func backportsVersions(names []string) map[string]string {
+	found := map[string]string{}
+	if len(names) == 0 {
+		return found
+	}
+	output, _ := run.CaptureQuiet(run.Minute, "apt-cache", append([]string{"madison"}, names...)...)
 	for _, line := range run.Lines(output) {
 		fields := strings.Split(line, "|")
-		if len(fields) >= madisonFields && strings.Contains(fields[2], backportsSuite) {
-			return strings.ReplaceAll(fields[1], " ", "")
+		if len(fields) < madisonFields || !strings.Contains(fields[2], backportsSuite) {
+			continue
+		}
+		if name := strings.TrimSpace(fields[0]); found[name] == "" {
+			found[name] = strings.ReplaceAll(fields[1], " ", "")
 		}
 	}
-	return ""
+	return found
 }
 
-func needsBackports(name string, installed map[string]bool) bool {
-	if !installed[name] {
-		return true
+func olderThan(name, wanted string) bool {
+	return wanted != "" && run.Quiet(run.Quick, "dpkg", "--compare-versions", Version(name), "lt", wanted) == 0
+}
+
+func installedBackports(specs []string, installed map[string]bool) []string {
+	var names []string
+	for _, spec := range specs {
+		if name, wanted := strings.CutSuffix(spec, backportsMark); wanted && installed[name] {
+			names = append(names, name)
+		}
 	}
-	wanted := backportsVersion(name)
-	if wanted == "" {
-		return false
-	}
-	return run.Quiet(run.Quick, "dpkg", "--compare-versions", Version(name), "lt", wanted) == 0
+	return names
 }
 
 func packageName(name string) bool {
@@ -238,7 +248,9 @@ func siblings(output string) []string {
 		}
 	}
 	slices.Sort(names)
-	return slices.DeleteFunc(slices.Compact(names), func(name string) bool { return backportsVersion(name) == "" })
+	names = slices.Compact(names)
+	versions := backportsVersions(names)
+	return slices.DeleteFunc(names, func(name string) bool { return versions[name] == "" })
 }
 
 func installStable(log *runlog.Log, specs []string) error {
@@ -264,11 +276,12 @@ func installStable(log *runlog.Log, specs []string) error {
 }
 
 func sorted(specs []string, installed map[string]bool) ([]string, []string) {
+	versions := backportsVersions(installedBackports(specs, installed))
 	var stable, backports []string
 	for _, spec := range specs {
 		name, wanted := strings.CutSuffix(spec, backportsMark)
 		if wanted {
-			if needsBackports(name, installed) {
+			if !installed[name] || olderThan(name, versions[name]) {
 				backports = append(backports, name)
 			}
 		} else if !installed[spec] {
