@@ -15,6 +15,7 @@ import (
 const (
 	labelWidth  = 34
 	markColumns = 3
+	infoIndent  = 2
 	pageJump    = 10
 )
 
@@ -344,24 +345,67 @@ func (view *page) text(line row, focused bool, width int) string {
 	return marked(focused, label)
 }
 
-func (view *page) draw(width, height int) string {
-	rows := view.shown()
-	view.scroll(height, len(rows))
-	lines := make([]string, 0, height)
-	for index := view.top; index < min(view.top+height, len(rows)); index++ {
-		lines = append(lines, view.text(rows[index], index == view.cursor, width))
+func (view *page) lines(line row, focused bool, width int) []string {
+	text := view.text(line, focused, width)
+	if !line.info || width <= infoIndent || lipgloss.Width(text) <= width {
+		return []string{text}
 	}
-	return strings.Join(lines, "\n")
+	wrapped := strings.Split(lipgloss.NewStyle().Width(width-infoIndent).Render(words.T(line.label)), "\n")
+	for index, piece := range wrapped {
+		wrapped[index] = strings.Repeat(" ", infoIndent) + strings.TrimRight(piece, " ")
+	}
+	return wrapped
 }
 
-func (view *page) scroll(height, total int) {
-	if view.cursor < view.top {
-		view.top = view.cursor
+func (view *page) draw(width, height int) string {
+	text, _ := view.render(width, height)
+	return text
+}
+
+func (view *page) render(width, height int) (string, bool) {
+	rows := view.shown()
+	spans := make([]int, len(rows))
+	wrapped := false
+	for index, line := range rows {
+		spans[index] = 1
+		if line.info && len(words.T(line.label))+infoIndent > width {
+			spans[index] = len(view.lines(line, false, width))
+			wrapped = wrapped || spans[index] > 1
+		}
 	}
-	if view.cursor >= view.top+height {
-		view.top = view.cursor - height + 1
+	view.scroll(height, spans)
+	lines := make([]string, 0, height)
+	for index := view.top; index < len(rows) && len(lines) < height; index++ {
+		if spans[index] == 1 {
+			lines = append(lines, view.text(rows[index], index == view.cursor, width))
+			continue
+		}
+		lines = append(lines, view.lines(rows[index], index == view.cursor, width)...)
 	}
-	view.top = max(min(view.top, total-height), 0)
+	return strings.Join(lines[:min(len(lines), height)], "\n"), wrapped
+}
+
+func (view *page) scroll(height int, spans []int) {
+	if len(spans) == 0 {
+		view.top = 0
+		return
+	}
+	cursor := min(view.cursor, len(spans)-1)
+	view.top = min(view.top, cursor)
+	for view.top < cursor && total(spans[view.top:cursor+1]) > height {
+		view.top++
+	}
+	for view.top > 0 && total(spans[view.top-1:]) <= height {
+		view.top--
+	}
+}
+
+func total(spans []int) int {
+	sum := 0
+	for _, span := range spans {
+		sum += span
+	}
+	return sum
 }
 
 func (view *page) help() string {

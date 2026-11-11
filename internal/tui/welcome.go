@@ -31,8 +31,8 @@ func (view *welcome) draw(width, height int) string {
 	if !logoFits(width, height) {
 		return view.page.draw(width, height)
 	}
-	text := view.page.draw(width-logoColumns, height-clearRows)
-	if lipgloss.Width(text) > width-logoColumns {
+	text, wrapped := view.page.render(width-logoColumns, height-clearRows)
+	if wrapped || lipgloss.Width(text) > width-logoColumns {
 		return view.page.draw(width, height)
 	}
 	frame, _ := burst.At(time.Since(view.started))
