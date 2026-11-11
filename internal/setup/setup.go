@@ -3,16 +3,25 @@ package setup
 import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/files"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/step"
 )
 
 type Context struct {
-	Run    *step.Runner
-	Deploy *files.Deployer
-	Person account.Account
-	Config *config.Config
-	CanAsk bool
+	Run     *step.Runner
+	Deploy  *files.Deployer
+	Person  account.Account
+	Config  *config.Config
+	CanAsk  bool
+	Machine string
+}
+
+func (context *Context) machine() string {
+	if context.Machine == "" {
+		context.Machine = detect.Summary()
+	}
+	return context.Machine
 }
 
 type Module struct {
