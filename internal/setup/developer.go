@@ -37,6 +37,8 @@ const (
 	gitLowSpeedTime  = "GIT_HTTP_LOW_SPEED_TIME=60"
 )
 
+var toolRepositories = [][2]string{{"docker", "docker-ce"}, {"mise", "mise"}, {"kubernetes", "kubernetes"}, {"kubernetes", "helm"}, {"vscode", "vscode"}, {"vscodium", "vscodium"}}
+
 type toolStep struct {
 	tools []string
 	title string
@@ -563,10 +565,25 @@ func (context *Context) toolSteps() []toolStep {
 	}
 }
 
+func (context *Context) toolRepositoriesAhead() []string {
+	var names []string
+	for _, pair := range toolRepositories {
+		if context.Config.Enabled("DEV_TOOLS", pair[0]) && !apt.ExtrepoEnabled(pair[1]) {
+			names = append(names, pair[1])
+		}
+	}
+	return names
+}
+
 func developerSteps(context *Context) {
+	ahead := context.toolRepositoriesAhead()
 	for _, entry := range context.toolSteps() {
 		if slices.ContainsFunc(entry.tools, func(tool string) bool { return context.Config.Enabled("DEV_TOOLS", tool) }) {
-			context.Run.Step(entry.title, entry.work)
+			context.Run.Step(entry.title, func(log *runlog.Log) error {
+				apt.ExtrepoAhead(log, ahead...)
+				ahead = nil
+				return entry.work(log)
+			})
 		}
 	}
 }
