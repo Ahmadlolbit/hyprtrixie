@@ -239,6 +239,19 @@ func newestSnapshot(limit time.Duration) (int64, bool, error) {
 	return seconds, problem == nil, err
 }
 
+func (visit *checkup) timersOff() {
+	if !installed("snapper") {
+		ui.Fail("Snapshots aren't set up: snapper isn't installed")
+		ui.Note("Fix: sudo hyprtrixie install --only 05 sets them up")
+		return
+	}
+	ui.Fail("The snapshot timers aren't running")
+	ui.Note("Fix: systemctl enable --now snapper-timeline.timer snapper-cleanup.timer")
+	visit.offer("Turn the snapshot timers back on", func() bool {
+		return succeeded("systemctl", "enable", "--now", "snapper-timeline.timer", "snapper-cleanup.timer")
+	})
+}
+
 func (visit *checkup) snapshots(setting string) {
 	if setting != "yes" {
 		ui.Skip("Snapshots are turned off")
@@ -253,11 +266,7 @@ func (visit *checkup) snapshots(setting string) {
 		return
 	}
 	if !active {
-		ui.Fail("The snapshot timers aren't running")
-		ui.Note("Fix: systemctl enable --now snapper-timeline.timer snapper-cleanup.timer")
-		visit.offer("Turn the snapshot timers back on", func() bool {
-			return succeeded("systemctl", "enable", "--now", "snapper-timeline.timer", "snapper-cleanup.timer")
-		})
+		visit.timersOff()
 		return
 	}
 	last, ok, err := newestSnapshot(visit.limit)
