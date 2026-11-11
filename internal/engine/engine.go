@@ -90,14 +90,26 @@ func setOnFailure(options *Options, value string) error {
 	return nil
 }
 
+func moduleNumbers(flag, value string) error {
+	for _, id := range strings.Split(value, ",") {
+		if id == "" {
+			return errors.New(flag + " takes module numbers, such as 04,05")
+		}
+		if !slices.ContainsFunc(modules.All, func(module modules.Module) bool { return module.ID == id }) {
+			return errors.New("no module " + id + ": " + flag + " takes module numbers, such as 04,05 (see: hyprtrixie modules)")
+		}
+	}
+	return nil
+}
+
 func setOnly(options *Options, value string) error {
 	options.Only = value
-	return nil
+	return moduleNumbers("--only", value)
 }
 
 func setSkip(options *Options, value string) error {
 	options.Skip = value
-	return nil
+	return moduleNumbers("--skip", value)
 }
 
 func setChanges(options *Options, value string) error {
