@@ -46,7 +46,7 @@ Singleton {
 
   Timer {
     interval: 2000
-    running: true
+    running: !Screens.dark && !Theme.zen
     repeat: true
     triggeredOnStart: true
     onTriggered: stat.reload()
@@ -54,7 +54,7 @@ Singleton {
 
   Timer {
     interval: 5000
-    running: true
+    running: !Screens.dark && !Theme.zen
     repeat: true
     triggeredOnStart: true
     onTriggered: meminfo.reload()

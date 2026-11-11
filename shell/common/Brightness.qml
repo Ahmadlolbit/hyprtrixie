@@ -93,7 +93,7 @@ Singleton {
 
   Timer {
     interval: 5000
-    running: root.device !== ""
+    running: root.device !== "" && !Screens.dark
     repeat: true
     onTriggered: now.reload()
   }

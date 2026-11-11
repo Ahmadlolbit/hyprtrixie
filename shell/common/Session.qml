@@ -101,7 +101,7 @@ Singleton {
 
   Timer {
     interval: 2000
-    running: root.fnLed !== ""
+    running: root.fnLed !== "" && !Screens.dark && !Theme.zen
     repeat: true
     onTriggered: fnState.reload()
   }

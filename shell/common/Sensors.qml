@@ -65,7 +65,7 @@ Singleton {
 
   Timer {
     interval: 5000
-    running: true
+    running: root.detailed || (!Screens.dark && !Theme.zen)
     repeat: true
     onTriggered: {
       if (root.cpuFile !== "")
