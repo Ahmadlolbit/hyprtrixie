@@ -2,7 +2,9 @@ package tui
 
 import (
 	"fmt"
+	"slices"
 	"strings"
+	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -16,7 +18,10 @@ const (
 	pageJump    = 10
 )
 
-const emptyRefused = "That row can't be empty, so it keeps what it had"
+const (
+	emptyRefused     = "That row can't be empty, so it keeps what it had"
+	lineBreakRefused = "A row can't take a tab or a line break, so the paste isn't taken"
+)
 
 type field struct {
 	allow   func(rune) bool
@@ -234,6 +239,9 @@ func (view *page) refuse(line row, key tea.KeyMsg) bool {
 		return false
 	}
 	view.wizard.notice = line.input.refused
+	if slices.ContainsFunc(key.Runes, unicode.IsControl) {
+		view.wizard.notice = lineBreakRefused
+	}
 	return true
 }
 
