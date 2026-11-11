@@ -94,6 +94,10 @@ func (disk Disk) Windows() bool {
 	})
 }
 
+func (disk Disk) External() bool {
+	return disk.Transport == "usb" || disk.Removable
+}
+
 func (disk Disk) Name() string {
 	model := strings.TrimSpace(disk.Model)
 	if model == "" {

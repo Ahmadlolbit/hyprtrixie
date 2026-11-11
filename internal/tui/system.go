@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 	"unicode"
@@ -58,8 +59,22 @@ func newSystem(found []disks.Disk) *system {
 		zone = "UTC"
 	}
 	layout := keyboard.Current()
-	return &system{found: found, room: map[string]string{}, reuse: map[string]bool{}, seen: layout,
+	return &system{found: internalFirst(found), room: map[string]string{}, reuse: map[string]bool{}, seen: layout,
 		answers: osinstall.Answers{Host: "hyprtrixie", Zone: zone, Keyboard: layout, Locale: "en_US.UTF-8"}}
+}
+
+func internalFirst(found []disks.Disk) []disks.Disk {
+	ordered := slices.Clone(found)
+	slices.SortStableFunc(ordered, func(one, other disks.Disk) int {
+		switch {
+		case one.External() == other.External():
+			return 0
+		case one.External():
+			return 1
+		}
+		return -1
+	})
+	return ordered
 }
 
 func (state *system) chosen() (disks.Disk, bool) {
