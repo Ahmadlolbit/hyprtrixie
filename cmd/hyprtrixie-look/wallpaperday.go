@@ -149,8 +149,9 @@ func ownPictures(place string) []string {
 	}
 	var found []string
 	for _, entry := range fsutil.Entries(place) {
-		if !entry.IsDir() && slices.Contains(pictureKind, strings.ToLower(filepath.Ext(entry.Name()))) {
-			found = append(found, filepath.Join(place, entry.Name()))
+		path := filepath.Join(place, entry.Name())
+		if !strings.HasPrefix(entry.Name(), ".") && slices.Contains(pictureKind, strings.ToLower(filepath.Ext(entry.Name()))) && fsutil.IsFile(path) {
+			found = append(found, path)
 		}
 	}
 	return found
