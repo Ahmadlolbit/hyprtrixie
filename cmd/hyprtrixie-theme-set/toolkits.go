@@ -28,6 +28,7 @@ const (
 var (
 	toolkitFiles = []string{"gtk3.css", "gtk4.css", "kde.colors"}
 	gtkKept      = []string{"color-scheme", "gtk-theme", "icon-theme"}
+	kdeChanged   = false
 )
 
 func appColors(colors theme.Colors) theme.Colors {
@@ -143,7 +144,9 @@ func writeKDEGlobals(scheme string) {
 	keepKDEGlobals(globals, current)
 	if err := atomic.Write(globals, []byte(merged), 0o666); err != nil {
 		fmt.Fprintln(os.Stderr, err)
+		return
 	}
+	kdeChanged = true
 }
 
 func kdeColors(file string) {
@@ -213,6 +216,9 @@ func releaseGTK(mode string) {
 }
 
 func tellKDEApps() {
+	if !kdeChanged {
+		return
+	}
 	for _, change := range []string{"0", "2"} {
 		run.Quiet(run.Quick, "gdbus", "emit", "--session", "--object-path", "/KGlobalSettings", "--signal", "org.kde.KGlobalSettings.notifyChange", change, "0")
 	}

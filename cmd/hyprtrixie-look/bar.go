@@ -8,6 +8,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/look"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
 func shellFile() string {
@@ -54,6 +55,7 @@ func setBar(change func([]byte, string) ([]byte, error), value string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
+	run.Quiet(run.Quick, "hyprctl", "reload")
 	return 0
 }
 
