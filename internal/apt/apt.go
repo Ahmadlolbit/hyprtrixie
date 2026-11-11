@@ -43,6 +43,7 @@ const (
 	folderMode     = 0o755
 	configMode     = 0o644
 	madisonFields  = 3
+	blanks         = " \t"
 )
 
 func extrepoConfig() string {
@@ -201,8 +202,29 @@ func backportsVersions(names []string) map[string]string {
 	return found
 }
 
-func olderThan(name, wanted string) bool {
-	return wanted != "" && run.Quiet(run.Quick, "dpkg", "--compare-versions", Version(name), "lt", wanted) == 0
+func installedVersions(names []string, wanted map[string]string) map[string]string {
+	asked := slices.DeleteFunc(slices.Clone(names), func(name string) bool { return wanted[name] == "" })
+	found := map[string]string{}
+	if len(asked) == 0 {
+		return found
+	}
+	output, _ := run.CaptureQuiet(run.Minute, "dpkg-query", append([]string{"-W", "-f", "${Package}\t${Version}\n"}, asked...)...)
+	for _, line := range run.Lines(output) {
+		if name, version, ok := strings.Cut(line, "\t"); ok && slices.Contains(asked, name) && version != "" && !strings.ContainsAny(version, blanks) {
+			found[name] = version
+		}
+	}
+	return found
+}
+
+func olderThan(name, installed, wanted string) bool {
+	switch {
+	case wanted == "" || installed == wanted:
+		return false
+	case installed == "":
+		installed = Version(name)
+	}
+	return run.Quiet(run.Quick, "dpkg", "--compare-versions", installed, "lt", wanted) == 0
 }
 
 func installedBackports(specs []string, installed map[string]bool) []string {
@@ -276,12 +298,14 @@ func installStable(log *runlog.Log, specs []string) error {
 }
 
 func sorted(specs []string, installed map[string]bool) ([]string, []string) {
-	versions := backportsVersions(installedBackports(specs, installed))
+	present := installedBackports(specs, installed)
+	versions := backportsVersions(present)
+	have := installedVersions(present, versions)
 	var stable, backports []string
 	for _, spec := range specs {
 		name, wanted := strings.CutSuffix(spec, backportsMark)
 		if wanted {
-			if !installed[name] || olderThan(name, versions[name]) {
+			if !installed[name] || olderThan(name, have[name], versions[name]) {
 				backports = append(backports, name)
 			}
 		} else if !installed[spec] {

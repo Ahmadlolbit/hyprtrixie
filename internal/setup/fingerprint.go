@@ -89,8 +89,10 @@ func fingerprintSetup(log *runlog.Log) error {
 	if err := apt.InstallLists(log, "fingerprint"); err != nil {
 		return err
 	}
-	if err := fingerprintOnlyWhereAsked(log); err != nil {
-		return err
+	if fingerprintEverywhere() {
+		if err := fingerprintOnlyWhereAsked(log); err != nil {
+			return err
+		}
 	}
 	return fingerprintSudo(true)
 }

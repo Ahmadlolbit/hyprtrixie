@@ -2,7 +2,6 @@ package setup
 
 import (
 	"errors"
-	"io"
 	"maps"
 	"os"
 	"slices"
@@ -70,9 +69,23 @@ func powerReady(log *runlog.Log) error {
 	return expect(service.Enabled(powerProfiles), powerProfiles+" isn't enabled")
 }
 
+func firewallSettled() bool {
+	output, _ := run.CaptureInEnglish(run.Minute, "ufw", "status", "verbose")
+	defaults := ""
+	for _, line := range strings.Split(output, "\n") {
+		if rest, found := strings.CutPrefix(line, "Default: "); found {
+			defaults = rest
+		}
+	}
+	return lineHasPrefix(output, "Status: active") && strings.Contains(defaults, "deny (incoming)") && strings.Contains(defaults, "allow (outgoing)")
+}
+
 func firewallSetup(log *runlog.Log) error {
 	if err := apt.InstallLists(log, "firewall"); err != nil {
 		return err
+	}
+	if firewallSettled() {
+		return nil
 	}
 	if err := run.Logged(log, "ufw", "default", "deny", "incoming"); err != nil {
 		return err
@@ -143,8 +156,12 @@ func sshServerOff(log *runlog.Log) error {
 	if installed, _ := apt.Installed(); !installed["openssh-server"] {
 		return nil
 	}
-	for _, unit := range []string{"ssh.socket", "ssh.service"} {
-		run.Logged(io.Discard, "systemctl", "disable", unit)
+	on := slices.DeleteFunc([]string{"ssh.socket", "ssh.service"}, func(unit string) bool { return !service.Enabled(unit) })
+	if len(on) == 0 {
+		return nil
+	}
+	if err := run.Logged(log, "systemctl", append([]string{"disable"}, on...)...); err != nil {
+		return err
 	}
 	log.Line("info", "the SSH server stays off from the next boot")
 	return nil

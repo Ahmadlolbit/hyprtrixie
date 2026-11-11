@@ -69,9 +69,13 @@ func (disk Disk) Holds(where string) bool {
 	return slices.Contains(disk.Mountpoint, where) || slices.ContainsFunc(disk.Children, func(part Partition) bool { return part.mounted(where) })
 }
 
+func (disk Disk) itself() Partition {
+	return Partition{Path: disk.Path, Type: disk.Type, Mountpoints: disk.Mountpoint, Children: disk.Children}
+}
+
 func (disk Disk) Mounted() []string {
 	var points []string
-	queue := slices.Clone(disk.Children)
+	queue := []Partition{disk.itself()}
 	for len(queue) > 0 {
 		part := queue[0]
 		queue = append(queue[1:], part.Children...)
@@ -162,9 +166,5 @@ func (part Partition) release(steps []Step) []Step {
 }
 
 func (disk Disk) Release() []Step {
-	var steps []Step
-	for _, part := range disk.Children {
-		steps = part.release(steps)
-	}
-	return steps
+	return disk.itself().release(nil)
 }

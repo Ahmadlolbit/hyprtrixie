@@ -30,12 +30,18 @@ const (
 	toolboxTool  = "jetbrains-toolbox"
 	zedDesktop   = "share/applications/dev.zed.Zed.desktop"
 	zedVersion   = ".hyprtrixie-version"
+	podmanSocket = "podman.socket"
+
+	globalPodmanSocket = "/etc/systemd/user/sockets.target.wants/" + podmanSocket
+	userPodmanSocket   = ".config/systemd/user/sockets.target.wants/" + podmanSocket
 
 	firstSubordinate = 100000
 	subordinateCount = 65536
 	gitLowSpeedLimit = "GIT_HTTP_LOW_SPEED_LIMIT=1024"
 	gitLowSpeedTime  = "GIT_HTTP_LOW_SPEED_TIME=60"
 )
+
+var toolRepositories = [][2]string{{"docker", "docker-ce"}, {"mise", "mise"}, {"kubernetes", "kubernetes"}, {"kubernetes", "helm"}, {"vscode", "vscode"}, {"vscodium", "vscodium"}}
 
 type toolStep struct {
 	tools []string
@@ -154,6 +160,24 @@ func (context *Context) engineInstall(log *runlog.Log) error {
 	if engineInUse() == engine && fsutil.Exists(shim) {
 		return nil
 	}
+	if engine != "podman" {
+		return context.switchEngine(log, engine)
+	}
+	socketOn := service.Enabled(podmanSocket)
+	links := slices.DeleteFunc([]string{globalPodmanSocket, context.Person.Path(userPodmanSocket)}, fsutil.IsLink)
+	err := context.switchEngine(log, engine)
+	if !socketOn && service.Enabled(podmanSocket) {
+		ledger.Note(ledger.Service, podmanSocket)
+	}
+	for _, link := range links {
+		if fsutil.IsLink(link) {
+			ledger.Note(ledger.Made, link)
+		}
+	}
+	return err
+}
+
+func (context *Context) switchEngine(log *runlog.Log, engine string) error {
 	return run.Logged(log, "env", "SUDO_USER="+context.Person.Name, filepath.Join(env.BinDir(), engineSwitch), engine)
 }
 
@@ -563,10 +587,25 @@ func (context *Context) toolSteps() []toolStep {
 	}
 }
 
+func (context *Context) toolRepositoriesAhead() []string {
+	var names []string
+	for _, pair := range toolRepositories {
+		if context.Config.Enabled("DEV_TOOLS", pair[0]) && !apt.ExtrepoEnabled(pair[1]) {
+			names = append(names, pair[1])
+		}
+	}
+	return names
+}
+
 func developerSteps(context *Context) {
+	ahead := context.toolRepositoriesAhead()
 	for _, entry := range context.toolSteps() {
 		if slices.ContainsFunc(entry.tools, func(tool string) bool { return context.Config.Enabled("DEV_TOOLS", tool) }) {
-			context.Run.Step(entry.title, entry.work)
+			context.Run.Step(entry.title, func(log *runlog.Log) error {
+				apt.ExtrepoAhead(log, ahead...)
+				ahead = nil
+				return entry.work(log)
+			})
 		}
 	}
 }
