@@ -5,7 +5,9 @@ local bar_height = math.floor(30 * scale + 0.5)
 local bar_width = math.floor(60 * scale + 0.5)
 local preset = look.bar("preset") or "full"
 local dropdown_move, dropdown_size = "0 " .. bar_height, "monitor_w monitor_h*0.45"
-if preset == "vertical" then
+if look.get("zen") == "yes" then
+  dropdown_move = "0 0"
+elseif preset == "vertical" then
   dropdown_move, dropdown_size = bar_width .. " 0", "(monitor_w-" .. bar_width .. ") (monitor_h*0.45)"
 elseif look.bar("position") == "bottom" then
   dropdown_move = "0 0"
