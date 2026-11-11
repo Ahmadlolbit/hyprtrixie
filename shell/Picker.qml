@@ -207,7 +207,10 @@ Scope {
       MouseArea {
         anchors.fill: parent
         onClicked: root.close()
-        onWheel: wheel => root.move(wheel.angleDelta.y > 0 ? -1 : 1)
+        onWheel: wheel => {
+          if (wheel.angleDelta.y !== 0)
+            root.move(wheel.angleDelta.y > 0 ? -1 : 1);
+        }
       }
 
       Item {

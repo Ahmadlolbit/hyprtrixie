@@ -14,7 +14,10 @@ Label {
     anchors.fill: parent
     cursorShape: Qt.PointingHandCursor
     onClicked: popup.toggle()
-    onWheel: wheel => Brightness.adjust(wheel.angleDelta.y > 0 ? "5%+" : "5%-")
+    onWheel: wheel => {
+      if (wheel.angleDelta.y !== 0)
+        Brightness.adjust(wheel.angleDelta.y > 0 ? "5%+" : "5%-");
+    }
   }
 
   BarPopup {

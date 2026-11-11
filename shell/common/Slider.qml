@@ -47,6 +47,9 @@ Item {
     cursorShape: Qt.PointingHandCursor
     onPressed: mouse => place(mouse.x)
     onPositionChanged: mouse => place(mouse.x)
-    onWheel: wheel => root.moved(wheel.angleDelta.y > 0 ? Math.max(root.value, Math.min(1, root.value + 0.05)) : Math.max(0, root.value - 0.05))
+    onWheel: wheel => {
+      if (wheel.angleDelta.y !== 0)
+        root.moved(wheel.angleDelta.y > 0 ? Math.max(root.value, Math.min(1, root.value + 0.05)) : Math.max(0, root.value - 0.05));
+    }
   }
 }
