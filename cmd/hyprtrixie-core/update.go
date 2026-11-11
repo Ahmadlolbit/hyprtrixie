@@ -149,7 +149,7 @@ func writeChanges(dir, text string) error {
 
 func update() int {
 	part := cmp.Or(env.Arg(2), "all")
-	if !slices.Contains([]string{"all", "system", "apps", "hyprtrixie"}, part) {
+	if !slices.Contains([]string{"all", "system", "apps", "hyprtrixie"}, part) || env.Arg(3) != "" {
 		return fail("usage: hyprtrixie update [system | apps | hyprtrixie]")
 	}
 	if os.Geteuid() == 0 {
