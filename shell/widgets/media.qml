@@ -84,7 +84,8 @@ Label {
           id: cover
 
           anchors.fill: parent
-          source: root.player ? root.player.trackArtUrl : ""
+          source: popup.visible && root.player ? root.player.trackArtUrl : ""
+          asynchronous: true
           fillMode: Image.PreserveAspectCrop
           sourceSize.width: 176
           sourceSize.height: 176
