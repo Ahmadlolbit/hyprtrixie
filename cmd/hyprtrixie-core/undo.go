@@ -57,9 +57,14 @@ func takenBack(record ledger.Record, installed map[string]bool, id string) []str
 func planUndo(id string) (undoPlan, error) {
 	installed, err := apt.Installed()
 	if err != nil {
-		return undoPlan{}, err
+		return undoPlan{}, fmt.Errorf("the installed packages can't be read: %w", err)
 	}
 	record := ledger.Load(id)
+	if len(record.Values(ledger.Made)) > 0 {
+		if _, err := account.People(); err != nil {
+			return undoPlan{}, err
+		}
+	}
 	record[ledger.Package] = append(record[ledger.Package], ledger.Unfinished(id, installed)...)
 	shared := ledger.Elsewhere(id, ledger.File)
 	plan := undoPlan{id: id, services: record.Values(ledger.Service), packages: takenBack(record, installed, id)}
@@ -81,8 +86,12 @@ func removable(path string) bool {
 	if !filepath.IsAbs(clean) || strings.Count(clean, "/") < 2 {
 		return false
 	}
+	people, err := account.People()
+	if err != nil {
+		return false
+	}
 	homes := []string{env.Home()}
-	for _, person := range account.Humans() {
+	for _, person := range people {
 		homes = append(homes, person.Home)
 	}
 	return !slices.ContainsFunc(homes, func(home string) bool {
@@ -145,7 +154,11 @@ func (plan undoPlan) takeFiles(log *runlog.Log) error {
 }
 
 func removeMade(log *runlog.Log, path string) error {
-	if person, ok := account.Owning(path); ok {
+	person, ok, err := account.Owner(path)
+	if err != nil {
+		return err
+	}
+	if ok {
 		return person.Run(log, "rm", "-rf", path)
 	}
 	return os.RemoveAll(path)
@@ -188,7 +201,7 @@ func undo(id string, yes bool) int {
 	}
 	plan, err := planUndo(id)
 	if err != nil {
-		return fail("The installed packages can't be read, so nothing was changed: %v", err)
+		return fail("Nothing was changed: %v.", err)
 	}
 	fmt.Print(plan.describe())
 	if !yes && !ui.Confirm("Undo module "+id+"?") {
