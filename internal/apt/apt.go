@@ -435,6 +435,21 @@ func extrepoEnable(log *runlog.Log, name string) (bool, error) {
 	return true, run.LoggedWithin(extrepoLimit, log, "extrepo", "enable", name)
 }
 
+func ExtrepoAhead(log *runlog.Log, names ...string) {
+	if len(names) == 0 || Install(log, "extrepo") != nil {
+		return
+	}
+	added := false
+	for _, name := range names {
+		if !ExtrepoEnabled(name) && run.LoggedWithin(extrepoLimit, log, "extrepo", "enable", name) == nil {
+			added = true
+		}
+	}
+	if added {
+		ForceUpdate(log)
+	}
+}
+
 func ExtrepoAllows(policy string) (bool, error) {
 	lines, err := fsutil.Lines(extrepoConfig())
 	return slices.Contains(lines, "- "+policy), err

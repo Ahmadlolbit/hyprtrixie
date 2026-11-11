@@ -255,9 +255,40 @@ func (context *Context) heliumIsDefault(log *runlog.Log) error {
 	return expect(err == nil && output == heliumEntry, "the default is "+cmp.Or(output, "not set"))
 }
 
+func (context *Context) waitingForRepositories() []apps.App {
+	source := context.Config.Get("TEAMS_SOURCE")
+	return slices.DeleteFunc(context.wantedApps(), func(app apps.App) bool {
+		name := repositoryOf(app)
+		return name == "" || app.Source == "teams" && source == "snap" || apt.ExtrepoEnabled(name)
+	})
+}
+
+func (context *Context) repositoriesAhead() []string {
+	waiting := context.waitingForRepositories()
+	if len(waiting) == 0 {
+		return nil
+	}
+	installed, err := apt.Installed()
+	if err != nil {
+		return nil
+	}
+	var names []string
+	for _, app := range waiting {
+		if name := repositoryOf(app); !slices.Contains(names, name) && !app.Present(installed, context.Config.Get("TEAMS_SOURCE")) {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
 func appSteps(context *Context) {
+	ahead := context.repositoriesAhead()
 	for _, app := range context.wantedApps() {
-		context.Run.Step("Install "+app.Name, func(log *runlog.Log) error { return context.appInstall(log, app) })
+		context.Run.Step("Install "+app.Name, func(log *runlog.Log) error {
+			apt.ExtrepoAhead(log, ahead...)
+			ahead = nil
+			return context.appInstall(log, app)
+		})
 	}
 	if context.Config.Enabled("APPS", "helium") {
 		context.Run.Step("Make Helium the default browser", func(log *runlog.Log) error {
