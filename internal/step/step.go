@@ -10,6 +10,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/term"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/ui"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/words"
 )
@@ -140,6 +141,7 @@ func (runner *Runner) Answer(ask func() (string, bool)) (string, bool) {
 		}
 		return got.text, got.ok
 	case <-runner.stop:
+		term.Restore()
 		runner.Interrupted = true
 		return "", false
 	}

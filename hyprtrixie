@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-root="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+root="$(readlink -f "${BASH_SOURCE[0]}")"
+root="${root%/*}"
 tools="${HYPRTRIXIE_TOOLS_DIR:-$root/build/bin}"
 core="${HYPRTRIXIE_CORE:-/usr/local/bin/hyprtrixie-core}"
 export HYPRTRIXIE_ROOT="$root"
@@ -29,7 +30,11 @@ needs_root() {
 }
 
 stale() {
+  local program
   [[ ! -x $tools/hyprtrixie-core ]] && return 0
+  for program in "$tools"/*; do
+    [[ -s $program ]] || return 0
+  done
   [[ -n $(find "$root/cmd" "$root/internal" "$root/vendor" "$root/go.mod" -newer "$tools/hyprtrixie-core" -print -quit) ]]
 }
 
@@ -76,7 +81,7 @@ case "${1:-} ${2:-}" in
     exec "$tools/hyprtrixie"
     ;;
   install\ *)
-    needs_root install
+    needs_root "$*"
     build
     fresh "$@"
     ;;
@@ -86,7 +91,7 @@ case "${1:-} ${2:-}" in
     fresh "$@"
     ;;
   verify\ *)
-    needs_root verify
+    needs_root "$*"
     if command -v go >/dev/null; then
       build
       fresh "$@"
