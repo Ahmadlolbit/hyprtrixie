@@ -60,7 +60,8 @@ func next() (string, bool) {
 }
 
 func perWorkspace() bool {
-	return look.Open().Get("workspaces") == "yes"
+	settings := look.Open()
+	return settings.Get("workspaces") == "yes" && settings.Get("day_wallpaper") == "off"
 }
 
 func inHyprland() bool {

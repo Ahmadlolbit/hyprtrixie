@@ -27,7 +27,7 @@ Scope {
   }
 
   Variants {
-    model: Theme.looks.workspaces === "yes" ? Hyprland.monitors.values : []
+    model: Theme.looks.workspaces === "yes" && (Theme.looks.day_wallpaper || "off") === "off" ? Hyprland.monitors.values : []
 
     Scope {
       id: wall
