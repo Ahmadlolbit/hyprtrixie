@@ -505,9 +505,10 @@ func RunInstaller() int {
 	}
 	flow := newWizard(config.Read(config.Path()))
 	flow.show = canShow
-	flow.nvidia = detect.ReadHardware().HasGPU("nvidia") || detect.NvidiaOnBus()
+	hardware, machine := detect.Survey()
+	flow.nvidia = hardware.HasGPU("nvidia") || detect.NvidiaOnBus()
 	flow.system = newSystem(found)
 	flow.system.blocked = installerBlocked()
-	flow.stages = flow.systemStages(run.Lines(detect.Summary()), apps.All())
+	flow.stages = flow.systemStages(run.Lines(machine), apps.All())
 	return play(flow)
 }
