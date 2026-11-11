@@ -13,6 +13,7 @@ Singleton {
   property bool quiet: false
   property int seen: 0
   property int cleared: 0
+  property real refreshed: 0
   readonly property var shownItems: items.filter(item => item.id > cleared)
   readonly property int newest: items.length ? Math.max(...items.map(item => item.id)) : 0
   readonly property int unread: items.filter(item => item.id > Math.max(seen, cleared)).length
@@ -80,6 +81,7 @@ Singleton {
   }
 
   function refresh() {
+    refreshed = Date.now();
     openLister.running = true;
     modes.running = true;
   }
@@ -93,6 +95,13 @@ Singleton {
     cleared = newest;
   }
 
+  function heard() {
+    if (settle.running)
+      return;
+    settle.interval = Math.max(300, refreshed + 2000 - Date.now());
+    settle.start();
+  }
+
   function toggleQuiet() {
     switcher.running = true;
   }
@@ -103,14 +112,13 @@ Singleton {
     running: true
     command: ["busctl", "--user", "monitor", "--json=short", "--match=type='method_call',interface='org.freedesktop.Notifications',member='Notify'", "--match=type='signal',interface='org.freedesktop.Notifications'", "--match=type='method_call',interface='fr.emersion.Mako',member='RestoreNotification'", "--match=type='method_call',interface='fr.emersion.Mako',member='SetModes'", "--match=type='method_call',interface='fr.emersion.Mako',member='SetMode'", "--match=type='signal',sender='org.freedesktop.DBus',member='NameOwnerChanged',arg0='org.freedesktop.Notifications'"]
     stdout: SplitParser {
-      onRead: settle.restart()
+      onRead: root.heard()
     }
   }
 
   Timer {
     id: settle
 
-    interval: 300
     onTriggered: root.refresh()
   }
 
