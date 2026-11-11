@@ -3,9 +3,12 @@ package main
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
@@ -107,9 +110,22 @@ func initialize(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
+	before, keysBefore := remember(repositoryFile()), remember(keysFile())
 	if !keysReady(location) {
 		return 1
 	}
+	code := setUp(location)
+	if code != 0 {
+		before.putBack()
+		keysBefore.putBack()
+	}
+	if kept := strings.TrimSpace(string(before.data)); code != 0 && kept != "" {
+		fmt.Fprintf(os.Stderr, "Backups still go to %s.\n", kept)
+	}
+	return code
+}
+
+func setUp(location string) int {
 	if err := atomic.Write(repositoryFile(), []byte(location+"\n"), 0o666); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
@@ -121,6 +137,31 @@ func initialize(args []string) int {
 		return 0
 	}
 	return run.Status("restic", "init")
+}
+
+type remembered struct {
+	path   string
+	data   []byte
+	absent bool
+	read   bool
+}
+
+func remember(path string) remembered {
+	data, err := os.ReadFile(path)
+	return remembered{path: path, data: data, absent: errors.Is(err, fs.ErrNotExist), read: err == nil}
+}
+
+func (file remembered) putBack() {
+	var err error
+	switch {
+	case file.absent:
+		err = os.Remove(file.path)
+	case file.read:
+		err = atomic.Write(file.path, file.data, 0o600)
+	}
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		fmt.Fprintln(os.Stderr, err)
+	}
 }
 
 func backup() int {

@@ -62,7 +62,12 @@ type RoomError struct {
 }
 
 func (err RoomError) Error() string {
-	return fmt.Sprintf("the largest free space on this disk is %s; shrink Windows first to leave at least %s", Size(err.Free), Size(err.Needed))
+	return fmt.Sprintf("the largest free space on this disk is %s; shrink Windows first to leave at least %s", Size(err.Free), Size(roundedUp(err.Needed)))
+}
+
+func roundedUp(bytes int64) int64 {
+	const unit = 1000 * 1000 * 1000
+	return (bytes + unit - 1) / unit * unit
 }
 
 func Beside(disk Disk, table Table, ids [3]string) (Plan, error) {

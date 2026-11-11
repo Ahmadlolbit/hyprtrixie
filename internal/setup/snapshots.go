@@ -171,9 +171,11 @@ func firstIn(listing string) (string, string, bool) {
 }
 
 func snapperFirst(log *runlog.Log) error {
-	listing, _ := run.CaptureQuiet(run.Minute, "snapper", snapperArgs("--csvout", "--no-headers", "--separator", "\t", "list", "--columns", "number,cleanup,description")...)
+	listing, err := run.CaptureQuiet(run.Minute, "snapper", snapperArgs("--csvout", "--no-headers", "--separator", "\t", "list", "--columns", "number,cleanup,description")...)
+	if err != nil {
+		return errors.New("snapper can't list the snapshots of /")
+	}
 	number, cleanup, found := firstIn(listing)
-	var err error
 	switch {
 	case found && cleanup != "":
 		err = run.Logged(log, "snapper", snapperArgs("modify", "--cleanup-algorithm", "", number)...)
@@ -208,7 +210,14 @@ func everySnapshotTimer() []string {
 }
 
 func aptSnapshotsOff() bool {
-	return strings.Trim(settingIn(snapperDefaults(), aptSnapshots), `"'`) == "yes"
+	lines, _ := fsutil.Lines(snapperDefaults())
+	value := ""
+	for _, line := range lines {
+		if rest, found := strings.CutPrefix(strings.TrimSpace(line), aptSnapshots+"="); found {
+			value = rest
+		}
+	}
+	return strings.Trim(value, `"'`) == "yes"
 }
 
 func anyTimerOn(timers []string) bool {
@@ -405,7 +414,7 @@ func snapshotSteps(context *Context) {
 		snapshotsOff(context)
 		return
 	}
-	if btrfs.RootSubvolume() == installerRoot {
+	if btrfs.RootSubvolume() == installerRoot && !btrfs.Mounted("/home") {
 		context.Run.Note("Root is the installer's " + installerRoot + "; /home is inside root snapshots.")
 	}
 	menu := grubMenu{}

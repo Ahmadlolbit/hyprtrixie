@@ -64,7 +64,7 @@ func Crypttab(text, mapper string, on bool) (string, bool) {
 	found := false
 	for index, line := range lines {
 		fields := strings.Fields(line)
-		if len(fields) < 3 || fields[0] != mapper {
+		if len(fields) < 2 || fields[0] != mapper {
 			continue
 		}
 		found = true
@@ -72,8 +72,11 @@ func Crypttab(text, mapper string, on bool) (string, bool) {
 		if len(fields) > 3 {
 			options = fields[3]
 		}
-		kept := fields[:3]
+		kept := fields[:min(len(fields), 3)]
 		if changed := withOption(options, on); changed != "" {
+			if len(kept) == 2 {
+				kept = append(kept, "none")
+			}
 			kept = append(kept, changed)
 		}
 		lines[index] = strings.Join(kept, " ")
@@ -84,7 +87,7 @@ func Crypttab(text, mapper string, on bool) (string, bool) {
 func optionsOf(text, mapper string) ([]string, bool) {
 	for _, line := range strings.Split(text, "\n") {
 		fields := strings.Fields(line)
-		if len(fields) < 3 || fields[0] != mapper {
+		if len(fields) < 2 || fields[0] != mapper {
 			continue
 		}
 		if len(fields) > 3 {

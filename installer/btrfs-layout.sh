@@ -22,6 +22,16 @@ is_mounted() {
   [ -n "$(mounted_on "$1")" ]
 }
 
+left_out() {
+  awk -v top=/target -v root="$1" '
+    index($2, top "/") != 1 { next }
+    { dir = substr($2, length(top) + 2) }
+    dir == "boot" || dir == "boot/efi" { next }
+    $1 == root && (dir == "home" || dir == ".snapshots" || dir == "var/log" || dir == "swap") { next }
+    { print dir, $1; exit }
+  ' /proc/mounts
+}
+
 target_dev=$(mounted_on /target)
 [ -n "$target_dev" ] || fail "nothing is mounted on /target. Run this right after partitioning, before the base system is installed."
 target_fs=$(awk '$2 == "/target" { print $3; exit }' /proc/mounts)
@@ -33,10 +43,11 @@ uuid=$(blkid "$target_dev" | sed -n 's/.* UUID="\([^"]*\)".*/\1/p')
 [ -n "$uuid" ] || fail "could not read the filesystem UUID of $target_dev."
 boot_dev=$(mounted_on /target/boot)
 efi_dev=$(mounted_on /target/boot/efi)
-for dir in home .snapshots var/log swap; do
-  dev=$(mounted_on "/target/$dir")
-  [ -z "$dev" ] || [ "$dev" = "$target_dev" ] || fail "/$dir is on a partition of its own ($dev), and this layout would leave it out. Skip this step: Hyprtrixie works without it, and /$dir stays out of the snapshots as it is."
-done
+held=$(left_out "$target_dev")
+if [ -n "$held" ]; then
+  dir=${held%% *}
+  fail "/$dir is on a partition of its own (${held#* }), and this layout would leave it out. Skip this step: Hyprtrixie works without it, and /$dir stays out of the snapshots as it is."
+fi
 say "Filesystem $target_dev ($uuid)"
 
 for dir in boot/efi boot home .snapshots var/log swap; do
