@@ -146,6 +146,13 @@ func ForceUpdate(log *runlog.Log) error {
 	return nil
 }
 
+func forgetUpdate() error {
+	if err := os.Remove(stamp()); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	return nil
+}
+
 func noteUpdate() error {
 	if err := os.MkdirAll(filepath.Dir(stamp()), folderMode); err != nil {
 		return err
@@ -467,10 +474,7 @@ func ExtrepoDisable(log *runlog.Log, name string) error {
 	if err := run.LoggedWithin(extrepoLimit, log, "extrepo", "disable", name); err != nil {
 		return err
 	}
-	if err := os.Remove(stamp()); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return err
-	}
-	return nil
+	return forgetUpdate()
 }
 
 func ownSource(name string) bool {
@@ -494,7 +498,10 @@ func extrepoEnable(log *runlog.Log, name string) (bool, error) {
 	if err := Install(log, "extrepo"); err != nil {
 		return false, err
 	}
-	return true, run.LoggedWithin(extrepoLimit, log, "extrepo", "enable", name)
+	if err := run.LoggedWithin(extrepoLimit, log, "extrepo", "enable", name); err != nil {
+		return true, err
+	}
+	return true, forgetUpdate()
 }
 
 func ExtrepoAhead(log *runlog.Log, names ...string) {
@@ -508,6 +515,7 @@ func ExtrepoAhead(log *runlog.Log, names ...string) {
 		}
 	}
 	if added {
+		forgetUpdate()
 		ForceUpdate(log)
 	}
 }
