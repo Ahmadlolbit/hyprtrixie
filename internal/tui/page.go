@@ -428,5 +428,8 @@ func (view *page) keys() string {
 	if view.typing() {
 		return "Type to change · Arrows move · Enter goes on · Esc back"
 	}
+	if line, found := view.current(); found && line.input != nil {
+		return "Digits change · Arrows move · Enter goes on · Esc back · / search · ? keys"
+	}
 	return "Arrows move · Space changes · Enter goes on · Esc back · / search · ? keys"
 }
