@@ -38,7 +38,7 @@ var (
 	localePattern = regexp.MustCompile(`^[a-z]{2,3}_[A-Z]{2}\.UTF-8$`)
 	taken         = []string{"root", "daemon", "bin", "sys", "sync", "games", "man", "lp", "mail", "news", "uucp", "proxy", "www-data", "backup", "list", "irc", "nobody", "systemd-network", "messagebus", "sddm", "polkitd"}
 	secureBoot    = detect.SecureBoot
-	listing       = []string{"--json", "--bytes", "--output", "PATH,SIZE,TYPE,MODEL,TRAN,RM,RO,PTTYPE,FSTYPE,PARTTYPE,PARTLABEL,MOUNTPOINTS,SERIAL,WWN"}
+	listing       = []string{"--json", "--bytes", "--output", "PATH,SIZE,TYPE,MODEL,TRAN,RM,RO,PTTYPE,PTUUID,FSTYPE,PARTTYPE,PARTLABEL,MOUNTPOINTS,SERIAL,WWN"}
 )
 
 func Read(path string) (Answers, error) {
