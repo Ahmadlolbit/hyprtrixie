@@ -91,7 +91,7 @@ func (context *Context) hyprlandOptions(*runlog.Log) error {
 	return context.Deploy.File("system/hypr/options.lua", "/etc/hyprtrixie/hypr/options.lua",
 		"NATURAL_SCROLL="+luaBool(settings.Get("NATURAL_SCROLL")), "TAP_TO_CLICK="+luaBool(settings.Get("TAP_TO_CLICK")),
 		"ANIMATIONS="+luaBool(settings.Get("ANIMATIONS")), "SCALE="+luaScale(settings.Get("DISPLAY_SCALE")),
-		"NVIDIA="+strconv.FormatBool(nvidiaDrivesDisplay(detect.ReadHardware(), settings.Get("GRAPHICS"))))
+		"NVIDIA="+strconv.FormatBool(nvidiaDrivesDisplay(context.hardware(), settings.Get("GRAPHICS"))))
 }
 
 func (context *Context) hyprlandUserConfig(log *runlog.Log) error {

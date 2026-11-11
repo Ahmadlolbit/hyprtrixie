@@ -12,7 +12,6 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/battery"
-	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
@@ -55,7 +54,7 @@ func (context *Context) powerInstall(log *runlog.Log) error {
 		return err
 	}
 	lists := []string{"power"}
-	if detect.ReadHardware().CPU == "intel" {
+	if context.hardware().CPU == "intel" {
 		lists = append(lists, "power-intel")
 	}
 	if err := apt.InstallLists(log, lists...); err != nil {

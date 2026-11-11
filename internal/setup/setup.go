@@ -9,12 +9,20 @@ import (
 )
 
 type Context struct {
-	Run     *step.Runner
-	Deploy  *files.Deployer
-	Person  account.Account
-	Config  *config.Config
-	CanAsk  bool
-	Machine string
+	Run      *step.Runner
+	Deploy   *files.Deployer
+	Person   account.Account
+	Config   *config.Config
+	CanAsk   bool
+	Machine  string
+	Hardware func() detect.Hardware
+}
+
+func (context *Context) hardware() detect.Hardware {
+	if context.Hardware == nil {
+		return detect.ReadHardware()
+	}
+	return context.Hardware()
 }
 
 func (context *Context) machine() string {
