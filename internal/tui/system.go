@@ -25,6 +25,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/lock"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/osinstall"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/words"
 )
 
 const (
@@ -77,6 +78,30 @@ func internalFirst(found []disks.Disk) []disks.Disk {
 	return ordered
 }
 
+func diskNotes(disk disks.Disk) string {
+	notes := []string{contentsWord(disk.Contents())}
+	if disk.Transport == "usb" {
+		notes = append([]string{words.T("USB")}, notes...)
+	} else if disk.Removable {
+		notes = append([]string{words.T("removable")}, notes...)
+	}
+	return " · " + strings.Join(notes, " · ")
+}
+
+func contentsWord(contents string) string {
+	switch contents {
+	case "Windows":
+		return words.T("Windows")
+	case "Linux":
+		return words.T("Linux")
+	case "has files":
+		return words.T("has files")
+	case "has partitions":
+		return words.T("has partitions")
+	}
+	return words.T("empty")
+}
+
 func (state *system) chosen() (disks.Disk, bool) {
 	for _, disk := range state.found {
 		if disk.Path == state.answers.Disk {
@@ -112,7 +137,7 @@ func (state *system) diskRow(flow *wizard, disk disks.Disk) row {
 	if chosen {
 		mark = "(*)"
 	}
-	return row{mark: mark, label: disk.Name(), chosen: chosen, help: "Space picks it, Enter picks it and goes on",
+	return row{mark: mark, label: disk.Name() + diskNotes(disk), chosen: chosen, help: "Space picks it, Enter picks it and goes on",
 		space: func() tea.Cmd { state.pick(disk); return nil },
 		enter: func() tea.Cmd { state.pick(disk); return flow.forward() }}
 }
