@@ -35,9 +35,17 @@ func (flow *wizard) saveConfiguration() tea.Cmd {
 	return nil
 }
 
+func readable(path string) bool {
+	if !fsutil.IsFile(path) {
+		return false
+	}
+	_, err := fsutil.Text(path)
+	return err == nil
+}
+
 func (flow *wizard) load(path string) tea.Cmd {
 	before := len(flow.settings.Notes)
-	if !fsutil.IsFile(path) {
+	if !readable(path) {
 		flow.notice = "Could not read " + path
 		return nil
 	}
