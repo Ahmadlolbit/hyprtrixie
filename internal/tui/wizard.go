@@ -308,11 +308,27 @@ func (flow *wizard) header(width int) string {
 	return title + strings.Repeat(" ", gap) + dimStyle.Render(where)
 }
 
+func (flow *wizard) saying(help string, width int) []string {
+	text := words.T(help)
+	if !strings.Contains(text, "\n") && (len(text) <= width || lipgloss.Width(text) <= width) {
+		return []string{cut(dimStyle.Render(text), width)}
+	}
+	most := max((flow.height-frameLines)/2, 1)
+	lines := strings.Split(lipgloss.NewStyle().Width(width).Render(text), "\n")
+	said := make([]string, 0, min(len(lines), most))
+	for _, line := range lines[:min(len(lines), most)] {
+		said = append(said, cut(dimStyle.Render(strings.TrimRight(line, " ")), width))
+	}
+	return said
+}
+
 func (flow *wizard) View() string {
-	width, height := max(flow.width, 1), max(flow.height-frameLines, 1)
-	rule := ruleStyle.Render(strings.Repeat("─", width))
+	width := max(flow.width, 1)
 	help, keys := flow.footer()
+	said := flow.saying(help, width)
+	height := max(flow.height-frameLines-len(said)+1, 1)
+	rule := ruleStyle.Render(strings.Repeat("─", width))
 	body := lipgloss.NewStyle().MaxWidth(width).Height(height).MaxHeight(height).Render(flow.body(width, height))
-	lines := []string{cut(flow.header(width), width), rule, body, rule, cut(dimStyle.Render(words.T(help)), width), cut(dimStyle.Render(words.T(keys)), width)}
-	return strings.Join(lines, "\n")
+	lines := append([]string{cut(flow.header(width), width), rule, body, rule}, said...)
+	return strings.Join(append(lines, cut(dimStyle.Render(words.T(keys)), width)), "\n")
 }
