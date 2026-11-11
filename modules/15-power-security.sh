@@ -57,7 +57,7 @@ ssh_server_disabled() {
 }
 
 wifi_from_interfaces() {
-  awk '$1 == "iface" { iface = $2 } $1 == "wpa-ssid" { sub(/^[[:space:]]*wpa-ssid[[:space:]]+/, ""); gsub(/^"|"$/, ""); ssid[iface] = $0 }
+  awk '{ sub(/\r$/, "") } $1 == "iface" { iface = $2 } $1 == "wpa-ssid" { sub(/^[[:space:]]*wpa-ssid[[:space:]]+/, ""); gsub(/^"|"$/, ""); ssid[iface] = $0 }
     $1 == "wpa-psk" { psk[iface] = $2 } END { for (i in ssid) printf "%s\t%s\t%s\n", i, ssid[i], psk[i] }' "$INTERFACES"
 }
 
