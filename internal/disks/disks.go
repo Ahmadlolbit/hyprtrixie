@@ -14,6 +14,7 @@ const (
 	espType     = "c12a7328-f81f-11d2-ba4b-00a0c93ec93b"
 	msReserved  = "e3c9e316-0b5c-4db8-817d-f92df00215ae"
 	msData      = "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7"
+	mbrNTFS     = "0x7"
 )
 
 var linuxSystems = []string{"btrfs", "crypto_LUKS", "ext2", "ext3", "ext4", "f2fs", "LVM2_member", "swap", "xfs"}
@@ -93,7 +94,7 @@ func (disk Disk) ESP() (Partition, bool) {
 
 func (disk Disk) Windows() bool {
 	return slices.ContainsFunc(disk.Children, func(part Partition) bool {
-		return strings.EqualFold(part.PartType, msReserved) || strings.EqualFold(part.PartType, msData) && part.FSType == "ntfs"
+		return strings.EqualFold(part.PartType, msReserved) || part.FSType == "ntfs" && (strings.EqualFold(part.PartType, msData) || part.PartType == mbrNTFS)
 	})
 }
 
