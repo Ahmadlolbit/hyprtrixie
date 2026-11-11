@@ -101,7 +101,7 @@ Singleton {
     id: watcher
 
     running: true
-    command: ["busctl", "--user", "monitor", "--json=short", "--match=type='method_call',interface='org.freedesktop.Notifications',member='Notify'", "--match=type='signal',interface='org.freedesktop.Notifications'", "--match=type='method_call',interface='fr.emersion.Mako',member='RestoreNotification'", "--match=type='signal',sender='org.freedesktop.DBus',member='NameOwnerChanged',arg0='org.freedesktop.Notifications'"]
+    command: ["busctl", "--user", "monitor", "--json=short", "--match=type='method_call',interface='org.freedesktop.Notifications',member='Notify'", "--match=type='signal',interface='org.freedesktop.Notifications'", "--match=type='method_call',interface='fr.emersion.Mako',member='RestoreNotification'", "--match=type='method_call',interface='fr.emersion.Mako',member='SetModes'", "--match=type='method_call',interface='fr.emersion.Mako',member='SetMode'", "--match=type='signal',sender='org.freedesktop.DBus',member='NameOwnerChanged',arg0='org.freedesktop.Notifications'"]
     stdout: SplitParser {
       onRead: settle.restart()
     }
@@ -111,7 +111,7 @@ Singleton {
     id: settle
 
     interval: 300
-    onTriggered: openLister.running = true
+    onTriggered: root.refresh()
   }
 
   Process {
@@ -174,13 +174,8 @@ Singleton {
 
   Timer {
     interval: 10000
-    running: true
+    running: !root.watching
     repeat: true
-    onTriggered: {
-      if (root.watching)
-        modes.running = true;
-      else
-        root.refresh();
-    }
+    onTriggered: root.refresh()
   }
 }
