@@ -94,7 +94,7 @@ Scope {
     return list.filter(bind => bind.has_description && bind.description && !bind.mouse && !bind.submap).map(bind => ({
           keys: keysOf(bind),
           text: bind.description
-        }));
+        })).filter((item, index, all) => all.findIndex(other => other.keys === item.keys) === index);
   }
 
   Process {
