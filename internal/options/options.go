@@ -248,7 +248,7 @@ func (option Option) Valid(value string) bool {
 		return whole(value) && option.within(value)
 	case Multi:
 		items := option.Items()
-		return !slices.ContainsFunc(strings.Fields(value), func(word string) bool { return !slices.Contains(items, word) })
+		return len(items) == 0 || !slices.ContainsFunc(strings.Fields(value), func(word string) bool { return !slices.Contains(items, word) })
 	}
 	return true
 }

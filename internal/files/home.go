@@ -2,7 +2,6 @@ package files
 
 import (
 	"errors"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
 const partSuffix = ".hyprtrixie-part"
@@ -37,7 +37,7 @@ func (deployer *Deployer) userWrite(path string, data []byte, mode os.FileMode) 
 		}
 	}
 	if err != nil {
-		person.Run(io.Discard, "rm", "-f", part)
+		run.Quiet(run.Quick, "runuser", person.RunuserArgs("rm", "-f", part)...)
 	}
 	return err
 }

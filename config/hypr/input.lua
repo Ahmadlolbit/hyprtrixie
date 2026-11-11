@@ -18,7 +18,7 @@ local system = keyboard()
 local layout = system.XKBLAYOUT or ""
 local variant = system.XKBVARIANT or ""
 local options = system.XKBOPTIONS or ""
-local non_latin = " am ara bd bg by et ge gr il in iq ir kg kh kz la lk mk mm mn mv np rs ru sy th tj ua "
+local non_latin = " af am ara bd bg bt by et ge gn gr il in iq ir kg kh kz la lk ma mk mm mn mv my np pk rs ru sy th tj ua uz "
 
 if layout == "" then
   layout = "us"

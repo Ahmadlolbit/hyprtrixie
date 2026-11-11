@@ -83,7 +83,7 @@ func (current *Config) Merge(path string) bool {
 }
 
 func (current *Config) MergeText(path, text string) {
-	text = strings.ReplaceAll(text, "\r\n", "\n")
+	text = strings.ReplaceAll(strings.TrimPrefix(text, "\ufeff"), "\r\n", "\n")
 	loaded := current.apply(path, strings.TrimSuffix(text, "\r"))
 	current.migrate(cmp.Or(loaded, strconv.Itoa(version)))
 	current.validate()

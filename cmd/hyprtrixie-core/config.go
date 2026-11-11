@@ -9,6 +9,7 @@ import (
 	"unicode"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
@@ -59,7 +60,11 @@ func presetFile(source string) (string, func(), error) {
 	if err != nil {
 		return "", nil, err
 	}
-	done := func() { os.RemoveAll(dir) }
+	forget := cleanup.OnSignal(func() { os.RemoveAll(dir) })
+	done := func() {
+		forget()
+		os.RemoveAll(dir)
+	}
 	path := filepath.Join(dir, "preset.conf")
 	if err := presets.Fetch(source, path); err != nil {
 		done()
@@ -116,11 +121,11 @@ func configCommand() int {
 	case "edit":
 		return asRoot("config edit", configEdit)
 	case "reset":
-		return asRoot("config reset", configReset)
+		return asRoot("config reset", alone(configReset))
 	case "export":
 		return say(presets.Export(config.Read(config.Path())))
 	case "import":
-		return asRoot("config import", configImport)
+		return asRoot("config import", alone(configImport))
 	}
 	return fail("usage: hyprtrixie config [show|path|edit|reset|export|import FILE|URL]")
 }
