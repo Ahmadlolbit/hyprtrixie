@@ -168,6 +168,9 @@ func reason(err error) string {
 }
 
 func set(argument string) int {
+	if listed, err := filepath.Abs(argument); err == nil && slices.Contains(backgrounds(), listed) {
+		return apply(listed)
+	}
 	file, err := fsutil.RealPath(argument)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "realpath: %s: %s\n", argument, reason(err))
