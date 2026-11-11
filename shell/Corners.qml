@@ -6,64 +6,76 @@ import qs.common
 Variants {
   model: Quickshell.screens
 
-  PanelWindow {
-    id: overlay
+  Scope {
+    id: display
 
     required property var modelData
-    readonly property int size: 12
 
-    screen: modelData
-    visible: Theme.corners
-    color: "transparent"
-    exclusionMode: ExclusionMode.Ignore
-    mask: Region {}
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "hyprtrixie-corners"
+    component Corner: PanelWindow {
+      id: corner
 
-    anchors {
-      top: true
-      bottom: true
-      left: true
-      right: true
-    }
+      property int turn: 0
+      readonly property int size: 12
 
-    component Corner: Canvas {
-      width: overlay.size
-      height: overlay.size
-      onPaint: {
-        const context = getContext("2d");
-        context.reset();
-        context.fillStyle = "black";
-        context.beginPath();
-        context.moveTo(0, 0);
-        context.lineTo(width, 0);
-        context.arc(width, height, width, -Math.PI / 2, Math.PI, true);
-        context.closePath();
-        context.fill();
+      screen: display.modelData
+      visible: Theme.corners
+      implicitWidth: size
+      implicitHeight: size
+      color: "transparent"
+      exclusionMode: ExclusionMode.Ignore
+      mask: Region {}
+      WlrLayershell.layer: WlrLayer.Overlay
+      WlrLayershell.namespace: "hyprtrixie-corners"
+
+      Canvas {
+        anchors.fill: parent
+        rotation: corner.turn
+        onPaint: {
+          const context = getContext("2d");
+          context.reset();
+          context.fillStyle = "black";
+          context.beginPath();
+          context.moveTo(0, 0);
+          context.lineTo(width, 0);
+          context.arc(width, height, width, -Math.PI / 2, Math.PI, true);
+          context.closePath();
+          context.fill();
+        }
       }
     }
 
     Corner {
-      anchors.top: parent.top
-      anchors.left: parent.left
+      anchors {
+        top: true
+        left: true
+      }
     }
 
     Corner {
-      anchors.top: parent.top
-      anchors.right: parent.right
-      rotation: 90
+      turn: 90
+
+      anchors {
+        top: true
+        right: true
+      }
     }
 
     Corner {
-      anchors.bottom: parent.bottom
-      anchors.right: parent.right
-      rotation: 180
+      turn: 180
+
+      anchors {
+        bottom: true
+        right: true
+      }
     }
 
     Corner {
-      anchors.bottom: parent.bottom
-      anchors.left: parent.left
-      rotation: 270
+      turn: 270
+
+      anchors {
+        bottom: true
+        left: true
+      }
     }
   }
 }
