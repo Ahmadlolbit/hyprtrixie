@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
@@ -25,9 +26,9 @@ const (
 
 var (
 	browsers = []string{"helium", "chromium", "brave-browser", "google-chrome", "microsoft-edge"}
-	goodName = regexp.MustCompile(`^[\p{L}\p{N}][\p{L}\p{N} ._+-]*$`)
-	goodSlug = regexp.MustCompile(`^[a-z0-9-]+$`)
-	unsafe   = regexp.MustCompile("[\\s\"'`$\\\\<>]")
+	goodName = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[\p{L}\p{N}][\p{L}\p{N} ._+-]*$`) })
+	goodSlug = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[a-z0-9-]+$`) })
+	unsafe   = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile("[\\s\"'`$\\\\<>]") })
 )
 
 func Folder() string {
@@ -60,11 +61,11 @@ func Icon(name string) string {
 }
 
 func Check(name, address string) error {
-	if !goodName.MatchString(name) {
+	if !goodName().MatchString(name) {
 		return errors.New("a name uses letters, digits, spaces and . _ + -")
 	}
 	parsed, err := url.Parse(address)
-	if err != nil || parsed.Host == "" || (parsed.Scheme != "https" && parsed.Scheme != "http") || unsafe.MatchString(address) {
+	if err != nil || parsed.Host == "" || (parsed.Scheme != "https" && parsed.Scheme != "http") || unsafe().MatchString(address) {
 		return errors.New("that isn't a web address: it starts with https:// and has no spaces or quotes")
 	}
 	return nil
@@ -102,7 +103,7 @@ func field(text, key string) string {
 }
 
 func Address(slug string) string {
-	if !goodSlug.MatchString(slug) {
+	if !goodSlug().MatchString(slug) {
 		return ""
 	}
 	return field(fsutil.Optional(entryFile(slug)), addressKey)

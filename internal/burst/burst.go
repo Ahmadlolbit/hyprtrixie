@@ -8,6 +8,7 @@ import (
 	"image/png"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -28,7 +29,7 @@ type shown struct {
 //go:embed flipbook.txt
 var flipbook string
 
-var loop = read(flipbook)
+var loop = sync.OnceValue(func() []shown { return read(flipbook) })
 
 func read(text string) []shown {
 	var frames []shown
@@ -53,7 +54,7 @@ func read(text string) []shown {
 
 func Length() time.Duration {
 	total := 0
-	for _, frame := range loop {
+	for _, frame := range loop() {
 		total += frame.ticks
 	}
 	return time.Duration(total) * tick
@@ -61,7 +62,7 @@ func Length() time.Duration {
 
 func markStart() time.Duration {
 	start := 0
-	for _, frame := range loop {
+	for _, frame := range loop() {
 		if frame.name == mark {
 			break
 		}
@@ -71,7 +72,7 @@ func markStart() time.Duration {
 }
 
 func Still() Frame {
-	for _, frame := range loop {
+	for _, frame := range loop() {
 		if frame.name == mark {
 			return frame.pixels
 		}
@@ -86,7 +87,7 @@ func At(elapsed time.Duration) (Frame, time.Duration) {
 	}
 	position := (max(elapsed, 0) + markStart()) % length
 	at := int(position / tick)
-	for _, frame := range loop {
+	for _, frame := range loop() {
 		if at < frame.ticks {
 			return frame.pixels, time.Duration(frame.ticks-at)*tick - position%tick
 		}

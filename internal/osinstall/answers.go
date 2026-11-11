@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/disks"
@@ -32,10 +33,10 @@ type Answers struct {
 }
 
 var (
-	userPattern   = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`)
-	hostPattern   = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
-	zonePattern   = regexp.MustCompile(`^[A-Za-z_]+(/[A-Za-z0-9_+-]+)*$`)
-	localePattern = regexp.MustCompile(`^[a-z]{2,3}_[A-Z]{2}\.UTF-8$`)
+	userPattern   = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`) })
+	hostPattern   = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`) })
+	zonePattern   = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[A-Za-z_]+(/[A-Za-z0-9_+-]+)*$`) })
+	localePattern = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[a-z]{2,3}_[A-Z]{2}\.UTF-8$`) })
 	taken         = []string{"root", "daemon", "bin", "sys", "sync", "games", "man", "lp", "mail", "news", "uucp", "proxy", "www-data", "backup", "list", "irc", "nobody", "systemd-network", "messagebus", "sddm", "polkitd"}
 	secureBoot    = detect.SecureBoot
 	listing       = []string{"--json", "--bytes", "--output", "PATH,SIZE,TYPE,MODEL,TRAN,RM,RO,PTTYPE,PTUUID,FSTYPE,PARTTYPE,PARTLABEL,MOUNTPOINTS,SERIAL,WWN"}
@@ -59,17 +60,17 @@ func (answers Answers) Check() error {
 		return errors.New("no disk was picked")
 	case answers.Password == "" || answers.Secret == "":
 		return errors.New("a password is missing")
-	case !userPattern.MatchString(answers.User):
+	case !userPattern().MatchString(answers.User):
 		return errors.New("the user name has to start with a small letter, and use small letters, digits, - and _")
 	case slices.Contains(taken, answers.User) || known(answers.User):
 		return errors.New("the system already has an account or a group called " + answers.User + ", so pick another user name")
 	case strings.ContainsAny(answers.Name, ":,\n"):
 		return errors.New("the full name can't have : or , in it")
-	case !hostPattern.MatchString(answers.Host):
+	case !hostPattern().MatchString(answers.Host):
 		return errors.New("the computer's name can only have small letters, digits and - in it")
-	case !zonePattern.MatchString(answers.Zone):
+	case !zonePattern().MatchString(answers.Zone):
 		return errors.New("the time zone isn't one like Europe/Istanbul")
-	case !localePattern.MatchString(answers.Locale):
+	case !localePattern().MatchString(answers.Locale):
 		return errors.New("the language isn't one like en_US.UTF-8")
 	}
 	return nil
