@@ -372,6 +372,10 @@ func (context *Context) lazyvimSetup(log *runlog.Log) error {
 }
 
 func (context *Context) lazyvimPlugins(log *runlog.Log) error {
+	if !fsutil.IsFile(context.Person.Path(".config/nvim/lua/plugins/hyprtrixie.lua")) {
+		log.Line("info", "your Neovim config isn't the LazyVim one the setup made, so its plugins stay as they are")
+		return nil
+	}
 	return context.Person.RunWithin(downloadLimit, log, "env", gitLowSpeedLimit, gitLowSpeedTime, filepath.Join(env.BinDir(), "nvim"), "--headless", "+Lazy! sync", "+qa")
 }
 
