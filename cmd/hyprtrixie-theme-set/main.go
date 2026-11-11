@@ -288,6 +288,9 @@ func swap(next, target string) error {
 }
 
 func symlink(target, link string) {
+	if linked, err := os.Readlink(link); err == nil && linked == target {
+		return
+	}
 	err := os.MkdirAll(filepath.Dir(link), 0o777)
 	if err == nil {
 		err = atomic.Symlink(target, link)
@@ -502,9 +505,7 @@ func apply(name string) (paper, bool) {
 		fmt.Fprintln(os.Stderr, err)
 		return paperKept, false
 	}
-	if err := atomic.Write(filepath.Join(state(), "theme.name"), []byte(name+"\n"), 0o666); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	}
+	writeChanged(filepath.Join(state(), "theme.name"), []byte(name+"\n"))
 	pickBackground(name, previous, colors)
 	linkApps()
 	desktopSettings(colors, apps)
