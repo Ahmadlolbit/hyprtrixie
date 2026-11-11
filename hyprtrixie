@@ -29,7 +29,11 @@ needs_root() {
 }
 
 stale() {
+  local program
   [[ ! -x $tools/hyprtrixie-core ]] && return 0
+  for program in "$tools"/*; do
+    [[ -s $program ]] || return 0
+  done
   [[ -n $(find "$root/cmd" "$root/internal" "$root/vendor" "$root/go.mod" -newer "$tools/hyprtrixie-core" -print -quit) ]]
 }
 
