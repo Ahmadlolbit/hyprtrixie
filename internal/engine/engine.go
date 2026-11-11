@@ -263,7 +263,7 @@ func (work *session) kept() map[string]string {
 	statuses := fsutil.Optional(modules.StatusFile())
 	kept := map[string]string{}
 	for id, result := range work.results {
-		if status, _ := modules.StatusOf(statuses, id); status != modules.Undone {
+		if status, _ := modules.StatusOf(statuses, id); status != "" && status != modules.Undone {
 			kept[id] = result
 		}
 	}
