@@ -38,9 +38,17 @@ func flathubAdd(log *runlog.Log) error {
 	return run.LoggedWithin(run.Slow, log, "flatpak", "remote-add", "--system", "--if-not-exists", "flathub", flathubURL)
 }
 
+func flatpakThere(app string) bool {
+	return run.Quiet(run.Minute, "flatpak", "info", "--system", app) == 0
+}
+
 func flatpakInstall(apps ...string) step.Work {
 	return func(log *runlog.Log) error {
-		return run.LoggedWithin(flatpakLimit, log, "flatpak", append([]string{"install", "--system", "--noninteractive", "-y", "flathub"}, apps...)...)
+		missing := slices.DeleteFunc(slices.Clone(apps), flatpakThere)
+		if len(missing) == 0 {
+			return nil
+		}
+		return run.LoggedWithin(flatpakLimit, log, "flatpak", append([]string{"install", "--system", "--noninteractive", "-y", "flathub"}, missing...)...)
 	}
 }
 
