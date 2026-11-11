@@ -497,7 +497,7 @@ func (context *Context) zedInstall(log *runlog.Log) error {
 	if !marked && leftAlone(log, app, "", "a Zed") {
 		return nil
 	}
-	ledger.Note(ledger.Made, app, context.Person.Path(".local/bin/zed"))
+	ledger.Note(ledger.Made, app, context.Person.Path(".local/bin/zed"), context.Person.Path(".local/share/applications/dev.zed.Zed.desktop"))
 	if version != release.Version || !fsutil.Runnable(filepath.Join(app, "bin/zed")) {
 		if err := context.zedUnpack(log, app, release.Version); err != nil {
 			return err

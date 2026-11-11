@@ -169,11 +169,13 @@ func removePackages(log *runlog.Log, app apps.App) error {
 }
 
 func (context *Context) appRemove(log *runlog.Log, app apps.App) error {
-	switch {
-	case app.Source == "webapp":
+	switch app.Source {
+	case "webapp":
 		return context.Deploy.Remove(filepath.Join(apps.WebFolder, app.ID+"-web.desktop"), filepath.Join(env.ShareDir(), "icons", app.ID+"-web.svg"))
-	case app.Source == "teams" && context.Config.Get("TEAMS_SOURCE") == "snap":
-		return removeSnap(log, apps.TeamsApp)
+	case "teams":
+		if err := removeSnap(log, apps.TeamsApp); err != nil {
+			return err
+		}
 	}
 	if err := removePackages(log, app); err != nil {
 		return err

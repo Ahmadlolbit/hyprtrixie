@@ -76,6 +76,9 @@ func userSocket(action string) {
 	}
 	info, err := os.Stat("/run/user/" + uid + "/bus")
 	if err != nil || info.Mode()&os.ModeSocket == 0 {
+		if action == "enable" {
+			run.Quiet(run.Slow, "systemctl", "--global", "enable", "podman.socket")
+		}
 		return
 	}
 	run.Quiet(run.Slow, "systemctl", "--user", "--machine="+user+"@", action, "--now", "podman.socket")
