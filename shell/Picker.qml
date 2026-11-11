@@ -40,7 +40,7 @@ Scope {
     if (mode !== kind)
       return;
     items = text.split("\n").filter(line => line !== "").map(line => parse(kind, line));
-    index = Math.max(0, items.findIndex(item => item.value === selected));
+    index = Math.max(0, shown.findIndex(item => item.value === selected));
   }
 
   function address(path) {
