@@ -2,7 +2,6 @@ package setup
 
 import (
 	"errors"
-	"io"
 	"maps"
 	"os"
 	"slices"
@@ -143,8 +142,12 @@ func sshServerOff(log *runlog.Log) error {
 	if installed, _ := apt.Installed(); !installed["openssh-server"] {
 		return nil
 	}
-	for _, unit := range []string{"ssh.socket", "ssh.service"} {
-		run.Logged(io.Discard, "systemctl", "disable", unit)
+	on := slices.DeleteFunc([]string{"ssh.socket", "ssh.service"}, func(unit string) bool { return !service.Enabled(unit) })
+	if len(on) == 0 {
+		return nil
+	}
+	if err := run.Logged(log, "systemctl", append([]string{"disable"}, on...)...); err != nil {
+		return err
 	}
 	log.Line("info", "the SSH server stays off from the next boot")
 	return nil
