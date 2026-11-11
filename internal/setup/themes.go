@@ -67,6 +67,8 @@ type themeRun struct {
 	bootImage   followUp
 	grubUpdate  followUp
 	consoleFont followUp
+	consoleUnit followUp
+	followUnits followUp
 }
 
 func oldThemeRoot() string {
@@ -648,10 +650,10 @@ func (theme *themeRun) consoleInstall(log *runlog.Log) error {
 			return err
 		}
 	}
-	if err := theme.Deploy.File("system/systemd/"+consoleService, unitFolder+consoleService); err != nil {
+	if err := theme.unitFile(&theme.consoleUnit, consoleService); err != nil {
 		return err
 	}
-	if err := service.Reload(log); err != nil {
+	if err := theme.consoleUnit.do(func() error { return service.Reload(log) }); err != nil {
 		return err
 	}
 	if err := service.Enable(log, consoleService); err != nil {
@@ -667,20 +669,29 @@ func (theme *themeRun) followRun(log *runlog.Log) error {
 	return theme.bootImage.do(func() error { return run.Logged(log, followProgram(), "--initramfs") })
 }
 
+func (theme *themeRun) unitFile(owed *followUp, name string, pairs ...string) error {
+	changed, err := theme.Deploy.Changed("system/systemd/"+name, unitFolder+name, pairs...)
+	owed.need(changed)
+	return err
+}
+
 func (theme *themeRun) followWatch(log *runlog.Log) error {
-	if err := theme.Deploy.File("system/systemd/"+followService, unitFolder+followService); err != nil {
+	if err := theme.unitFile(&theme.followUnits, followService); err != nil {
 		return err
 	}
-	if err := theme.Deploy.File("system/systemd/"+followPath, unitFolder+followPath, "HOME="+theme.Person.Home); err != nil {
+	if err := theme.unitFile(&theme.followUnits, followPath, "HOME="+theme.Person.Home); err != nil {
 		return err
 	}
-	if err := service.Reload(log); err != nil {
-		return err
+	if theme.followUnits.due() {
+		if err := service.Reload(log); err != nil {
+			return err
+		}
 	}
 	if err := service.Enable(log, followPath); err != nil {
 		return err
 	}
-	return service.Restart(log, followPath)
+	theme.followUnits.owed = theme.followUnits.owed || !service.Active(followPath)
+	return theme.followUnits.do(func() error { return service.Restart(log, followPath) })
 }
 
 func (theme *themeRun) ready(*runlog.Log) error {
@@ -691,7 +702,8 @@ func (theme *themeRun) ready(*runlog.Log) error {
 }
 
 func themeSteps(context *Context) {
-	theme := &themeRun{Context: context, bootImage: followUp{name: "boot-image"}, grubUpdate: followUp{name: "update-grub"}, consoleFont: followUp{name: "console-font"}}
+	theme := &themeRun{Context: context, bootImage: followUp{name: "boot-image"}, grubUpdate: followUp{name: "update-grub"}, consoleFont: followUp{name: "console-font"},
+		consoleUnit: followUp{name: "console-unit"}, followUnits: followUp{name: "follow-units"}}
 	context.Run.Step("Install theme packages", packages("themes"))
 	context.Run.Step("Move your themes to their new folders", theme.migrate)
 	context.Run.Step("Install the themes", theme.themesInstall)

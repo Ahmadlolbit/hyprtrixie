@@ -247,10 +247,6 @@ func (menu *grubMenu) install(log *runlog.Log) error {
 	if err := apt.InstallLists(log, grubBtrfs); err != nil {
 		return err
 	}
-	folder, err := fetch.GitCached(log, grubBtrfs)
-	if err != nil {
-		return err
-	}
 	pinned, err := fetch.GetSource(log, grubBtrfs)
 	if err != nil {
 		return err
@@ -259,6 +255,10 @@ func (menu *grubMenu) install(log *runlog.Log) error {
 	built, _ := fsutil.Text(stamp)
 	if fsutil.Runnable(grubScript) && strings.TrimSpace(built) == pinned.Commit {
 		return nil
+	}
+	folder, err := fetch.GitCached(log, grubBtrfs)
+	if err != nil {
+		return err
 	}
 	if err := grubBuild(log, folder); err != nil {
 		return err

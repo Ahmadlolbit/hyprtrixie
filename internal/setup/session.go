@@ -299,45 +299,62 @@ func (context *Context) tipsInstall(*runlog.Log) error {
 		"WELCOME="+settings.Get("TIPS_WELCOME"), "NOTIFY="+settings.Get("TIPS_NOTIFY"))
 }
 
-func (context *Context) deployUserUnits(units ...string) error {
+func (context *Context) deployUserUnits(units ...string) (bool, error) {
+	changed := false
 	for _, unit := range units {
-		if err := context.Deploy.File("system/systemd/"+unit, userUnits+unit); err != nil {
-			return err
+		moved, err := context.Deploy.Changed("system/systemd/"+unit, userUnits+unit)
+		changed = changed || moved
+		if err != nil {
+			return changed, err
 		}
 	}
-	return nil
+	return changed, nil
+}
+
+func everyoneTimer(log *runlog.Log, timer string, on, changed bool) error {
+	if !changed && fsutil.IsLink(userUnits+"timers.target.wants/"+timer) == on {
+		return nil
+	}
+	action := "disable"
+	if on {
+		action = "enable"
+	}
+	return run.Logged(log, "systemctl", "--global", action, timer)
 }
 
 func (context *Context) tipTimerInstall(log *runlog.Log) error {
-	if err := context.deployUserUnits(tipService, tipTimer); err != nil {
+	changed, err := context.deployUserUnits(tipService, tipTimer)
+	if err != nil {
 		return err
 	}
-	return run.Logged(log, "systemctl", "--global", "enable", tipTimer)
+	return everyoneTimer(log, tipTimer, true, changed)
 }
 
 func (context *Context) careInstall(log *runlog.Log) error {
 	if err := context.Deploy.Tool("hyprtrixie-care"); err != nil {
 		return err
 	}
-	if err := context.deployUserUnits(careService, careTimer); err != nil {
+	changed, err := context.deployUserUnits(careService, careTimer)
+	if err != nil {
 		return err
 	}
-	action := "disable"
-	if context.Config.Get("CARE_NOTIFY") == "yes" {
-		action = "enable"
-	}
-	return run.Logged(log, "systemctl", "--global", action, careTimer)
+	return everyoneTimer(log, careTimer, context.Config.Get("CARE_NOTIFY") == "yes", changed)
 }
 
 func (context *Context) brightnessAccess(log *runlog.Log) error {
-	if err := context.Deploy.File("system/udev/90-hyprtrixie-brightness.rules", "/etc/udev/rules.d/90-hyprtrixie-brightness.rules"); err != nil {
+	rules := followUp{name: "brightness-rules"}
+	changed, err := context.Deploy.Changed("system/udev/90-hyprtrixie-brightness.rules", "/etc/udev/rules.d/90-hyprtrixie-brightness.rules")
+	rules.need(changed)
+	if err != nil {
 		return err
 	}
 	if err := context.Person.AddGroups(log, "video"); err != nil {
 		return err
 	}
-	run.Logged(log, "udevadm", "control", "--reload")
-	return run.Logged(log, "udevadm", "trigger", "--subsystem-match=backlight", "--subsystem-match=leds", "--action=add")
+	return rules.do(func() error {
+		run.Logged(log, "udevadm", "control", "--reload")
+		return run.Logged(log, "udevadm", "trigger", "--subsystem-match=backlight", "--subsystem-match=leds", "--action=add")
+	})
 }
 
 func (context *Context) toolStep(title, tool string) {

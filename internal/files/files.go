@@ -480,12 +480,16 @@ func ConfSet(path, key, value string) error {
 	if err != nil {
 		return err
 	}
-	found := false
+	wanted := key + "=" + value
+	found, changed := false, false
 	for index, line := range list {
 		if setting(line, key) {
-			list[index] = key + "=" + value
-			found = true
+			found, changed = true, changed || line != wanted
+			list[index] = wanted
 		}
+	}
+	if found && !changed {
+		return nil
 	}
 	if !found {
 		list = append(list, key+"="+value)
