@@ -2,6 +2,7 @@ package setup
 
 import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/files"
@@ -59,5 +60,15 @@ func init() {
 		"15": {securitySteps, securityChecks},
 		"16": {backupSteps, backupChecks},
 		"17": {reportSteps, noChecks},
+	}
+	for id, module := range Modules {
+		Modules[id] = Module{remembering(module.Steps), remembering(module.Checks)}
+	}
+}
+
+func remembering(work func(*Context)) func(*Context) {
+	return func(context *Context) {
+		defer apt.Remember()()
+		work(context)
 	}
 }

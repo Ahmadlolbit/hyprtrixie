@@ -103,6 +103,7 @@ func repair(out io.Writer) error {
 }
 
 func get(out io.Writer, args ...string) error {
+	defer forgetStates()
 	os.Setenv("DEBIAN_FRONTEND", "noninteractive")
 	os.Setenv("NEEDRESTART_MODE", "a")
 	os.Setenv("NEEDRESTART_SUSPEND", "1")
@@ -153,6 +154,10 @@ func noteUpdate() error {
 }
 
 func packageStates() (map[string]bool, map[string]bool, error) {
+	stamp := dpkgStamp()
+	if installed, held, kept := keptStates(stamp); kept {
+		return installed, held, nil
+	}
 	output, err := run.CaptureQuiet(run.Slow, "dpkg-query", "-W", "-f", "${Package}\t${Status}\n")
 	installed, held := map[string]bool{}, map[string]bool{}
 	for _, line := range run.Lines(output) {
@@ -167,6 +172,9 @@ func packageStates() (map[string]bool, map[string]bool, error) {
 		if words[0] == "hold" {
 			held[name] = true
 		}
+	}
+	if err == nil {
+		keepStates(stamp, installed, held)
 	}
 	return installed, held, err
 }
