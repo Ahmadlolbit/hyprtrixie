@@ -9,6 +9,7 @@ A layout takes only small letters, digits, - and _, such as us or de
 A light theme by day and a dark one at night: by the sun or at set times	
 A new wallpaper every day: drawn in the theme's colours, NASA's picture of the day (needs the internet), or one from your folder	
 A notification when new firmware is ready, or when the disk is nearly full	
+A row can't take a tab or a line break, so the paste isn't taken	
 A short chime when you log in, lower for dark themes and higher for light ones; a sound of your own in ~/.config/hyprtrixie/startup.ogg plays instead	
 A short tip under the prompt in every new terminal	
 A theme is applied	

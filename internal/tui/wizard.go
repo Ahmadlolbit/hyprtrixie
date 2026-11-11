@@ -108,12 +108,17 @@ func (flow *wizard) Init() tea.Cmd {
 
 func (flow *wizard) logoLater() tea.Cmd {
 	view, onWelcome := flow.stages[flow.at].(*welcome)
-	if flow.show == nil || flow.ticking || !onWelcome {
+	if flow.show == nil || flow.ticking || !onWelcome || !flow.logoInSight() {
 		return nil
 	}
 	flow.ticking = true
 	_, wait := burst.At(time.Since(view.started))
 	return tea.Tick(wait, func(time.Time) tea.Msg { return logoTick{} })
+}
+
+func (flow *wizard) logoInSight() bool {
+	width, height, _, _ := flow.frame()
+	return !flow.guide && len(flow.dialogs) == 0 && logoFits(width, height)
 }
 
 func (flow *wizard) checkTerminal() tea.Cmd {
@@ -130,6 +135,7 @@ func (flow *wizard) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			flow.width = message.Width
 			flow.height = message.Height
 		}
+		return flow, flow.logoLater()
 	case tea.KeyMsg:
 		command := flow.press(message)
 		return flow, tea.Batch(command, flow.logoLater())
@@ -308,11 +314,31 @@ func (flow *wizard) header(width int) string {
 	return title + strings.Repeat(" ", gap) + dimStyle.Render(where)
 }
 
-func (flow *wizard) View() string {
-	width, height := max(flow.width, 1), max(flow.height-frameLines, 1)
-	rule := ruleStyle.Render(strings.Repeat("─", width))
+func (flow *wizard) saying(help string, width int) []string {
+	text := words.T(help)
+	if !strings.Contains(text, "\n") && (len(text) <= width || lipgloss.Width(text) <= width) {
+		return []string{cut(dimStyle.Render(text), width)}
+	}
+	most := max((flow.height-frameLines)/2, 1)
+	lines := strings.Split(lipgloss.NewStyle().Width(width).Render(text), "\n")
+	said := make([]string, 0, min(len(lines), most))
+	for _, line := range lines[:min(len(lines), most)] {
+		said = append(said, cut(dimStyle.Render(strings.TrimRight(line, " ")), width))
+	}
+	return said
+}
+
+func (flow *wizard) frame() (int, int, []string, string) {
+	width := max(flow.width, 1)
 	help, keys := flow.footer()
+	said := flow.saying(help, width)
+	return width, max(flow.height-frameLines-len(said)+1, 1), said, keys
+}
+
+func (flow *wizard) View() string {
+	width, height, said, keys := flow.frame()
+	rule := ruleStyle.Render(strings.Repeat("─", width))
 	body := lipgloss.NewStyle().MaxWidth(width).Height(height).MaxHeight(height).Render(flow.body(width, height))
-	lines := []string{cut(flow.header(width), width), rule, body, rule, cut(dimStyle.Render(words.T(help)), width), cut(dimStyle.Render(words.T(keys)), width)}
-	return strings.Join(lines, "\n")
+	lines := append([]string{cut(flow.header(width), width), rule, body, rule}, said...)
+	return strings.Join(append(lines, cut(dimStyle.Render(words.T(keys)), width)), "\n")
 }

@@ -74,9 +74,9 @@ func (box *dialog) move(name string) {
 	}
 }
 
-func (box *dialog) answers() []string {
+func (box *dialog) answers(width int) []string {
 	if box.field != nil {
-		return []string{"  " + box.field.shown()}
+		return []string{"  " + tail(box.field.shown(), width-2)}
 	}
 	lines := make([]string, 0, len(box.items))
 	for index, item := range box.items {
@@ -93,8 +93,8 @@ func (box *dialog) context(room int) []string {
 	return append(slices.Clone(shown), "")
 }
 
-func (box *dialog) draw(_, height int) string {
-	answers := box.answers()
+func (box *dialog) draw(width, height int) string {
+	answers := box.answers(width)
 	lines := []string{headingStyle.Render(box.title), ""}
 	lines = append(lines, box.context(height-len(lines)-len(answers)-1)...)
 	first := max(len(lines)+box.cursor-height+1, 0)

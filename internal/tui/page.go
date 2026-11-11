@@ -2,19 +2,27 @@ package tui
 
 import (
 	"fmt"
+	"slices"
 	"strings"
+	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/words"
 )
 
 const (
-	labelWidth = 34
-	pageJump   = 10
+	labelWidth  = 34
+	markColumns = 3
+	infoIndent  = 2
+	pageJump    = 10
 )
 
-const emptyRefused = "That row can't be empty, so it keeps what it had"
+const (
+	emptyRefused     = "That row can't be empty, so it keeps what it had"
+	lineBreakRefused = "A row can't take a tab or a line break, so the paste isn't taken"
+)
 
 type field struct {
 	allow   func(rune) bool
@@ -232,6 +240,9 @@ func (view *page) refuse(line row, key tea.KeyMsg) bool {
 		return false
 	}
 	view.wizard.notice = line.input.refused
+	if slices.ContainsFunc(key.Runes, unicode.IsControl) {
+		view.wizard.notice = lineBreakRefused
+	}
 	return true
 }
 
@@ -316,7 +327,7 @@ func (view *page) pressEscape() tea.Cmd {
 	return view.wizard.backward()
 }
 
-func (view *page) text(line row, focused bool) string {
+func (view *page) text(line row, focused bool, width int) string {
 	if line.heading {
 		return headingStyle.Render(words.T(line.label))
 	}
@@ -324,34 +335,77 @@ func (view *page) text(line row, focused bool) string {
 		return "  " + words.T(line.label)
 	}
 	label := strings.TrimSpace(line.mark + " " + words.T(line.label))
-	value := line.value
 	if focused && view.draft != nil {
-		value = view.draft.shown()
+		label = fmt.Sprintf("%-*s ", labelWidth, label)
+		return marked(focused, label+tail(view.draft.shown(), width-lipgloss.Width(label)-markColumns))
 	}
-	if value != "" {
-		label = fmt.Sprintf("%-*s %s", labelWidth, label, value)
+	if line.value != "" {
+		label = fmt.Sprintf("%-*s %s", labelWidth, label, line.value)
 	}
 	return marked(focused, label)
 }
 
-func (view *page) draw(_, height int) string {
-	rows := view.shown()
-	view.scroll(height, len(rows))
-	lines := make([]string, 0, height)
-	for index := view.top; index < min(view.top+height, len(rows)); index++ {
-		lines = append(lines, view.text(rows[index], index == view.cursor))
+func (view *page) lines(line row, focused bool, width int) []string {
+	text := view.text(line, focused, width)
+	if !line.info || width <= infoIndent || lipgloss.Width(text) <= width {
+		return []string{text}
 	}
-	return strings.Join(lines, "\n")
+	wrapped := strings.Split(lipgloss.NewStyle().Width(width-infoIndent).Render(words.T(line.label)), "\n")
+	for index, piece := range wrapped {
+		wrapped[index] = strings.Repeat(" ", infoIndent) + strings.TrimRight(piece, " ")
+	}
+	return wrapped
 }
 
-func (view *page) scroll(height, total int) {
-	if view.cursor < view.top {
-		view.top = view.cursor
+func (view *page) draw(width, height int) string {
+	text, _ := view.render(width, height)
+	return text
+}
+
+func (view *page) render(width, height int) (string, bool) {
+	rows := view.shown()
+	spans := make([]int, len(rows))
+	wrapped := false
+	for index, line := range rows {
+		spans[index] = 1
+		if line.info && len(words.T(line.label))+infoIndent > width {
+			spans[index] = len(view.lines(line, false, width))
+			wrapped = wrapped || spans[index] > 1
+		}
 	}
-	if view.cursor >= view.top+height {
-		view.top = view.cursor - height + 1
+	view.scroll(height, spans)
+	lines := make([]string, 0, height)
+	for index := view.top; index < len(rows) && len(lines) < height; index++ {
+		if spans[index] == 1 {
+			lines = append(lines, view.text(rows[index], index == view.cursor, width))
+			continue
+		}
+		lines = append(lines, view.lines(rows[index], index == view.cursor, width)...)
 	}
-	view.top = max(min(view.top, total-height), 0)
+	return strings.Join(lines[:min(len(lines), height)], "\n"), wrapped
+}
+
+func (view *page) scroll(height int, spans []int) {
+	if len(spans) == 0 {
+		view.top = 0
+		return
+	}
+	cursor := min(view.cursor, len(spans)-1)
+	view.top = min(view.top, cursor)
+	for view.top < cursor && total(spans[view.top:cursor+1]) > height {
+		view.top++
+	}
+	for view.top > 0 && total(spans[view.top-1:]) <= height {
+		view.top--
+	}
+}
+
+func total(spans []int) int {
+	sum := 0
+	for _, span := range spans {
+		sum += span
+	}
+	return sum
 }
 
 func (view *page) help() string {
@@ -373,6 +427,9 @@ func (view *page) keys() string {
 	}
 	if view.typing() {
 		return "Type to change · Arrows move · Enter goes on · Esc back"
+	}
+	if line, found := view.current(); found && line.input != nil {
+		return "Digits change · Arrows move · Enter goes on · Esc back · / search · ? keys"
 	}
 	return "Arrows move · Space changes · Enter goes on · Esc back · / search · ? keys"
 }

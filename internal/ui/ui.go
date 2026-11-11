@@ -69,8 +69,12 @@ func ExitCode() int {
 	return 0
 }
 
+func fancy() bool {
+	return term.IsTerminal(os.Stdout) && os.Getenv("TERM") != "dumb"
+}
+
 func paint(style, text string) string {
-	if term.IsTerminal(os.Stdout) {
+	if fancy() {
 		return style + text + reset
 	}
 	return text
@@ -112,13 +116,13 @@ func Warn(text string) {
 }
 
 func Busy(text string) {
-	if !send(events.Busy, text) && term.IsTerminal(os.Stdout) {
+	if !send(events.Busy, text) && fancy() {
 		Print("  " + paint(blue, "[ .. ]") + " " + text)
 	}
 }
 
 func Done() {
-	if !send(events.Done, "") && term.IsTerminal(os.Stdout) {
+	if !send(events.Done, "") && fancy() {
 		Print("\r\x1b[K")
 	}
 }
