@@ -64,7 +64,7 @@ Label {
     }
     onWheel: wheel => {
       if (root.sink)
-        root.sink.audio.volume = Math.max(0, Math.min(1, root.volume + (wheel.angleDelta.y > 0 ? 0.05 : -0.05)));
+        root.sink.audio.volume = wheel.angleDelta.y > 0 ? Math.max(root.volume, Math.min(1, root.volume + 0.05)) : Math.max(0, root.volume - 0.05);
     }
   }
 

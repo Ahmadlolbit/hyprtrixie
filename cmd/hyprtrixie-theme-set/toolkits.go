@@ -169,13 +169,13 @@ func gtkBefore() string {
 	return filepath.Join(state(), "gtk.before")
 }
 
-func rememberGTK() {
+func rememberGTK(current map[string]string) {
 	if fsutil.Exists(gtkBefore()) {
 		return
 	}
 	var text strings.Builder
 	for _, key := range gtkKept {
-		value := desktopValue(key)
+		value := current[key]
 		if value == "" || strings.Contains(value, gtkOurs) {
 			return
 		}

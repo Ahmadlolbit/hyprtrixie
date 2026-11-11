@@ -49,7 +49,7 @@ func pattern(expression string) func() *regexp.Regexp {
 
 func Parse(text string) Colors {
 	colors := Colors{}
-	for _, line := range strings.Split(strings.TrimSuffix(text, "\n"), "\n") {
+	for _, line := range strings.Split(strings.TrimSuffix(strings.TrimPrefix(text, "\ufeff"), "\n"), "\n") {
 		if key, value, ok := assignment(line); ok {
 			colors.take(key, value)
 		}

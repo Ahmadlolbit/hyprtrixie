@@ -269,6 +269,14 @@ func dropWeather() int {
 	return 0
 }
 
+func weatherHere() int {
+	if settings.Get("weather") != "yes" {
+		return 0
+	}
+	dropWeather()
+	return updateWeather()
+}
+
 func weather(args []string) int {
 	on, off := putThen("weather", "yes", updateWeather), putThen("weather", "no", dropWeather)
 	return onOff{"weather", on, off}.run(args)

@@ -17,10 +17,12 @@ Singleton {
   readonly property int newest: items.length ? Math.max(...items.map(item => item.id)) : 0
   readonly property int unread: items.filter(item => item.id > Math.max(seen, cleared)).length
   readonly property string runtime: Quickshell.env("XDG_RUNTIME_DIR") || ""
+  readonly property bool watching: watcher.running
 
   onSeenChanged: keeper.restart()
   onClearedChanged: keeper.restart()
   onNewestChanged: startedAgain()
+  Component.onCompleted: refresh()
 
   function character(match, name) {
     const named = {
@@ -96,6 +98,23 @@ Singleton {
   }
 
   Process {
+    id: watcher
+
+    running: true
+    command: ["busctl", "--user", "monitor", "--json=short", "--match=type='method_call',interface='org.freedesktop.Notifications',member='Notify'", "--match=type='signal',interface='org.freedesktop.Notifications'", "--match=type='method_call',interface='fr.emersion.Mako',member='RestoreNotification'", "--match=type='method_call',interface='fr.emersion.Mako',member='SetModes'", "--match=type='method_call',interface='fr.emersion.Mako',member='SetMode'", "--match=type='signal',sender='org.freedesktop.DBus',member='NameOwnerChanged',arg0='org.freedesktop.Notifications'"]
+    stdout: SplitParser {
+      onRead: settle.restart()
+    }
+  }
+
+  Timer {
+    id: settle
+
+    interval: 300
+    onTriggered: root.refresh()
+  }
+
+  Process {
     id: openLister
 
     command: ["busctl", "--user", "-j", "call", "org.freedesktop.Notifications", "/fr/emersion/Mako", "fr.emersion.Mako", "ListNotifications"]
@@ -155,9 +174,8 @@ Singleton {
 
   Timer {
     interval: 10000
-    running: true
+    running: !root.watching
     repeat: true
-    triggeredOnStart: true
     onTriggered: root.refresh()
   }
 }

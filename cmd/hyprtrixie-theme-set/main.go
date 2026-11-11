@@ -378,18 +378,35 @@ func desktop(action string, args ...string) {
 	run.Quiet(run.Quick, "dbus-run-session", append([]string{"--", "gsettings"}, args...)...)
 }
 
-func desktopValue(key string) string {
-	name, args := "gsettings", []string{"get", "org.gnome.desktop.interface", key}
+func desktopValues() map[string]string {
+	name, args := "gsettings", []string{"list-recursively", "org.gnome.desktop.interface"}
 	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") == "" {
 		name, args = "dbus-run-session", append([]string{"--", "gsettings"}, args...)
 	}
 	output, _ := run.CaptureQuiet(run.Quick, name, args...)
-	return strings.TrimSpace(output)
+	values := map[string]string{}
+	for _, line := range strings.Split(output, "\n") {
+		if fields := strings.SplitN(line, " ", 3); len(fields) == 3 && fields[0] == "org.gnome.desktop.interface" {
+			values[fields[1]] = strings.TrimSpace(fields[2])
+		}
+	}
+	return values
 }
 
-func ourScaling() bool {
-	factor, err := strconv.ParseFloat(desktopValue("text-scaling-factor"), 64)
-	return err == nil && slices.Contains([]float64{theme.TextScale("large"), theme.TextScale("larger")}, factor)
+func change(current map[string]string, key, value string) {
+	if current[key] != "'"+value+"'" {
+		desktop("set", key, value)
+	}
+}
+
+func scaleText(current map[string]string, scale float64) {
+	factor, err := strconv.ParseFloat(current["text-scaling-factor"], 64)
+	switch {
+	case scale != 1 && (err != nil || factor != scale):
+		desktop("set", "text-scaling-factor", strconv.FormatFloat(scale, 'f', -1, 64))
+	case scale == 1 && err == nil && slices.Contains([]float64{theme.TextScale("large"), theme.TextScale("larger")}, factor):
+		desktop("reset", "text-scaling-factor")
+	}
 }
 
 func iconTheme(mode string) string {
@@ -407,27 +424,24 @@ func desktopSettings(colors, apps theme.Colors) {
 	if _, err := exec.LookPath("gsettings"); err != nil {
 		return
 	}
+	current := desktopValues()
 	mode := apps["mode"]
 	if settings.Get("apps") == appsOff {
 		releaseGTK(mode)
 	} else {
-		rememberGTK()
-		desktop("set", "color-scheme", "prefer-"+mode)
+		rememberGTK(current)
+		change(current, "color-scheme", "prefer-"+mode)
 		desktop("set", "gtk-theme", gtkTheme(mode))
-		desktop("set", "icon-theme", iconTheme(mode))
+		change(current, "icon-theme", iconTheme(mode))
 	}
-	desktop("set", "monospace-font-name", colors["font"]+" 11")
+	change(current, "monospace-font-name", colors["font"]+" 11")
 	if ui := settings.Get("ui_font"); ui == "default" {
 		desktop("reset", "font-name")
 	} else {
-		desktop("set", "font-name", ui+" 11")
+		change(current, "font-name", ui+" 11")
 	}
-	if scale := theme.TextScale(settings.Get("text")); scale != 1 {
-		desktop("set", "text-scaling-factor", strconv.FormatFloat(scale, 'f', -1, 64))
-	} else if ourScaling() {
-		desktop("reset", "text-scaling-factor")
-	}
-	desktop("set", "cursor-theme", "Bibata-Modern-Ice")
+	scaleText(current, theme.TextScale(settings.Get("text")))
+	change(current, "cursor-theme", "Bibata-Modern-Ice")
 }
 
 func rememberPick(name, mode string) {
