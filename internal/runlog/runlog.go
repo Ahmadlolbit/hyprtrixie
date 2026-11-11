@@ -60,6 +60,7 @@ func hideOldSecrets(dir string) {
 type Log struct {
 	file        string
 	copy        string
+	opened      *os.File
 	copied      *os.File
 	mirror      func([]byte)
 	fileWarning sync.Once
@@ -83,7 +84,11 @@ func Start(what string) (*Log, error) {
 	if err != nil {
 		return nil, err
 	}
-	log := &Log{file: path}
+	opened, err := private(path, os.O_WRONLY|os.O_APPEND, fileMode)
+	if err != nil {
+		return nil, err
+	}
+	log := &Log{file: path, opened: opened}
 	if err := atomic.Symlink(filepath.Base(path), filepath.Join(dir, "latest.log")); err != nil {
 		log.Line("warn", "cannot point latest.log at this run: "+err.Error())
 	}
@@ -201,11 +206,11 @@ func add(path string, how int, data []byte) error {
 	return err
 }
 
-func (log *Log) toCopy(data []byte) error {
-	if log.copied == nil {
-		return add(log.copy, syscall.O_NOFOLLOW|syscall.O_NONBLOCK, data)
+func write(file *os.File, path string, how int, data []byte) error {
+	if file == nil {
+		return add(path, how, data)
 	}
-	_, err := log.copied.Write(data)
+	_, err := file.Write(data)
 	return err
 }
 
@@ -220,8 +225,8 @@ func (log *Log) Mirror(to func([]byte)) {
 }
 
 func (log *Log) Write(data []byte) (int, error) {
-	warn(&log.fileWarning, add(log.file, os.O_CREATE, data))
-	warn(&log.copyWarning, log.toCopy(data))
+	warn(&log.fileWarning, write(log.opened, log.file, os.O_CREATE, data))
+	warn(&log.copyWarning, write(log.copied, log.copy, syscall.O_NOFOLLOW|syscall.O_NONBLOCK, data))
 	if log.mirror != nil {
 		log.mirror(data)
 	}

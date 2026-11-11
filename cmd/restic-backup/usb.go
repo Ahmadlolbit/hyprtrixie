@@ -83,7 +83,8 @@ func usbOn() int {
 func usbOff() int {
 	run.Quiet(serviceLimit, "systemctl", "--user", "disable", usbUnit)
 	if err := os.Remove(unitFile()); err != nil && !os.IsNotExist(err) {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, "Backups still start by themselves: %v\n", err)
+		return 1
 	}
 	run.Within(serviceLimit, "systemctl", "--user", "daemon-reload")
 	fmt.Println("Backups no longer start by themselves.")

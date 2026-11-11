@@ -128,6 +128,6 @@ func hashes(limit time.Duration, messages *os.File, lines []string) (map[string]
 }
 
 func Waiting(limit time.Duration, home string) ([]string, error) {
-	output, err := run.CaptureQuiet(limit, "find", "/etc", "/usr/share/hyprtrixie", filepath.Join(home, ".config"), "-name", "*.hyprtrixie-new")
+	output, err := run.CaptureQuiet(limit, "find", "-H", "/etc", "/usr/share/hyprtrixie", filepath.Join(home, ".config"), "-name", "*.hyprtrixie-new")
 	return run.Lines(output), err
 }
