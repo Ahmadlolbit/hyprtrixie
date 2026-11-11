@@ -18,7 +18,7 @@ const (
 	fallback     = "XKBMODEL=\"pc105\"\nXKBOPTIONS=\"\"\nBACKSPACE=\"guess\"\n"
 )
 
-var nonLatin = strings.Fields("am ara bd bg by et ge gr il in iq ir kg kh kz la lk mk mm mn mv np rs ru sy th tj ua")
+var nonLatin = strings.Fields("af am ara bd bg bt by et ge gn gr il in iq ir kg kh kz la lk ma mk mm mn mv my np pk rs ru sy th tj ua uz")
 
 type Layout struct {
 	ID    string
