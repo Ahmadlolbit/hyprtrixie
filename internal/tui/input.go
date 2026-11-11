@@ -30,11 +30,15 @@ func (field *input) press(key tea.KeyMsg) bool {
 }
 
 func (field *input) insert(characters []rune) {
+	var text strings.Builder
+	text.Grow(len(field.text) + len(characters))
+	text.WriteString(field.text)
 	for _, character := range characters {
 		if field.allow(character) {
-			field.text += string(character)
+			text.WriteRune(character)
 		}
 	}
+	field.text = text.String()
 }
 
 func (field *input) erase() {
