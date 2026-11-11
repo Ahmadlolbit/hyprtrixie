@@ -2,6 +2,7 @@ package tui
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -41,6 +42,7 @@ type system struct {
 	found   []disks.Disk
 	room    map[string]string
 	reuse   map[string]bool
+	shrink  map[string]bool
 	blocked string
 	seen    string
 	say     func(string)
@@ -60,7 +62,7 @@ func newSystem(found []disks.Disk) *system {
 		zone = "UTC"
 	}
 	layout := keyboard.Current()
-	return &system{found: internalFirst(found), room: map[string]string{}, reuse: map[string]bool{}, seen: layout,
+	return &system{found: internalFirst(found), room: map[string]string{}, reuse: map[string]bool{}, shrink: map[string]bool{}, seen: layout,
 		answers: osinstall.Answers{Host: "hyprtrixie", Zone: zone, Keyboard: layout, Locale: "en_US.UTF-8"}}
 }
 
@@ -123,6 +125,7 @@ func (state *system) roomBeside(disk disks.Disk) string {
 		why = err.Error()
 	}
 	state.room[disk.Path], state.reuse[disk.Path] = why, len(plan.Reuses) > 0
+	state.shrink[disk.Path] = errors.As(err, new(disks.RoomError))
 	return why
 }
 
@@ -174,9 +177,16 @@ func (state *system) consequences() []row {
 	}
 	rows = append(rows, state.besideRow(disk))
 	if why := state.roomBeside(disk); why != "" {
-		rows = append(rows, row{label: "To keep Windows: " + why + ". In Windows, Disk Management's Shrink Volume on C: makes room; then start this again.", info: true})
+		rows = append(rows, row{label: keepWindows(why, state.shrink[disk.Path]), info: true})
 	}
 	return rows
+}
+
+func keepWindows(why string, shrink bool) string {
+	if shrink {
+		return "To keep Windows: " + why + ". In Windows, Disk Management's Shrink Volume on C: makes room; then start this again."
+	}
+	return "To keep Windows: " + why + "."
 }
 
 func (state *system) diskRows(flow *wizard) []row {

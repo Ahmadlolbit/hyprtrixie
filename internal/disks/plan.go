@@ -57,6 +57,14 @@ func Whole(disk Disk, ids [3]string) Plan {
 	return Plan{Disk: disk, Size: disk.Size, Sector: 512, IDs: ids}
 }
 
+type RoomError struct {
+	Free, Needed int64
+}
+
+func (err RoomError) Error() string {
+	return fmt.Sprintf("the largest free space on this disk is %s; shrink Windows first to leave at least %s", Size(err.Free), Size(err.Needed))
+}
+
 func Beside(disk Disk, table Table, ids [3]string) (Plan, error) {
 	esp, found := disk.ESP()
 	switch {
@@ -68,7 +76,7 @@ func Beside(disk Disk, table Table, ids [3]string) (Plan, error) {
 	free, reused := table.unfinished()
 	gap := free.Largest()
 	if gap.Size < SmallestUse+bootSize {
-		return Plan{}, fmt.Errorf("the largest free space on this disk is %s; shrink Windows first to leave at least %s", Size(gap.Size), Size(SmallestUse+bootSize))
+		return Plan{}, RoomError{gap.Size, SmallestUse + bootSize}
 	}
 	return Plan{Disk: disk, Beside: true, ESP: esp.Path, Start: gap.Start, Size: gap.Size, Sector: table.Sector, IDs: ids, Reuses: reused}, nil
 }
