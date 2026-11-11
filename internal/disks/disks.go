@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"encoding/json"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -39,6 +40,7 @@ type Disk struct {
 	Removable  bool        `json:"rm"`
 	ReadOnly   bool        `json:"ro"`
 	Table      string      `json:"pttype"`
+	TableID    string      `json:"ptuuid"`
 	FSType     string      `json:"fstype"`
 	Serial     string      `json:"serial"`
 	WWN        string      `json:"wwn"`
@@ -137,7 +139,10 @@ func (disk Disk) virtual() bool {
 }
 
 func (disk Disk) ID() string {
-	return cmp.Or(disk.WWN, disk.Serial)
+	if id := cmp.Or(disk.WWN, disk.Serial); id != "" {
+		return id
+	}
+	return strings.TrimSpace(disk.Model) + " " + strconv.FormatInt(disk.Size, 10) + " " + disk.TableID
 }
 
 func (part Partition) release(steps []Step) []Step {
