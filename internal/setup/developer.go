@@ -30,6 +30,10 @@ const (
 	toolboxTool  = "jetbrains-toolbox"
 	zedDesktop   = "share/applications/dev.zed.Zed.desktop"
 	zedVersion   = ".hyprtrixie-version"
+	podmanSocket = "podman.socket"
+
+	globalPodmanSocket = "/etc/systemd/user/sockets.target.wants/" + podmanSocket
+	userPodmanSocket   = ".config/systemd/user/sockets.target.wants/" + podmanSocket
 
 	firstSubordinate = 100000
 	subordinateCount = 65536
@@ -156,6 +160,24 @@ func (context *Context) engineInstall(log *runlog.Log) error {
 	if engineInUse() == engine && fsutil.Exists(shim) {
 		return nil
 	}
+	if engine != "podman" {
+		return context.switchEngine(log, engine)
+	}
+	socketOn := service.Enabled(podmanSocket)
+	links := slices.DeleteFunc([]string{globalPodmanSocket, context.Person.Path(userPodmanSocket)}, fsutil.IsLink)
+	err := context.switchEngine(log, engine)
+	if !socketOn && service.Enabled(podmanSocket) {
+		ledger.Note(ledger.Service, podmanSocket)
+	}
+	for _, link := range links {
+		if fsutil.IsLink(link) {
+			ledger.Note(ledger.Made, link)
+		}
+	}
+	return err
+}
+
+func (context *Context) switchEngine(log *runlog.Log, engine string) error {
 	return run.Logged(log, "env", "SUDO_USER="+context.Person.Name, filepath.Join(env.BinDir(), engineSwitch), engine)
 }
 
