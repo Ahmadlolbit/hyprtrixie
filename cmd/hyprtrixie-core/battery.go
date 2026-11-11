@@ -13,7 +13,7 @@ import (
 func showLimit() int {
 	limit := battery.Limit()
 	if limit == "" {
-		return 1
+		return fail("this battery has no charge limit")
 	}
 	return say(limit + "\n")
 }
