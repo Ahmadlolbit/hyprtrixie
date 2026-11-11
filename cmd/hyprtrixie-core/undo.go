@@ -177,6 +177,9 @@ func (plan undoPlan) run(log *runlog.Log) error {
 }
 
 func undo(id string, yes bool) int {
+	if status, _ := modules.StatusOf(fsutil.Optional(modules.StatusFile()), id); !ledger.Known(id) && status == modules.Undone {
+		return say(fmt.Sprintf("Module %s is undone already. The setup leaves it out until you run it again: sudo hyprtrixie install --only %s\n", id, id))
+	}
 	if !ledger.Known(id) {
 		return fail("There's no record of module %s yet. Run the setup once (sudo hyprtrixie install), then undo it.", id)
 	}
