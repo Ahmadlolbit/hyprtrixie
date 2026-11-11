@@ -422,7 +422,7 @@ func location(args []string) int {
 		fmt.Fprintln(os.Stderr, "a location is LATITUDE,LONGITUDE in degrees, like 33.31,44.36, or zone")
 		return 2
 	}
-	return putThen("location", value, nothing)()
+	return putThen("location", value, weatherHere)()
 }
 
 func remember(args []string) int {
