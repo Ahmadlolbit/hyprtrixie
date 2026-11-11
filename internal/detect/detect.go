@@ -203,7 +203,7 @@ func SecureBoot() string {
 	if _, err := exec.LookPath("mokutil"); err != nil {
 		return secureBootVariable()
 	}
-	state, _ := run.CaptureQuiet(run.Quick, "mokutil", "--sb-state")
+	state, _ := run.CaptureOnce(run.Quick, "mokutil", "--sb-state")
 	switch {
 	case strings.Contains(state, "enabled"):
 		return "enabled"
