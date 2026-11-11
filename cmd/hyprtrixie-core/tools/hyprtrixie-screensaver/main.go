@@ -177,10 +177,16 @@ func saver() {
 	stop()
 }
 
+func failed(summary string, err error) int {
+	fmt.Fprintln(os.Stderr, err)
+	notify.Post([]string{"--app-name=Screensaver"}, summary, err.Error())
+	return 1
+}
+
 func toggle() int {
 	if fsutil.Exists(offFile()) {
 		if err := os.Remove(offFile()); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			return failed("Couldn't turn the screensaver on", err)
 		}
 		return notify.Post([]string{"--app-name=Screensaver"}, "Screensaver on", "")
 	}
@@ -189,7 +195,7 @@ func toggle() int {
 		err = atomic.Write(offFile(), nil, 0o666)
 	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		return failed("Couldn't turn the screensaver off", err)
 	}
 	return notify.Post([]string{"--app-name=Screensaver"}, "Screensaver off", "")
 }
