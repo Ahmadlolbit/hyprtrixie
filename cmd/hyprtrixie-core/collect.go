@@ -30,7 +30,7 @@ const (
 	privateMode = 0o600
 )
 
-var details = regexp.MustCompile(`(?m)^(\s*(?:title|initialTitle|lastwindowtitle|serial):).*$`)
+var details = regexp.MustCompile(`(?m)^(\s*(?:title|initialTitle|lastwindowtitle|serial|description):|Window [0-9a-f]+ ->).*$`)
 
 var hyprRequests = [][]string{{"version"}, {"monitors"}, {"workspaces"}, {"clients"}, {"layers"}, {"configerrors"}, {"hyprpaper", "listactive"}}
 

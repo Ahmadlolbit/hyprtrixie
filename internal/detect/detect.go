@@ -33,6 +33,7 @@ type Hardware struct {
 	GPUs       []string
 	Wifi       []string
 	NvidiaOpen bool
+	IPU6       bool
 }
 
 type machine struct {
@@ -41,6 +42,7 @@ type machine struct {
 	gpuVendors    []string
 	gpuNames      []string
 	nvidiaOpen    bool
+	ipu6Camera    bool
 	wifiVendors   []string
 	laptop        bool
 	secureBoot    string
@@ -292,12 +294,17 @@ func (found *machine) readChips() {
 	lspci, _ := run.CaptureQuiet(run.Quick, "lspci", "-nn")
 	found.readGPUs(lspci)
 	found.readWifi(lspci)
+	found.ipu6Camera = ipu6(lspci)
+}
+
+func (found machine) hardware() Hardware {
+	return Hardware{found.cpuVendor, found.gpuVendors, found.wifiVendors, found.nvidiaOpen, found.ipu6Camera}
 }
 
 func ReadHardware() Hardware {
 	var found machine
 	found.readChips()
-	return Hardware{found.cpuVendor, found.gpuVendors, found.wifiVendors, found.nvidiaOpen}
+	return found.hardware()
 }
 
 func (hardware Hardware) HasGPU(vendor string) bool {
@@ -396,6 +403,11 @@ func Summary() string {
 	return all().summary()
 }
 
+func Survey() (Hardware, string) {
+	found := all()
+	return found.hardware(), found.summary()
+}
+
 var ipu6Devices = []string{"9a19", "4e19", "465d", "462e", "a75d", "7d19"}
 
 func ipu6(lspci string) bool {
@@ -406,9 +418,4 @@ func ipu6(lspci string) bool {
 		}
 	}
 	return false
-}
-
-func IPU6Camera() bool {
-	lspci, _ := run.CaptureQuiet(run.Quick, "lspci", "-nn")
-	return ipu6(lspci)
 }

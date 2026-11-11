@@ -110,6 +110,9 @@ func (plan undoPlan) describe() string {
 }
 
 func snapshotBefore(description string) error {
+	if snapshotsOff() {
+		return nil
+	}
 	if !installed("snapper") || !fsutil.IsFile(env.Or("HYPRTRIXIE_SNAPPER_CONFIG", "/etc/snapper/configs/root")) {
 		fmt.Println("Snapshots aren't set up, so there's no restore point.")
 		return nil

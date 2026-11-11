@@ -56,8 +56,9 @@ func Run() int {
 	}
 	flow := newWizard(config.Read(config.Path()))
 	flow.show = canShow
-	flow.nvidia = detect.ReadHardware().HasGPU("nvidia") || detect.NvidiaOnBus()
-	flow.stages = flow.allStages(run.Lines(detect.Summary()), apps.All())
+	hardware, machine := detect.Survey()
+	flow.nvidia = hardware.HasGPU("nvidia") || detect.NvidiaOnBus()
+	flow.stages = flow.allStages(run.Lines(machine), apps.All())
 	return play(flow)
 }
 

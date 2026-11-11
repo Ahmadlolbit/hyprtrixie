@@ -7,7 +7,6 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
-	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/modules"
@@ -54,7 +53,7 @@ func report(context *Context) string {
 	fmt.Fprintf(&text, "- Date: %s\n- hyprtrixie: %s\n- Configuration: %s\n- Log: %s\n\n",
 		time.Now().Format(time.DateTime), env.Version, config.Path(), context.Run.Log.Path())
 	text.WriteString("## Machine\n\n")
-	for _, line := range strings.Split(strings.TrimSuffix(detect.Summary(), "\n"), "\n") {
+	for _, line := range strings.Split(strings.TrimSuffix(context.machine(), "\n"), "\n") {
 		text.WriteString("    " + line + "\n")
 	}
 	text.WriteString("\n")

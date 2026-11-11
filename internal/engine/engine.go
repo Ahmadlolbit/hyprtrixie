@@ -74,6 +74,8 @@ type session struct {
 	started   time.Time
 	results   map[string]string
 	installed map[string]bool
+	machine   string
+	hardware  detect.Hardware
 }
 
 func setConfig(options *Options, value string) error {
@@ -247,7 +249,7 @@ func (work *session) changesFiles() bool {
 
 func (work *session) context() (*setup.Context, error) {
 	work.refreshPerson()
-	context := &setup.Context{Run: work.runner, Person: work.person, Config: work.settings, CanAsk: work.canAsk}
+	context := &setup.Context{Run: work.runner, Person: work.person, Config: work.settings, CanAsk: work.canAsk, Machine: work.machine, Hardware: work.readHardware}
 	if !work.changesFiles() {
 		return context, nil
 	}
@@ -402,8 +404,20 @@ func (work *session) outcome() int {
 	return code
 }
 
+func (work *session) survey() {
+	if work.machine == "" {
+		work.hardware, work.machine = detect.Survey()
+	}
+}
+
+func (work *session) readHardware() detect.Hardware {
+	work.survey()
+	return work.hardware
+}
+
 func (work *session) showMachine() {
-	for _, line := range run.Lines(strings.TrimSuffix(detect.Summary(), "\n")) {
+	work.survey()
+	for _, line := range run.Lines(strings.TrimSuffix(work.machine, "\n")) {
 		work.log.Line("info", line)
 		if !work.options.Events {
 			ui.Print(line + "\n")
@@ -475,7 +489,8 @@ func (work *session) finish(code int) int {
 	}
 	work.save()
 	if work.person.Home != "" {
-		if err := setup.WriteReport(&setup.Context{Run: work.runner, Person: work.person}); err != nil {
+		work.survey()
+		if err := setup.WriteReport(&setup.Context{Run: work.runner, Person: work.person, Machine: work.machine}); err != nil {
 			work.log.Line("warn", "could not write the report")
 		}
 	}

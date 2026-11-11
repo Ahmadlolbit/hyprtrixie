@@ -272,8 +272,8 @@ func AccountSteps(context *Context) {
 	context.Run.Step("Give the account its own copy of Hyprtrixie", context.giveClone)
 }
 
-func preflightDetect(log *runlog.Log) error {
-	fmt.Fprint(log, detect.Summary())
+func (context *Context) preflightDetect(log *runlog.Log) error {
+	fmt.Fprint(log, context.machine())
 	return nil
 }
 
@@ -284,7 +284,7 @@ func preflightSteps(context *Context) {
 	context.Run.Step("Internet connection", preflightNetwork)
 	context.Run.Step("Enough free disk space", preflightDisk)
 	context.Run.Interactive("Admin account", context.preflightUser)
-	context.Run.Step("Detect hardware", preflightDetect)
+	context.Run.Step("Detect hardware", context.preflightDetect)
 }
 
 func (context *Context) adminCheckTitle() string {

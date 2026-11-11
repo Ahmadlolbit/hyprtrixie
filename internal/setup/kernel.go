@@ -145,7 +145,7 @@ func (driver *nvidiaDriver) configure(log *runlog.Log) error {
 }
 
 func (context *Context) webcamWanted() bool {
-	return context.Config.Get("WEBCAM") == "auto" && detect.IPU6Camera()
+	return context.Config.Get("WEBCAM") == "auto" && context.hardware().IPU6
 }
 
 func (context *Context) webcamInstall(log *runlog.Log) error {
@@ -161,7 +161,7 @@ func webcamReady(*runlog.Log) error {
 }
 
 func kernelSteps(context *Context) {
-	driver := nvidiaDriver{Context: context, hardware: detect.ReadHardware(), initramfs: followUp{name: "nvidia-initramfs"}}
+	driver := nvidiaDriver{Context: context, hardware: context.hardware(), initramfs: followUp{name: "nvidia-initramfs"}}
 	context.Run.Step("Install the "+context.Config.Get("KERNEL")+" kernel", context.kernelInstall)
 	for _, note := range context.kernelNotes() {
 		context.Run.Note(note)
@@ -176,7 +176,7 @@ func kernelSteps(context *Context) {
 }
 
 func kernelChecks(context *Context) {
-	driver := nvidiaDriver{Context: context, hardware: detect.ReadHardware()}
+	driver := nvidiaDriver{Context: context, hardware: context.hardware()}
 	if context.Config.Get("KERNEL") == "backports" {
 		context.Run.Check("The kernel comes from backports", kernelFromBackports)
 	}

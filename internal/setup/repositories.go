@@ -142,7 +142,7 @@ func (context *Context) firmwarePackages(log *runlog.Log, lists []string) ([]str
 }
 
 func (context *Context) firmwareInstall(log *runlog.Log) error {
-	lists := firmwareLists(detect.ReadHardware())
+	lists := firmwareLists(context.hardware())
 	packages, err := context.firmwarePackages(log, lists)
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func (context *Context) firmwareInstall(log *runlog.Log) error {
 }
 
 func (context *Context) firmwarePresent(log *runlog.Log) error {
-	packages, err := context.firmwarePackages(log, firmwareLists(detect.ReadHardware()))
+	packages, err := context.firmwarePackages(log, firmwareLists(context.hardware()))
 	if err != nil {
 		return err
 	}

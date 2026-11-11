@@ -11,6 +11,7 @@ import (
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/lock"
@@ -33,8 +34,23 @@ func gitLog(args ...string) string {
 
 var snapshotTaken bool
 
+func snapshotsOff() bool {
+	if config.Read(config.Path()).Get("SNAPSHOTS") == "yes" {
+		return false
+	}
+	fmt.Println("Snapshots are off, so there's no restore point before this")
+	return true
+}
+
 func snapshotFirst() int {
-	if snapshotTaken || !installed("snapper") || !fsutil.IsFile(env.Or("HYPRTRIXIE_SNAPPER_CONFIG", "/etc/snapper/configs/root")) {
+	if snapshotTaken {
+		return 0
+	}
+	if snapshotsOff() {
+		snapshotTaken = true
+		return 0
+	}
+	if !installed("snapper") || !fsutil.IsFile(env.Or("HYPRTRIXIE_SNAPPER_CONFIG", "/etc/snapper/configs/root")) {
 		return 0
 	}
 	fmt.Println("Taking a snapshot first")
