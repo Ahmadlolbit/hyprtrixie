@@ -51,6 +51,8 @@ func snapshotFirst() int {
 		return 0
 	}
 	if !installed("snapper") || !fsutil.IsFile(env.Or("HYPRTRIXIE_SNAPPER_CONFIG", "/etc/snapper/configs/root")) {
+		fmt.Println("Snapshots aren't set up, so there's no restore point.")
+		snapshotTaken = true
 		return 0
 	}
 	fmt.Println("Taking a snapshot first")
