@@ -6,6 +6,11 @@ import Quickshell.Services.UPower
 import qs.common
 
 Scope {
+  id: root
+
+  readonly property var looks: Theme.looks
+  readonly property bool timed: (looks.auto || "off") !== "off" || looks.daily === "yes" || parseInt(looks.rotate || "0") > 0 || (looks.day_wallpaper || "off") !== "off" || looks.weather === "yes" || looks.quiet === "yes" || (looks.night || "off") !== "off"
+
   function followPower() {
     Quickshell.execDetached(["hyprtrixie-look", "power-apply", UPower.onBattery ? "battery" : "ac"]);
   }
@@ -69,7 +74,7 @@ Scope {
 
   Timer {
     interval: 60000
-    running: true
+    running: root.timed
     repeat: true
     triggeredOnStart: true
     onTriggered: tick.running = true
