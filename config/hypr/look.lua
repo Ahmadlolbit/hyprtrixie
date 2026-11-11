@@ -10,12 +10,31 @@ local function setting(path, key)
   return text:match("\n" .. key .. "=([^\n]*)")
 end
 
-function look.get(key)
+local function config_home()
   local config = os.getenv("XDG_CONFIG_HOME")
   if not config or config == "" then
     config = (os.getenv("HOME") or "") .. "/.config"
   end
-  return setting(config .. "/hyprtrixie/look.conf", key) or setting("/etc/hyprtrixie/look.conf", key)
+  return config
+end
+
+function look.get(key)
+  return setting(config_home() .. "/hyprtrixie/look.conf", key) or setting("/etc/hyprtrixie/look.conf", key)
+end
+
+local function bar_value(path, key)
+  local file = io.open(path, "r")
+  if not file then
+    return nil
+  end
+  local text = file:read("a")
+  file:close()
+  return text:match('"' .. key .. '"%s*:%s*"([%w-]+)"')
+end
+
+function look.bar(key)
+  local system = os.getenv("HYPRTRIXIE_SHELL_SYSTEM") or "/etc/hyprtrixie/shell.json"
+  return bar_value(config_home() .. "/hyprtrixie/shell.json", key) or bar_value(system, key)
 end
 
 return look
