@@ -127,8 +127,10 @@ func overIPC(file string) bool {
 func restartPaper() {
 	if run.Within(run.Quick, "pkill", "-x", "hyprpaper") == 0 {
 		run.Quiet(3*time.Second, "pidwait", "-x", "hyprpaper")
-		run.Quiet(run.Quick, "setsid", "-f", "hyprtrixie-start", "hyprpaper")
+	} else if !inHyprland() {
+		return
 	}
+	run.Quiet(run.Quick, "setsid", "-f", "hyprtrixie-start", "hyprpaper")
 }
 
 func apply(file string) int {
