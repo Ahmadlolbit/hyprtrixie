@@ -37,10 +37,11 @@ type Report struct {
 }
 
 type scan struct {
-	report Report
-	others []Temp
-	drives int
-	rank   int
+	report  Report
+	others  []Temp
+	drives  int
+	rank    int
+	cpuFile string
 }
 
 func Read(root string) Report {
@@ -51,11 +52,20 @@ func ReadCPU(root string) Report {
 	return read(root, false)
 }
 
-func read(root string, all bool) Report {
+func CPUFile(root string) string {
+	return walk(root, false).cpuFile
+}
+
+func walk(root string, all bool) scan {
 	current := scan{report: Report{Temps: []Temp{}, Fans: []Fan{}}, rank: len(cpuSensors)}
 	for _, dir := range entries(root+"/sys/class/hwmon", "hwmon", "") {
 		current.add(dir, all)
 	}
+	return current
+}
+
+func read(root string, all bool) Report {
+	current := walk(root, all)
 	if cpu := current.report.CPU; cpu != nil {
 		current.report.Temps = append(current.report.Temps, Temp{"CPU", *cpu})
 	}
@@ -83,8 +93,9 @@ func (current *scan) addCPU(dir, name string) {
 	if index < 0 {
 		return
 	}
-	if value, ok := degrees(cpuInput(dir, name)); ok {
-		current.report.CPU, current.rank = &value, index
+	input := cpuInput(dir, name)
+	if value, ok := degrees(input); ok {
+		current.report.CPU, current.rank, current.cpuFile = &value, index, input
 	}
 }
 
