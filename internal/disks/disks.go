@@ -16,6 +16,8 @@ const (
 	msData      = "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7"
 )
 
+var linuxSystems = []string{"btrfs", "crypto_LUKS", "ext2", "ext3", "ext4", "f2fs", "LVM2_member", "swap", "xfs"}
+
 type Partition struct {
 	Path        string      `json:"path"`
 	Size        int64       `json:"size"`
@@ -36,6 +38,7 @@ type Disk struct {
 	Removable  bool        `json:"rm"`
 	ReadOnly   bool        `json:"ro"`
 	Table      string      `json:"pttype"`
+	FSType     string      `json:"fstype"`
 	Serial     string      `json:"serial"`
 	WWN        string      `json:"wwn"`
 	Children   []Partition `json:"children"`
@@ -92,6 +95,32 @@ func (disk Disk) Windows() bool {
 	return slices.ContainsFunc(disk.Children, func(part Partition) bool {
 		return strings.EqualFold(part.PartType, msReserved) || strings.EqualFold(part.PartType, msData) && part.FSType == "ntfs"
 	})
+}
+
+func (disk Disk) External() bool {
+	return disk.Transport == "usb" || disk.Removable
+}
+
+func (disk Disk) Contents() string {
+	switch {
+	case disk.Windows():
+		return "Windows"
+	case slices.Contains(linuxSystems, disk.FSType) || slices.ContainsFunc(disk.Children, Partition.linux):
+		return "Linux"
+	case disk.FSType != "" || slices.ContainsFunc(disk.Children, Partition.formatted):
+		return "has files"
+	case len(disk.Children) > 0:
+		return "has partitions"
+	}
+	return "empty"
+}
+
+func (part Partition) linux() bool {
+	return slices.Contains(linuxSystems, part.FSType) || slices.ContainsFunc(part.Children, Partition.linux)
+}
+
+func (part Partition) formatted() bool {
+	return part.FSType != "" || slices.ContainsFunc(part.Children, Partition.formatted)
 }
 
 func (disk Disk) Name() string {

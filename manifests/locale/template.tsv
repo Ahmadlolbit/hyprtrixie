@@ -253,6 +253,7 @@ Let you change the brightness
 Let you manage printers and scanners	
 Light from	
 Light theme	
+Linux	
 Load a configuration file	
 Load configuration	
 Loaded %s	
@@ -494,6 +495,7 @@ Type to change · Arrows move · Enter goes on · Esc back
 Type to search · Enter keeps it · Esc clears it	
 Type, then Enter	
 Type, then Enter · Esc cancels	
+USB	
 Unlock it	
 Unlock the lock screen and approve sudo with a finger; the login screen keeps your password. Add a finger with hyprtrixie fingerprint add	
 Use Debian over HTTPS with backports	
@@ -524,6 +526,7 @@ Where Debian packages download from; the default picks a nearby server
 Where Hyprtrixie goes	
 Wi-Fi and wired connections move to NetworkManager, so the bar manages them	
 Window style	
+Windows	
 Windows and workspaces animate as they open, close and move	
 Windows stays. Hyprtrixie goes in the free space, and the boot menu offers both for five seconds.	
 Words above it	
@@ -544,10 +547,14 @@ Your name can't have : or , in it
 Your password, for sudo	
 curl is installed	
 distrobox and Podman are installed	
+empty	
 engine-switch points docker at %s	
+has files	
+has partitions	
 kitty, zsh and tmux are installed	
 kubectl, helm, k9s and kind are installed	
 lazydocker is installed	
+removable	
 restic-backup is in ~/bin	
 snapper-rollback works	
 sudo takes your finger	
