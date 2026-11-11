@@ -339,15 +339,15 @@ func writeReport(path string, person account.Account, fill func(*report)) error 
 	return errors.Join(out.problem, file.Close())
 }
 
-func copyAsUser(person account.Account, source, folder string) {
-	target, err := os.OpenFile(filepath.Join(folder, filepath.Base(source)), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, privateMode)
+func copyAsUser(person account.Account, source, target string) {
+	file, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, privateMode)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
 	}
-	defer target.Close()
-	if run.Into(run.Slow, target, "runuser", person.RunuserArgs("cat", source)...) != 0 {
-		os.Remove(target.Name())
+	defer file.Close()
+	if run.Into(run.Slow, file, "runuser", person.RunuserArgs("cat", source)...) != 0 {
+		os.Remove(file.Name())
 	}
 }
 
@@ -359,10 +359,13 @@ func copyLogs(person account.Account, folder string) {
 			run.Within(run.Slow, "cp", file, folder+"/")
 		}
 	}
+	if report := filepath.Join(person.Home, "runbook-report.md"); fsutil.IsFile(report) {
+		copyAsUser(person, report, filepath.Join(folder, filepath.Base(report)))
+	}
 	hyprLogs, _ := filepath.Glob(person.Runtime() + "/hypr/*/hyprland.log")
-	for _, file := range append([]string{filepath.Join(person.Home, "runbook-report.md")}, hyprLogs...) {
+	for _, file := range hyprLogs {
 		if fsutil.IsFile(file) {
-			copyAsUser(person, file, folder)
+			copyAsUser(person, file, filepath.Join(folder, "hyprland-"+filepath.Base(filepath.Dir(file))+".log"))
 		}
 	}
 }
