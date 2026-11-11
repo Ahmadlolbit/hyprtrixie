@@ -473,8 +473,22 @@ func ExtrepoDisable(log *runlog.Log, name string) error {
 	return nil
 }
 
+func ownSource(name string) bool {
+	text, err := fsutil.Text(sourceFile(name))
+	address := strings.TrimSuffix(field(text, "URIs"), "/")
+	if err != nil || address == "" {
+		return false
+	}
+	output, _ := run.CaptureInEnglish(run.Minute, "apt-get", "update", "--print-uris")
+	return slices.ContainsFunc(run.Lines(output), func(line string) bool { return mentions(line, address) })
+}
+
 func extrepoEnable(log *runlog.Log, name string) (bool, error) {
 	if ExtrepoEnabled(name) {
+		return false, nil
+	}
+	if ownSource(name) {
+		log.Line("info", "the "+name+" repository is set up already in an apt source of your own, so that one is used")
 		return false, nil
 	}
 	if err := Install(log, "extrepo"); err != nil {
@@ -489,7 +503,7 @@ func ExtrepoAhead(log *runlog.Log, names ...string) {
 	}
 	added := false
 	for _, name := range names {
-		if !ExtrepoEnabled(name) && run.LoggedWithin(extrepoLimit, log, "extrepo", "enable", name) == nil {
+		if !ExtrepoEnabled(name) && !ownSource(name) && run.LoggedWithin(extrepoLimit, log, "extrepo", "enable", name) == nil {
 			added = true
 		}
 	}
@@ -582,7 +596,7 @@ func ExtrepoTry(log *runlog.Log, name string) error {
 		update = ForceUpdate
 	}
 	failure := update(log)
-	if failure == nil && !ExtrepoEnabled(name) {
+	if failure == nil && !ExtrepoEnabled(name) && !ownSource(name) {
 		return errors.New("the " + name + " repository was turned off, because apt rejects it")
 	}
 	if failure == nil || errors.Is(failure, run.ErrStopped) {

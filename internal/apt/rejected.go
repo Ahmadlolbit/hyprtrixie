@@ -38,7 +38,7 @@ func vendorAddresses() map[string]string {
 	files, _ := filepath.Glob(filepath.Join(SourcesDir(), "extrepo_*.sources"))
 	for _, file := range files {
 		name := strings.TrimSuffix(strings.TrimPrefix(filepath.Base(file), "extrepo_"), ".sources")
-		if text, err := fsutil.Text(file); err == nil && field(text, "URIs") != "" {
+		if text, err := fsutil.Text(file); err == nil && field(text, "URIs") != "" && ExtrepoEnabled(name) {
 			found[name] = strings.TrimSuffix(field(text, "URIs"), "/")
 		}
 	}
@@ -59,10 +59,32 @@ func rejected(output string) []string {
 	return names
 }
 
+func doubled(output string) []string {
+	var lines []string
+	for _, line := range strings.Split(output, "\n") {
+		if strings.Contains(line, "Conflicting values set for option") {
+			lines = append(lines, line)
+		}
+	}
+	return rejected(strings.Join(lines, "\n"))
+}
+
 func refresh(log *runlog.Log) error {
 	output, err := listsUpdate(log)
+	if err == nil {
+		return nil
+	}
+	if twice := doubled(output); len(twice) > 0 {
+		for _, name := range twice {
+			log.Line("warn", "the "+name+" repository is set up already in an apt source of your own, so extrepo's copy of it is turned off")
+			run.LoggedWithin(extrepoLimit, log, "extrepo", "disable", name)
+		}
+		if output, err = listsUpdate(log); err == nil {
+			return nil
+		}
+	}
 	names := rejected(output)
-	if err == nil || len(names) == 0 {
+	if len(names) == 0 {
 		return err
 	}
 	for _, name := range names {
