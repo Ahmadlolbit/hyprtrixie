@@ -547,7 +547,7 @@ func Candidate(spec string) string {
 
 func field(text, name string) string {
 	for _, line := range strings.Split(text, "\n") {
-		if rest, found := strings.CutPrefix(line, name+":"); found {
+		if key, rest, found := strings.Cut(line, ":"); found && strings.EqualFold(key, name) {
 			if fields := strings.Fields(rest); len(fields) > 0 {
 				return fields[0]
 			}
@@ -563,6 +563,9 @@ func releaseAddress(name string) (string, error) {
 	}
 	address := strings.TrimSuffix(field(text, "URIs"), "/")
 	suite := field(text, "Suites")
+	if suite == "/" {
+		suite = "./"
+	}
 	if strings.HasSuffix(suite, "/") {
 		return address + "/" + strings.TrimPrefix(suite, "./") + "InRelease", nil
 	}
