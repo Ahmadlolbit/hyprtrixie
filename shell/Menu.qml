@@ -254,6 +254,14 @@ Scope {
     return typed.join() === secretKeys.join();
   }
 
+  function coding() {
+    for (let size = Math.min(typed.length, secretKeys.length - 1); size > 0; size--) {
+      if (typed.slice(-size).join() === secretKeys.slice(0, size).join())
+        return true;
+    }
+    return false;
+  }
+
   function showCredits() {
     typed = [];
     filter = "";
@@ -327,7 +335,7 @@ Scope {
     if (stack.length > 1) {
       stack = stack.slice(0, -1);
       enter();
-    } else {
+    } else if (!coding()) {
       close();
     }
   }
