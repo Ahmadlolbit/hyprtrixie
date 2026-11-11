@@ -23,8 +23,12 @@ type welcome struct {
 	started time.Time
 }
 
+func logoFits(width, height int) bool {
+	return width >= logoColumns+textColumns && height >= burst.Size/2+clearRows
+}
+
 func (view *welcome) draw(width, height int) string {
-	if width < logoColumns+textColumns || height < burst.Size/2+clearRows {
+	if !logoFits(width, height) {
 		return view.page.draw(width, height)
 	}
 	text := view.page.draw(width-logoColumns, height-clearRows)

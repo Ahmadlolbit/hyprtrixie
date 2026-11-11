@@ -108,12 +108,17 @@ func (flow *wizard) Init() tea.Cmd {
 
 func (flow *wizard) logoLater() tea.Cmd {
 	view, onWelcome := flow.stages[flow.at].(*welcome)
-	if flow.show == nil || flow.ticking || !onWelcome {
+	if flow.show == nil || flow.ticking || !onWelcome || !flow.logoInSight() {
 		return nil
 	}
 	flow.ticking = true
 	_, wait := burst.At(time.Since(view.started))
 	return tea.Tick(wait, func(time.Time) tea.Msg { return logoTick{} })
+}
+
+func (flow *wizard) logoInSight() bool {
+	width, height, _, _ := flow.frame()
+	return !flow.guide && len(flow.dialogs) == 0 && logoFits(width, height)
 }
 
 func (flow *wizard) checkTerminal() tea.Cmd {
@@ -130,6 +135,7 @@ func (flow *wizard) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			flow.width = message.Width
 			flow.height = message.Height
 		}
+		return flow, flow.logoLater()
 	case tea.KeyMsg:
 		command := flow.press(message)
 		return flow, tea.Batch(command, flow.logoLater())
@@ -322,11 +328,15 @@ func (flow *wizard) saying(help string, width int) []string {
 	return said
 }
 
-func (flow *wizard) View() string {
+func (flow *wizard) frame() (int, int, []string, string) {
 	width := max(flow.width, 1)
 	help, keys := flow.footer()
 	said := flow.saying(help, width)
-	height := max(flow.height-frameLines-len(said)+1, 1)
+	return width, max(flow.height-frameLines-len(said)+1, 1), said, keys
+}
+
+func (flow *wizard) View() string {
+	width, height, said, keys := flow.frame()
 	rule := ruleStyle.Render(strings.Repeat("─", width))
 	body := lipgloss.NewStyle().MaxWidth(width).Height(height).MaxHeight(height).Render(flow.body(width, height))
 	lines := append([]string{cut(flow.header(width), width), rule, body, rule}, said...)
