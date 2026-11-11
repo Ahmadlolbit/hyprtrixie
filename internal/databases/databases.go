@@ -99,6 +99,9 @@ func (database Database) Password() (string, error) {
 	}
 	password := rand.Text()
 	_, err = file.WriteString(password + "\n")
+	if err == nil {
+		err = file.Sync()
+	}
 	return password, errors.Join(err, file.Close())
 }
 
