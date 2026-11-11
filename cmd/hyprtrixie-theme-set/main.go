@@ -248,26 +248,28 @@ func templates(dir string) []string {
 	return paths
 }
 
-func renderOne(template, target string, replacer *strings.Replacer, scale float64) {
+func renderOne(template, target string, replacer *strings.Replacer, scale float64) error {
 	data, err := os.ReadFile(template)
-	if err == nil {
-		err = atomic.Stage(target, []byte(theme.Sized(replacer.Replace(string(data)), scale)), 0o666)
-	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
+		return nil
 	}
+	return atomic.Stage(target, []byte(theme.Sized(replacer.Replace(string(data)), scale)), 0o666)
 }
 
-func render(dir string, colors, apps theme.Colors) {
+func render(dir string, colors, apps theme.Colors) error {
 	replacers := map[bool]*strings.Replacer{false: colors.Replacer(), true: apps.Replacer()}
 	scale := theme.TextScale(settings.Get("text"))
 	found := append(templates(filepath.Join(env.AppConfig(), "themed")), templates(filepath.Join(systemRoot, "themed"))...)
 	for _, template := range found {
 		base := strings.TrimSuffix(filepath.Base(template), ".tpl")
 		if target := filepath.Join(dir, base); !fsutil.Exists(target) {
-			renderOne(template, target, replacers[slices.Contains(toolkitFiles, base)], scale)
+			if err := renderOne(template, target, replacers[slices.Contains(toolkitFiles, base)], scale); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 func swap(next, target string) error {
@@ -286,6 +288,9 @@ func swap(next, target string) error {
 }
 
 func symlink(target, link string) {
+	if linked, err := os.Readlink(link); err == nil && linked == target {
+		return
+	}
 	err := os.MkdirAll(filepath.Dir(link), 0o777)
 	if err == nil {
 		err = atomic.Symlink(target, link)
@@ -473,7 +478,10 @@ func prepare(name, next string) (theme.Colors, theme.Colors, bool) {
 		return nil, nil, false
 	}
 	apps := appColors(colors)
-	render(next, colors, apps)
+	if err := render(next, colors, apps); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return nil, nil, false
+	}
 	if colors["glass"] != "yes" {
 		os.Remove(filepath.Join(next, "glass.lua"))
 	}
@@ -497,9 +505,7 @@ func apply(name string) (paper, bool) {
 		fmt.Fprintln(os.Stderr, err)
 		return paperKept, false
 	}
-	if err := atomic.Write(filepath.Join(state(), "theme.name"), []byte(name+"\n"), 0o666); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	}
+	writeChanged(filepath.Join(state(), "theme.name"), []byte(name+"\n"))
 	pickBackground(name, previous, colors)
 	linkApps()
 	desktopSettings(colors, apps)

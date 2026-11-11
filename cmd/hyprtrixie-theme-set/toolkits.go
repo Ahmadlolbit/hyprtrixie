@@ -80,14 +80,7 @@ func writeGTKTheme(name, base string) {
 	for _, part := range [][2]string{{"gtk-3.0", "gtk3.css"}, {"gtk-4.0", "gtk4.css"}} {
 		text := fmt.Sprintf("@import url(%q);\n@import url(%q);\n",
 			filepath.Join(gtkThemes, base, part[0], gtkUserFile), filepath.Join(current, part[1]))
-		file := filepath.Join(env.DataHome(), "themes", name, part[0], gtkUserFile)
-		err := os.MkdirAll(filepath.Dir(file), 0o777)
-		if err == nil {
-			err = atomic.Write(file, []byte(text), 0o666)
-		}
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-		}
+		writeChanged(filepath.Join(env.DataHome(), "themes", name, part[0], gtkUserFile), []byte(text))
 	}
 }
 

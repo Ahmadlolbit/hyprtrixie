@@ -74,7 +74,7 @@ func workspaces() bool {
 	}
 	found := backgrounds()
 	if len(found) == 0 {
-		return true
+		return current() == "" || overIPC(current())
 	}
 	monitors, _ := hypr.QuietMonitors()
 	for _, monitor := range monitors {

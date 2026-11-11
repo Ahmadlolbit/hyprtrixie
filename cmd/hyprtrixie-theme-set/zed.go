@@ -74,11 +74,11 @@ func writeChanged(file string, data []byte) bool {
 	return true
 }
 
-func followZed(name string, palettes []palette) {
+func followZed(name string, palettes func() []palette) {
 	if !zedInstalled() {
 		return
 	}
-	data, ok := zedThemes(palettes)
+	data, ok := zedThemes(palettes())
 	if !ok {
 		return
 	}
