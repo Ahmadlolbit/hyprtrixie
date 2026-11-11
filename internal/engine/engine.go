@@ -186,7 +186,7 @@ func settingsFor(options Options) (*config.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	settings.LoadText(options.Config, string(text))
+	settings.MergeText(options.Config, string(text))
 	return settings, nil
 }
 
