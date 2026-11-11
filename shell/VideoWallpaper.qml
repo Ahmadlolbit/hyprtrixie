@@ -25,16 +25,21 @@ Variants {
       right: true
     }
 
-    Video {
-      readonly property bool resting: !Theme.videoOnBattery && UPower.onBattery
-
+    Loader {
       anchors.fill: parent
-      source: "file://" + Theme.video.split("/").map(encodeURIComponent).join("/")
-      loops: MediaPlayer.Infinite
-      muted: true
-      fillMode: VideoOutput.PreserveAspectCrop
-      autoPlay: !resting
-      onRestingChanged: resting ? pause() : play()
+      active: !Screens.dark
+
+      sourceComponent: Video {
+        readonly property bool resting: !Theme.videoOnBattery && UPower.onBattery
+
+        anchors.fill: parent
+        source: "file://" + Theme.video.split("/").map(encodeURIComponent).join("/")
+        loops: MediaPlayer.Infinite
+        muted: true
+        fillMode: VideoOutput.PreserveAspectCrop
+        autoPlay: !resting
+        onRestingChanged: resting ? pause() : play()
+      }
     }
   }
 }
