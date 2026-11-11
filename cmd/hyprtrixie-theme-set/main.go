@@ -43,6 +43,7 @@ const (
 )
 
 var (
+	ownFiles   = []string{"btop.theme", "chromium.theme", "colors.toml", "gtk3.css", "gtk4.css", "icons.theme", "light.mode", "look.toml", "walker.css"}
 	systemRoot = env.ThemeRoot()
 	iconName   = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
 	settings   = look.Open()
@@ -110,10 +111,16 @@ func stageEntry(own, next string, entry fs.DirEntry) error {
 	case strings.HasSuffix(base, ".lua") || strings.Contains(denied, " "+base+" "):
 		fmt.Fprintf(os.Stderr, "ignored %s from %s: your themes can't bring code or settings that run commands\n", base, own)
 		return nil
+	case base == "backgrounds" && entry.IsDir():
+		return stageImages(source, target)
+	case !slices.Contains(ownFiles, base):
+		return nil
 	case entry.Type()&os.ModeSymlink != 0:
 		return stageLink(source, target)
+	case entry.Type().IsRegular():
+		return stageFile(source, target)
 	}
-	return fsutil.CopyEntry(source, target)
+	return nil
 }
 
 func stageLink(source, target string) error {
@@ -121,11 +128,31 @@ func stageLink(source, target string) error {
 		fmt.Fprintf(os.Stderr, "ignored %s: it links to something other than a file\n", source)
 		return nil
 	}
+	return stageFile(source, target)
+}
+
+func stageFile(source, target string) error {
 	data, err := os.ReadFile(source)
 	if err != nil {
 		return err
 	}
 	return atomic.Install(target, data, 0o644)
+}
+
+func stageImages(source, target string) error {
+	images := fsutil.Images(source)
+	if len(images) == 0 {
+		return nil
+	}
+	if err := os.MkdirAll(target, 0o777); err != nil {
+		return err
+	}
+	for _, image := range images {
+		if err := stageFile(image, filepath.Join(target, filepath.Base(image))); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func stage(name, next string) error {
