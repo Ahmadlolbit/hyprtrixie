@@ -179,10 +179,18 @@ func (deployer *Deployer) settle(target string, data []byte, mode os.FileMode, o
 }
 
 func (deployer *Deployer) keepEdits(target string, data []byte, mode os.FileMode, owner string) error {
-	if err := deployer.place(target+newSuffix, data, mode, owner); err != nil {
+	fresh := target + newSuffix
+	var err error
+	switch {
+	case current(fresh) != fingerprint(data):
+		err = deployer.place(fresh, data, mode, owner)
+	case deployer.inHome(fresh):
+		err = deployer.settleHome(fresh, data, mode)
+	}
+	if err != nil {
 		return err
 	}
-	deployer.Log.Line("warn", "kept local edits in "+target+", new version written to "+target+newSuffix)
+	deployer.Log.Line("warn", "kept local edits in "+target+", new version written to "+fresh)
 	return nil
 }
 
