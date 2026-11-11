@@ -80,7 +80,7 @@ case "${1:-} ${2:-}" in
     exec "$tools/hyprtrixie"
     ;;
   install\ *)
-    needs_root install
+    needs_root "$*"
     build
     fresh "$@"
     ;;
@@ -90,7 +90,7 @@ case "${1:-} ${2:-}" in
     fresh "$@"
     ;;
   verify\ *)
-    needs_root verify
+    needs_root "$*"
     if command -v go >/dev/null; then
       build
       fresh "$@"
