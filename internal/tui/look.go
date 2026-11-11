@@ -30,7 +30,7 @@ func marked(focused bool, text string) string {
 	case focusStyle.Render(" ") == " ":
 		return "> " + text
 	}
-	return " " + focusStyle.Render(" "+text+" ")
+	return ">" + focusStyle.Render(" "+text+" ")
 }
 
 func cut(text string, width int) string {
