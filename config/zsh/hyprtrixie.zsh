@@ -8,7 +8,7 @@ for plugin in docker kubectl helm fzf; do
   (( $+commands[$plugin] )) && plugins+=($plugin)
 done
 unset plugin
-mkdir -p "$ZSH_CACHE_DIR/completions"
+[[ -d $ZSH_CACHE_DIR/completions ]] || mkdir -p "$ZSH_CACHE_DIR/completions"
 source "$ZSH/oh-my-zsh.sh"
 
 HISTFILE="$HOME/.zsh_history"
@@ -35,7 +35,7 @@ fi
 (( $+commands[fd] )) && export FZF_DEFAULT_COMMAND='fd --type f --hidden --exclude .git'
 [[ $TERM == (xterm-kitty|tmux-256color) ]] && alias ssh='TERM=xterm-256color ssh'
 
-if [[ "$(cat /var/lib/hyprtrixie/container-engine 2>/dev/null)" == podman ]]; then
+if [[ -r /var/lib/hyprtrixie/container-engine && "$(</var/lib/hyprtrixie/container-engine)" == podman ]]; then
   export DOCKER_HOST="unix://${XDG_RUNTIME_DIR:-/run/user/$UID}/podman/podman.sock"
 fi
 
