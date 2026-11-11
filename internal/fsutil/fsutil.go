@@ -224,20 +224,34 @@ func image(name string) bool {
 	return false
 }
 
+type writer func(path string, data []byte, perm os.FileMode) error
+
 func CopyTree(source, target string) error {
+	return copyTree(source, target, atomic.Write)
+}
+
+func StageTree(source, target string) error {
+	return copyTree(source, target, atomic.Stage)
+}
+
+func CopyEntry(source, target string) error {
+	return copyEntry(source, target, atomic.Write)
+}
+
+func copyTree(source, target string, write writer) error {
 	entries, err := os.ReadDir(source)
 	if err != nil {
 		return err
 	}
 	for _, entry := range entries {
-		if err := CopyEntry(filepath.Join(source, entry.Name()), filepath.Join(target, entry.Name())); err != nil {
+		if err := copyEntry(filepath.Join(source, entry.Name()), filepath.Join(target, entry.Name()), write); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func CopyEntry(source, target string) error {
+func copyEntry(source, target string, write writer) error {
 	info, err := os.Lstat(source)
 	if err != nil {
 		return err
@@ -246,9 +260,9 @@ func CopyEntry(source, target string) error {
 	case info.Mode()&os.ModeSymlink != 0:
 		return copyLink(source, target)
 	case info.IsDir():
-		return copyDir(source, target, info.Mode().Perm())
+		return copyDir(source, target, info.Mode().Perm(), write)
 	case info.Mode().IsRegular():
-		return copyFile(source, target, info.Mode().Perm())
+		return copyFile(source, target, info.Mode().Perm(), write)
 	}
 	return nil
 }
@@ -261,17 +275,17 @@ func copyLink(source, target string) error {
 	return atomic.Symlink(link, target)
 }
 
-func copyDir(source, target string, perm os.FileMode) error {
+func copyDir(source, target string, perm os.FileMode, write writer) error {
 	if err := os.MkdirAll(target, perm|0o700); err != nil {
 		return err
 	}
-	return CopyTree(source, target)
+	return copyTree(source, target, write)
 }
 
-func copyFile(source, target string, perm os.FileMode) error {
+func copyFile(source, target string, perm os.FileMode, write writer) error {
 	data, err := os.ReadFile(source)
 	if err != nil {
 		return err
 	}
-	return atomic.Write(target, data, perm)
+	return write(target, data, perm)
 }
