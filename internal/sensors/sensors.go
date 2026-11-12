@@ -40,6 +40,7 @@ type scan struct {
 	report  Report
 	others  []Temp
 	drives  int
+	gpus    int
 	rank    int
 	cpuFile string
 }
@@ -107,12 +108,13 @@ func (current *scan) addTemp(dir, name string) {
 	if !ok {
 		return
 	}
-	label := "GPU"
 	if name == "nvme" {
 		current.drives++
-		label = driveLabel(current.drives)
+		current.others = append(current.others, Temp{numbered("NVMe", current.drives), value})
+		return
 	}
-	current.others = append(current.others, Temp{label, value})
+	current.gpus++
+	current.others = append(current.others, Temp{numbered("GPU", current.gpus), value})
 }
 
 func (report Report) JSON() ([]byte, error) {
@@ -125,11 +127,11 @@ func (report Report) JSON() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-func driveLabel(drive int) string {
-	if drive > 1 {
-		return "NVMe " + strconv.Itoa(drive)
+func numbered(name string, count int) string {
+	if count > 1 {
+		return name + " " + strconv.Itoa(count)
 	}
-	return "NVMe"
+	return name
 }
 
 func entries(dir, prefix, suffix string) []string {
