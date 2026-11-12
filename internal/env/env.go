@@ -48,8 +48,12 @@ func AppConfig() string {
 	return filepath.Join(ConfigHome(), "hyprtrixie")
 }
 
+func LocalState() string {
+	return filepath.Join(Home(), ".local", "state")
+}
+
 func ThemeState() string {
-	return filepath.Join(StateHome(), "hyprtrixie", "current")
+	return filepath.Join(LocalState(), "hyprtrixie", "current")
 }
 
 func CacheHome() string {

@@ -9,7 +9,7 @@ Singleton {
 
   readonly property int breakMinutes: 5
   readonly property string chime: "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga"
-  readonly property string statePath: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/hyprtrixie/focus"
+  readonly property string statePath: Quickshell.env("HOME") + "/.local/state/hyprtrixie/focus"
   property string phase: ""
   property int length: 25
   property real until: 0
