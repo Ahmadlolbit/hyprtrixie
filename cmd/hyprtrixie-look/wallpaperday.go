@@ -141,10 +141,24 @@ func expandHome(path string) string {
 	return path
 }
 
+func listedPictures(list string) []string {
+	lines, _ := fsutil.Lines(list)
+	var found []string
+	for _, line := range lines {
+		path := expandHome(strings.TrimSpace(line))
+		if path != "" && !filepath.IsAbs(path) {
+			path = filepath.Join(filepath.Dir(list), path)
+		}
+		if fsutil.IsFile(path) {
+			found = append(found, path)
+		}
+	}
+	return found
+}
+
 func ownPictures(place string) []string {
 	if fsutil.IsFile(place) {
-		lines, _ := fsutil.Lines(place)
-		return slices.DeleteFunc(slices.Clone(lines), func(line string) bool { return !fsutil.IsFile(expandHome(strings.TrimSpace(line))) })
+		return listedPictures(place)
 	}
 	folder := place
 	if real, err := filepath.EvalSymlinks(place); err == nil {
@@ -157,6 +171,7 @@ func ownPictures(place string) []string {
 			found = append(found, path)
 		}
 	}
+	slices.Sort(found)
 	return found
 }
 
@@ -166,8 +181,7 @@ func folderPicture(day int64) (string, error) {
 	if len(pictures) == 0 {
 		return "", fmt.Errorf("no pictures in %s", place)
 	}
-	slices.Sort(pictures)
-	return expandHome(strings.TrimSpace(pictures[day%int64(len(pictures))])), nil
+	return pictures[day%int64(len(pictures))], nil
 }
 
 func localDay(at time.Time) int64 {
