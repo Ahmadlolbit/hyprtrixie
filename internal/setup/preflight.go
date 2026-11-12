@@ -17,6 +17,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/step"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/ui"
 )
 
@@ -281,9 +282,20 @@ func (context *Context) preflightDetect(log *runlog.Log) error {
 	return nil
 }
 
+func stopsTheRun(work step.Work) step.Work {
+	return func(log *runlog.Log) error {
+		err := work(log)
+		if err == nil {
+			return nil
+		}
+		fmt.Fprintln(log, "The setup stops here, whatever it was set to do on a failure: going on would leave this system half changed.")
+		return step.Halting(err)
+	}
+}
+
 func preflightSteps(context *Context) {
-	context.Run.Step("Debian 13 (trixie)", preflightOS)
-	context.Run.Step("64-bit PC (amd64)", preflightArch)
+	context.Run.Step("Debian 13 (trixie)", stopsTheRun(preflightOS))
+	context.Run.Step("64-bit PC (amd64)", stopsTheRun(preflightArch))
 	context.Run.Step("Secure Boot is off", preflightSecureBoot)
 	context.Run.Step("Internet connection", preflightNetwork)
 	context.Run.Step("Enough free disk space", preflightDisk)
