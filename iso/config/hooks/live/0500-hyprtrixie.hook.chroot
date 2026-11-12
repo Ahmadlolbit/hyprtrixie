@@ -4,7 +4,7 @@ set -e
 useradd -m -s /bin/bash hyprtrixie
 cd /opt/hyprtrixie
 status=0
-HYPRTRIXIE_USER=hyprtrixie ./hyprtrixie install --config /opt/hyprtrixie/iso/live.conf --skip 01,04,05,17 --on-failure continue --yes || status=$?
+HYPRTRIXIE_LIVE=1 HYPRTRIXIE_USER=hyprtrixie ./hyprtrixie install --config /opt/hyprtrixie/iso/live.conf --skip 01,04,05,17 --on-failure continue --yes || status=$?
 cached=/var/cache/hyprtrixie/sources/grub-btrfs
 grep '^grub-btrfs[[:space:]]' manifests/sources >/tmp/grub-btrfs.source || true
 read -r _ url commit </tmp/grub-btrfs.source || true

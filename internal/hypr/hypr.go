@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 )
 
@@ -84,6 +85,18 @@ func Session(runtime string) ([]string, bool) {
 		}
 	}
 	return nil, false
+}
+
+func Running(runtime string) []string {
+	entries, _ := os.ReadDir(filepath.Join(runtime, "hypr"))
+	for _, entry := range entries {
+		lock := strings.Fields(fsutil.Optional(filepath.Join(runtime, "hypr", entry.Name(), "hyprland.lock")))
+		instance := "HYPRLAND_INSTANCE_SIGNATURE=" + entry.Name()
+		if entry.IsDir() && len(lock) > 1 && run.Quiet(run.Quick, "env", "XDG_RUNTIME_DIR="+runtime, instance, "hyprctl", "version") == 0 {
+			return []string{instance, "WAYLAND_DISPLAY=" + lock[1]}
+		}
+	}
+	return nil
 }
 
 func Wallpaper(monitor, file string) bool {

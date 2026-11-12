@@ -20,7 +20,7 @@ import (
 const stoppedCode = 130
 
 func canShow() bool {
-	return term.IsTerminal(os.Stdin) && term.IsTerminal(os.Stdout)
+	return term.IsTerminal(os.Stdin) && term.IsTerminal(os.Stdout) && os.Getenv("TERM") != "dumb"
 }
 
 func (flow *wizard) allStages(machine []string, catalogue []apps.App) []stage {

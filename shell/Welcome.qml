@@ -9,7 +9,7 @@ import qs.common
 Scope {
   id: root
 
-  readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/hyprtrixie"
+  readonly property string stateDir: Quickshell.env("HOME") + "/.local/state/hyprtrixie"
   readonly property var keys: [["Super + Space", "Apps"], ["Super + Alt + Space", "Menu"], ["Super + K", "All the keys"], ["Super + Return", "Terminal"], ["Super + Ctrl + T", "Themes"]]
   property bool open: false
   property string tip: ""

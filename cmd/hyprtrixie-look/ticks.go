@@ -318,7 +318,23 @@ func quietWanted() bool {
 	return ok && state == "quiet" && settings.Get("quiet") == "yes"
 }
 
+func quietHeld() string {
+	return quietStamp() + "-held"
+}
+
+func quietStart() {
+	if doNotDisturbOn() {
+		return
+	}
+	run.Quiet(run.Quick, "makoctl", "mode", "-a", doNotDisturb)
+	save(quietHeld(), "yes")
+}
+
 func quietOver() {
+	if stored(quietHeld()) != "yes" {
+		return
+	}
+	remove(quietHeld())
 	if settings.Get("presentation") == "yes" {
 		save(lookState("presentation-quiet"), "yes")
 		return
@@ -336,7 +352,7 @@ func quietTick() {
 	}
 	save(quietStamp(), state)
 	if state == "quiet" {
-		run.Quiet(run.Quick, "makoctl", "mode", "-a", doNotDisturb)
+		quietStart()
 		return
 	}
 	quietOver()

@@ -74,7 +74,7 @@ func fancy() bool {
 }
 
 func paint(style, text string) string {
-	if fancy() {
+	if fancy() && os.Getenv("NO_COLOR") == "" {
 		return style + text + reset
 	}
 	return text

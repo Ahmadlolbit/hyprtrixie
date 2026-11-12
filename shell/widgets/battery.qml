@@ -13,7 +13,8 @@ Label {
   property string chargeLimit: ""
   readonly property bool shown: device !== null && device.isLaptopBattery && device.isPresent
   readonly property real level: shown ? (device.percentage > 1 ? device.percentage / 100 : device.percentage) : 0
-  readonly property bool charging: shown && (device.state === UPowerDeviceState.Charging || device.state === UPowerDeviceState.FullyCharged)
+  readonly property bool limited: shown && device.state === UPowerDeviceState.PendingCharge
+  readonly property bool charging: shown && (device.state === UPowerDeviceState.Charging || device.state === UPowerDeviceState.FullyCharged || limited)
   readonly property var profiles: [
     {
       label: "Power saver",
@@ -57,6 +58,8 @@ Label {
       return device.timeToFull > 0 ? duration(device.timeToFull) + " until full" : "Charging";
     if (device.state === UPowerDeviceState.Discharging)
       return device.timeToEmpty > 0 ? duration(device.timeToEmpty) + " left" : "On battery";
+    if (limited)
+      return "Charge limit reached";
     return "Plugged in";
   }
 

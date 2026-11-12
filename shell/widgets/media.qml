@@ -39,12 +39,17 @@ Label {
         popup.toggle();
     }
     onWheel: wheel => {
+      const steps = notches.steps(wheel);
       if (!root.player)
         return;
-      if (wheel.angleDelta.y < 0 && root.player.canGoNext)
+      if (steps < 0 && root.player.canGoNext)
         root.player.next();
-      else if (wheel.angleDelta.y > 0 && root.player.canGoPrevious)
+      else if (steps > 0 && root.player.canGoPrevious)
         root.player.previous();
+    }
+
+    Notches {
+      id: notches
     }
   }
 

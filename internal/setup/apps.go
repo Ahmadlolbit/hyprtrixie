@@ -168,7 +168,19 @@ func removePackages(log *runlog.Log, app apps.App) error {
 	return err
 }
 
+func (context *Context) webAppOn(browser apps.App) (apps.App, bool) {
+	for _, app := range apps.All() {
+		if browser.ID == "helium" && app.Source == "webapp" && context.Config.Enabled("APPS", app.ID) {
+			return app, true
+		}
+	}
+	return apps.App{}, false
+}
+
 func (context *Context) appRemove(log *runlog.Log, app apps.App) error {
+	if webApp, needed := context.webAppOn(app); needed {
+		return log.Failed(webApp.Name + "'s web app needs Helium, so Helium stays installed")
+	}
 	switch app.Source {
 	case "webapp":
 		return context.Deploy.Remove(filepath.Join(apps.WebFolder, app.ID+"-web.desktop"), filepath.Join(env.ShareDir(), "icons", app.ID+"-web.svg"))

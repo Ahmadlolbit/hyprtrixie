@@ -85,7 +85,10 @@ func (store *Store) Put(key, value string) error {
 		return err
 	}
 	updated := Without(string(current), key) + key + "=" + value + "\n"
-	if err := atomic.Install(store.path, []byte(updated), 0o600); err != nil {
+	if err := atomic.Write(store.path, []byte(updated), 0o600); err != nil {
+		return err
+	}
+	if err := os.Chmod(store.path, 0o600); err != nil {
 		return err
 	}
 	store.user = updated

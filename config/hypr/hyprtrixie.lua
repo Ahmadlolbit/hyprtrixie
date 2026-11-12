@@ -1,4 +1,4 @@
-local state = os.getenv("XDG_STATE_HOME") or ((os.getenv("HOME") or "") .. "/.local/state")
+local state = (os.getenv("HOME") or "") .. "/.local/state"
 local roots = "/etc/?.lua;/usr/share/?.lua;" .. state .. "/?.lua;"
 if not package.path:find(roots, 1, true) then
   package.path = roots .. package.path

@@ -20,6 +20,10 @@ Singleton {
     close(popup);
   }
 
+  function held(name) {
+    return popups.some(popup => popup.name === name && popup.bar);
+  }
+
   function toggle(popup) {
     open = open === popup ? null : popup;
   }

@@ -5,6 +5,7 @@ import qs.common
 
 Label {
   property var bar
+  readonly property bool shown: Session.powerProfiles
 
   text: PowerProfiles.profile === PowerProfile.PowerSaver ? "\u{f032a}" : PowerProfiles.profile === PowerProfile.Performance ? "\u{f04c5}" : "\u{f05d1}"
   color: PowerProfiles.profile === PowerProfile.Performance ? Theme.warning : Theme.text

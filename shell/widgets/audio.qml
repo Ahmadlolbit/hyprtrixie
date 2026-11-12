@@ -63,8 +63,13 @@ Label {
         popup.toggle();
     }
     onWheel: wheel => {
-      if (root.sink && wheel.angleDelta.y !== 0)
-        root.sink.audio.volume = wheel.angleDelta.y > 0 ? Math.max(root.volume, Math.min(1, root.volume + 0.05)) : Math.max(0, root.volume - 0.05);
+      const steps = notches.steps(wheel);
+      if (root.sink && steps !== 0)
+        root.sink.audio.volume = steps > 0 ? Math.max(root.volume, Math.min(1, root.volume + 0.05 * steps)) : Math.max(0, root.volume + 0.05 * steps);
+    }
+
+    Notches {
+      id: notches
     }
   }
 

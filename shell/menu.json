@@ -194,6 +194,7 @@
     "label": "Power saver on battery",
     "action": "hyprtrixie-look power toggle",
     "state": "test \"$(hyprtrixie-look power)\" = yes",
+    "needs": "power-profiles",
     "keywords": [
       "power",
       "battery",
@@ -647,6 +648,7 @@
     "glyph": "\udb80\udcdf",
     "label": "Brightness",
     "action": "qs -p /usr/share/hyprtrixie/shell ipc call popup toggle brightness",
+    "needs": "brightness",
     "keywords": [
       "brightness",
       "screen",

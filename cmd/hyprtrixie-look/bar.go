@@ -51,7 +51,11 @@ func setBar(change func([]byte, string) ([]byte, error), value string) int {
 		fmt.Fprintf(os.Stderr, "%s is not valid JSON; fix it first\n", file)
 		return 1
 	}
-	if err := atomic.Install(file, updated, 0o600); err != nil {
+	if err := atomic.Write(file, updated, 0o600); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	if err := os.Chmod(file, 0o600); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
