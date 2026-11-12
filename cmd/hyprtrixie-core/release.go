@@ -99,11 +99,14 @@ func afterUpdate(from, to string) int {
 	args := []string{script(), "install"}
 	if text := changesBetween(from, to); text != "" {
 		dir := changesDir()
-		if err := writeChanges(dir, text); err != nil {
+		err := writeChanges(dir, text)
+		if err != nil {
 			fmt.Fprintln(os.Stderr, "cannot save the update notes:", err)
 		}
 		fmt.Printf("\nWhat changed:\n%s\n", text)
-		args = append(args, "--changes", filepath.Join(dir, "changes.txt"))
+		if err == nil {
+			args = append(args, "--changes", filepath.Join(dir, "changes.txt"))
+		}
 	}
 	return run.Report(run.Exec("sudo", args...))
 }
