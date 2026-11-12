@@ -139,9 +139,11 @@ func (colors Colors) Resolve() {
 	colors.fallback("accent", "blue", "")
 	colors.fallback("orange", "yellow", "")
 	colors.resolveShades()
-	if colors["mode"] != "light" {
-		colors["mode"] = "dark"
+	mode := "dark"
+	if strings.EqualFold(colors["mode"], "light") {
+		mode = "light"
 	}
+	colors["mode"] = mode
 	colors.fallback("kde_icons", "", kdeIcons[colors["mode"]])
 }
 
