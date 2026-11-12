@@ -322,12 +322,16 @@ func everyoneTimer(log *runlog.Log, timer string, on, changed bool) error {
 	return run.Logged(log, "systemctl", "--global", action, timer)
 }
 
+func liveImage() bool {
+	return os.Getenv("HYPRTRIXIE_LIVE") == "1"
+}
+
 func (context *Context) tipTimerInstall(log *runlog.Log) error {
 	changed, err := context.deployUserUnits(tipService, tipTimer)
 	if err != nil {
 		return err
 	}
-	return everyoneTimer(log, tipTimer, true, changed)
+	return everyoneTimer(log, tipTimer, !liveImage(), changed)
 }
 
 func (context *Context) careInstall(log *runlog.Log) error {
@@ -338,7 +342,7 @@ func (context *Context) careInstall(log *runlog.Log) error {
 	if err != nil {
 		return err
 	}
-	return everyoneTimer(log, careTimer, context.Config.Get("CARE_NOTIFY") == "yes", changed)
+	return everyoneTimer(log, careTimer, !liveImage() && context.Config.Get("CARE_NOTIFY") == "yes", changed)
 }
 
 func (context *Context) brightnessAccess(log *runlog.Log) error {
@@ -404,7 +408,7 @@ func sessionChecks(context *Context) {
 	context.Run.Check("Your account can change the brightness", func(*runlog.Log) error {
 		return expect(context.Person.InGroup("video"), "you are not in the video group")
 	})
-	if context.Config.Get("CARE_NOTIFY") == "yes" {
+	if !liveImage() && context.Config.Get("CARE_NOTIFY") == "yes" {
 		context.Run.Check("The quiet system checks are scheduled", timerCheck(careTimer))
 	}
 	context.Run.Check("The hyprtrixie command points at this folder", commandReady)
@@ -424,7 +428,9 @@ func sessionChecks(context *Context) {
 	context.Run.Check("The web app maker is installed", commands("hyprtrixie-webapp"))
 	context.Run.Check("The session starter is installed", commands("hyprtrixie-start"))
 	context.Run.Check("The floating terminal is installed", commands("hyprtrixie-terminal"))
-	context.Run.Check("Tip notifications are scheduled", timerCheck(tipTimer))
+	if !liveImage() {
+		context.Run.Check("Tip notifications are scheduled", timerCheck(tipTimer))
+	}
 	context.Run.Check("The tips are installed", commands("hyprtrixie-tip"))
 	context.Run.Check("Your Hyprland config loads the Hyprtrixie defaults", context.hyprlandUserReady)
 	context.Run.Check("Walker and its providers are installed", walkerReady)
