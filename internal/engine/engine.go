@@ -43,13 +43,17 @@ const (
 	appsModule   = "10"
 	noModule     = "none"
 	configLimit  = 64 << 10
+	keepYours    = "Keep yours, leaving the configuration alone"
+	useRuns      = "Use the run's, overwriting your choices"
+	mergeBoth    = "Merge the two: the run's changes, and yours where you both changed a setting"
 )
 
 var (
 	ErrHelp      = errors.New("help")
 	AfterTesting = func() {}
 
-	failureModes = []string{askMode, "halt", continueMode}
+	failureModes  = []string{askMode, "halt", continueMode}
+	editedChoices = []string{keepYours, useRuns, mergeBoth}
 )
 
 type Options struct {
@@ -434,16 +438,43 @@ func (work *session) confirmed() bool {
 	return ok
 }
 
+func (work *session) editedChoice(path string) (string, bool) {
+	if !work.canAsk {
+		return mergeBoth, true
+	}
+	return work.runner.Answer(func() (string, bool) {
+		return work.runner.Choose(path+" changed after this run read it. Which configuration should it keep?", editedChoices)
+	})
+}
+
+func (work *session) saveSettings() bool {
+	path, settings := config.Path(), work.settings
+	if settings.Edited(path) {
+		choice, ok := work.editedChoice(path)
+		if !ok {
+			return false
+		}
+		work.log.Line("info", "the configuration changed after this run read it: "+choice)
+		if choice == keepYours {
+			return true
+		}
+		if choice == mergeBoth {
+			settings = settings.Merged(path)
+		}
+	}
+	if err := settings.Save(path); err != nil {
+		work.log.Line("warn", "cannot save the configuration: "+err.Error())
+	}
+	return true
+}
+
 func (work *session) install() int {
 	if !work.options.Events {
 		ui.Header("hyprtrixie "+env.Version, "Debian 13 with Hyprland, set up properly")
 	}
 	work.showMachine()
-	if !work.confirmed() {
+	if !work.confirmed() || !work.saveSettings() {
 		return work.runner.ExitCode()
-	}
-	if err := work.settings.Save(config.Path()); err != nil {
-		work.log.Line("warn", "cannot save the configuration: "+err.Error())
 	}
 	work.applyOverrides()
 	work.walk(stepsAndChecks)
@@ -547,8 +578,8 @@ func Verify(args []string) int {
 func (work *session) changeApp(app apps.App, change func(*config.Config), steps func(*setup.Context, apps.App)) int {
 	work.runner.Begin(noModule)
 	change(work.settings)
-	if err := work.settings.Save(config.Path()); err != nil {
-		work.log.Line("warn", "cannot save the configuration: "+err.Error())
+	if !work.saveSettings() {
+		return work.outcome()
 	}
 	work.applyOverrides()
 	context, err := work.context()
