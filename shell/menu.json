@@ -647,6 +647,7 @@
     "glyph": "\udb80\udcdf",
     "label": "Brightness",
     "action": "qs -p /usr/share/hyprtrixie/shell ipc call popup toggle brightness",
+    "needs": "brightness",
     "keywords": [
       "brightness",
       "screen",

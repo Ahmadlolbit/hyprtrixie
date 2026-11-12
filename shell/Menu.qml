@@ -75,8 +75,14 @@ Scope {
     return at < 0 ? "root" : id.slice(0, at);
   }
 
+  function present(entry) {
+    if (entry.needs === "brightness")
+      return Brightness.available && Popups.held("brightness");
+    return true;
+  }
+
   function childrenOf(id) {
-    return order.filter(key => parentOf(key) === id).map(key => entries[key]);
+    return order.filter(key => parentOf(key) === id && present(entries[key])).map(key => entries[key]);
   }
 
   function isPage(entry) {
@@ -110,7 +116,7 @@ Scope {
   function search(text) {
     const needle = text.toLowerCase();
     const found = listed.filter(item => item.label.toLowerCase().includes(needle));
-    return found.concat(order.map(key => entries[key]).filter(entry => !isPage(entry) && ((entry.label || "") + " " + (entry.keywords || []).join(" ")).toLowerCase().includes(needle)).map(entry => Object.assign(row(entry), {
+    return found.concat(order.map(key => entries[key]).filter(entry => !isPage(entry) && present(entry) && ((entry.label || "") + " " + (entry.keywords || []).join(" ")).toLowerCase().includes(needle)).map(entry => Object.assign(row(entry), {
           path: trail(parentOf(entry.id))
         })));
   }
