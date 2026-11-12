@@ -484,7 +484,8 @@ func (context *Context) zedEntry(log *runlog.Log, app string) error {
 	}
 	text = strings.ReplaceAll(text, "Exec=zed", "Exec="+app+"/bin/zed")
 	text = strings.ReplaceAll(text, "Icon=zed", "Icon="+app+"/share/icons/hicolor/512x512/apps/zed.png")
-	return context.Person.Write(log, context.Person.Path(".local/share/applications/dev.zed.Zed.desktop"), text+"\n")
+	_, err = context.Deploy.Content([]byte(text+"\n"), context.Person.Path(".local/share/applications/dev.zed.Zed.desktop"))
+	return err
 }
 
 func (context *Context) zedInstall(log *runlog.Log) error {
