@@ -42,7 +42,7 @@ func trustedSigners() (string, func(), error) {
 }
 
 func signedByRelease(signers, tag string) bool {
-	verify := []string{"-C", root(), "-c", "gpg.ssh.allowedSignersFile=" + signers, "-c", "gpg.openpgp.program=false", "-c", "gpg.x509.program=false", "verify-tag", tag}
+	verify := []string{"-C", root(), "-c", "gpg.ssh.allowedSignersFile=" + signers, "-c", "gpg.ssh.program=ssh-keygen", "-c", "gpg.openpgp.program=false", "-c", "gpg.x509.program=false", "verify-tag", tag}
 	if run.Quiet(run.Quick, "git", verify...) != 0 {
 		return false
 	}
