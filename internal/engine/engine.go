@@ -40,6 +40,7 @@ const (
 	verifyMode   = "verify"
 	accountMode  = "account"
 	appMode      = "app-"
+	appsModule   = "10"
 	noModule     = "none"
 	configLimit  = 64 << 10
 )
@@ -555,8 +556,27 @@ func (work *session) changeApp(app apps.App, change func(*config.Config), steps 
 		work.runner.Broke("step", "cannot read what's installed: "+err.Error())
 		return work.outcome()
 	}
+	record := work.recordStart(appsModule)
 	steps(context, app)
+	work.recordEnd(appsModule, record)
+	work.forgetRemoved(record.before)
 	return work.outcome()
+}
+
+func (work *session) forgetRemoved(before map[string]bool) {
+	if before == nil || work.installed == nil {
+		return
+	}
+	for name := range before {
+		if work.installed[name] {
+			continue
+		}
+		for _, kind := range []string{ledger.Package, ledger.Wants} {
+			if err := ledger.Forget(appsModule, kind, name); err != nil {
+				work.log.Line("warn", "cannot record that "+name+" was removed: "+err.Error())
+			}
+		}
+	}
 }
 
 func AddApp(app apps.App) int {
