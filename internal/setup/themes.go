@@ -18,6 +18,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/files"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/hypr"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/options"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
@@ -426,8 +427,9 @@ func (theme *themeRun) themeInUse() bool {
 }
 
 func (theme *themeRun) themeSet(log *runlog.Log, name string) error {
-	return theme.Person.Run(log, "env", "HYPRTRIXIE_THEME_ROOT="+env.ThemeRoot(), "HYPRTRIXIE_LOOK_SYSTEM="+lookConf(), "HYPRTRIXIE_LOOK_AUTO=1",
-		filepath.Join(env.BinDir(), themeSetter), name)
+	command := []string{"env", "HYPRTRIXIE_THEME_ROOT=" + env.ThemeRoot(), "HYPRTRIXIE_LOOK_SYSTEM=" + lookConf(), "HYPRTRIXIE_LOOK_AUTO=1"}
+	command = append(command, hypr.Running(theme.Person.Runtime())...)
+	return theme.Person.Run(log, append(command, filepath.Join(env.BinDir(), themeSetter), name)...)
 }
 
 func (theme *themeRun) applyChosen(log *runlog.Log, chosen string) error {
