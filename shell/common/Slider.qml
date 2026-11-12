@@ -49,8 +49,13 @@ Item {
     onPressed: mouse => place(mouse.x)
     onPositionChanged: mouse => place(mouse.x)
     onWheel: wheel => {
-      if (wheel.angleDelta.y !== 0)
-        root.moved(wheel.angleDelta.y > 0 ? Math.max(root.value, Math.min(1, root.value + root.step)) : Math.max(0, root.value - root.step));
+      const steps = notches.steps(wheel);
+      if (steps !== 0)
+        root.moved(steps > 0 ? Math.max(root.value, Math.min(1, root.value + root.step * steps)) : Math.max(0, root.value + root.step * steps));
+    }
+
+    Notches {
+      id: notches
     }
   }
 }

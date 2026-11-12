@@ -208,8 +208,13 @@ Scope {
         anchors.fill: parent
         onClicked: root.close()
         onWheel: wheel => {
-          if (wheel.angleDelta.y !== 0)
-            root.move(wheel.angleDelta.y > 0 ? -1 : 1);
+          const steps = notches.steps(wheel);
+          if (steps !== 0)
+            root.move(-steps);
+        }
+
+        Notches {
+          id: notches
         }
       }
 

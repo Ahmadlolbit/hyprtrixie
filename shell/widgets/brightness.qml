@@ -15,8 +15,13 @@ Label {
     cursorShape: Qt.PointingHandCursor
     onClicked: popup.toggle()
     onWheel: wheel => {
-      if (wheel.angleDelta.y !== 0)
-        Brightness.adjust(wheel.angleDelta.y > 0 ? "5%+" : "5%-");
+      const steps = notches.steps(wheel);
+      if (steps !== 0)
+        Brightness.adjust(5 * Math.abs(steps) + (steps > 0 ? "%+" : "%-"));
+    }
+
+    Notches {
+      id: notches
     }
   }
 
