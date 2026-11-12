@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/disks"
@@ -32,6 +33,11 @@ type Answers struct {
 	Config   string `json:"config"`
 }
 
+const (
+	longestUser = 32
+	longestHost = 63
+)
+
 var (
 	userPattern   = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`) })
 	hostPattern   = sync.OnceValue(func() *regexp.Regexp { return regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`) })
@@ -54,20 +60,47 @@ func Read(path string) (Answers, error) {
 	return answers, answers.Check()
 }
 
+func userProblem(user string) error {
+	switch {
+	case utf8.RuneCountInString(user) > longestUser:
+		return errors.New("the user name can be 32 characters at most")
+	case !userPattern().MatchString(user):
+		return errors.New("the user name has to start with a small letter, and use small letters, digits, - and _")
+	case slices.Contains(taken, user) || known(user):
+		return errors.New("the system already has an account or a group called " + user + ", so pick another user name")
+	}
+	return nil
+}
+
+func hostProblem(host string) error {
+	switch {
+	case utf8.RuneCountInString(host) > longestHost:
+		return errors.New("the computer's name can be 63 characters at most")
+	case strings.HasPrefix(host, "-") || strings.HasSuffix(host, "-"):
+		return errors.New("the computer's name can't start or end with -")
+	case !hostPattern().MatchString(host):
+		return errors.New("the computer's name can only have small letters, digits and - in it")
+	}
+	return nil
+}
+
 func (answers Answers) Check() error {
 	switch {
 	case !strings.HasPrefix(answers.Disk, "/dev/"):
 		return errors.New("no disk was picked")
 	case answers.Password == "" || answers.Secret == "":
 		return errors.New("a password is missing")
-	case !userPattern().MatchString(answers.User):
-		return errors.New("the user name has to start with a small letter, and use small letters, digits, - and _")
-	case slices.Contains(taken, answers.User) || known(answers.User):
-		return errors.New("the system already has an account or a group called " + answers.User + ", so pick another user name")
-	case strings.ContainsAny(answers.Name, ":,\n"):
+	}
+	if err := userProblem(answers.User); err != nil {
+		return err
+	}
+	if strings.ContainsAny(answers.Name, ":,\n") {
 		return errors.New("the full name can't have : or , in it")
-	case !hostPattern().MatchString(answers.Host):
-		return errors.New("the computer's name can only have small letters, digits and - in it")
+	}
+	if err := hostProblem(answers.Host); err != nil {
+		return err
+	}
+	switch {
 	case !zonePattern().MatchString(answers.Zone):
 		return errors.New("the time zone isn't one like Europe/Istanbul")
 	case !localePattern().MatchString(answers.Locale):
