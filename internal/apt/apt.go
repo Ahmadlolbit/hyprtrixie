@@ -44,6 +44,7 @@ const (
 	configMode     = 0o644
 	madisonFields  = 3
 	blanks         = " \t"
+	quotedInNames  = `\|{}[]<>"^~_=!@#$%&*`
 )
 
 func extrepoConfig() string {
@@ -52,6 +53,10 @@ func extrepoConfig() string {
 
 func SourcesDir() string {
 	return env.Or("HYPRTRIXIE_SOURCES_DIR", "/etc/apt/sources.list.d")
+}
+
+func listsDir() string {
+	return env.Or("HYPRTRIXIE_LISTS_DIR", "/var/lib/apt/lists")
 }
 
 func stamp() string {
@@ -504,19 +509,61 @@ func extrepoEnable(log *runlog.Log, name string) (bool, error) {
 	return true, forgetUpdate()
 }
 
+func listName(address string) string {
+	if _, rest, found := strings.Cut(address, "://"); found {
+		address = rest
+	}
+	var name strings.Builder
+	for _, char := range []byte(strings.TrimSuffix(address, "/") + "/") {
+		switch {
+		case char == '/':
+			name.WriteByte('_')
+		case char <= ' ' || char >= 0x7f || strings.IndexByte(quotedInNames, char) >= 0:
+			fmt.Fprintf(&name, "%%%02x", char)
+		default:
+			name.WriteByte(char)
+		}
+	}
+	return name.String()
+}
+
+func listsRead(name string) bool {
+	text, err := fsutil.Text(sourceFile(name))
+	address := field(text, "URIs")
+	if err != nil || address == "" {
+		return true
+	}
+	prefix := listName(address)
+	return slices.ContainsFunc(fsutil.Entries(listsDir()), func(entry fs.DirEntry) bool {
+		return strings.HasPrefix(entry.Name(), prefix) && strings.Contains(entry.Name(), "_Packages")
+	})
+}
+
+func readLists(log *runlog.Log, names ...string) error {
+	if err := ForceUpdate(log); err != nil {
+		return err
+	}
+	unread := slices.DeleteFunc(slices.Clone(names), listsRead)
+	if len(unread) == 0 {
+		return nil
+	}
+	log.Line("warn", "apt got no lists from "+strings.Join(unread, ", ")+", so it reads them again")
+	return ForceUpdate(log)
+}
+
 func ExtrepoAhead(log *runlog.Log, names ...string) {
 	if len(names) == 0 || Install(log, "extrepo") != nil {
 		return
 	}
-	added := false
+	var added []string
 	for _, name := range names {
 		if !ExtrepoEnabled(name) && !ownSource(name) && run.LoggedWithin(extrepoLimit, log, "extrepo", "enable", name) == nil {
-			added = true
+			added = append(added, name)
 		}
 	}
-	if added {
+	if len(added) > 0 {
 		forgetUpdate()
-		ForceUpdate(log)
+		readLists(log, added...)
 	}
 }
 
@@ -601,7 +648,7 @@ func ExtrepoTry(log *runlog.Log, name string) error {
 	}
 	update := Update
 	if enabled {
-		update = ForceUpdate
+		update = func(log *runlog.Log) error { return readLists(log, name) }
 	}
 	failure := update(log)
 	if failure == nil && !ExtrepoEnabled(name) && !ownSource(name) {
