@@ -11,6 +11,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/cleanup"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/lock"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/snapshots"
 )
@@ -129,6 +130,9 @@ func kernelAdvice(snapshotModules, boot, root string) string {
 
 func goBack(number string) int {
 	defer cleanup.IgnoreQuit()()
+	if lock.Busy() {
+		return fail("a Hyprtrixie run is still going, so nothing went back: run hyprtrixie restore %s once it ends", number)
+	}
 	if code := say("Comparing snapshot " + number + " with today, this can take a minute...\n"); code != 0 {
 		return code
 	}
