@@ -229,6 +229,7 @@ func wifiNetworks(lines []string) []wifiNetwork {
 	device := ""
 	names, keys := map[string]string{}, map[string]string{}
 	for _, line := range lines {
+		line = strings.TrimSuffix(line, "\r")
 		words := wordsOf(line)
 		switch words[0] {
 		case "iface":
