@@ -48,7 +48,7 @@ func current() string {
 
 func backgrounds() []string {
 	name, _ := fsutil.Text(filepath.Join(state(), "theme.name"))
-	return fsutil.Images(filepath.Join(state(), "theme", "backgrounds"), filepath.Join(env.AppConfig(), "backgrounds", name))
+	return fsutil.Images(filepath.Join(state(), "theme", "backgrounds"), look.OwnBackgrounds(name))
 }
 
 func next() (string, bool) {

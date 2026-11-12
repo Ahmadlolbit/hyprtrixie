@@ -348,7 +348,7 @@ func pickBackground(name, previous string, colors theme.Colors) {
 	if previous == name && fsutil.Exists(link) {
 		return
 	}
-	found := fsutil.Images(filepath.Join(state(), "theme", "backgrounds"), filepath.Join(env.AppConfig(), "backgrounds", name))
+	found := fsutil.Images(filepath.Join(state(), "theme", "backgrounds"), look.OwnBackgrounds(name))
 	target, _ := os.Readlink(link)
 	switch {
 	case len(found) > 0:
