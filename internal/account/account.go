@@ -1,6 +1,7 @@
 package account
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -47,10 +48,10 @@ func (person Account) human() bool {
 		!strings.HasSuffix(person.Shell, "nologin") && !strings.HasSuffix(person.Shell, "false")
 }
 
-func Humans() []Account {
-	output, err := run.Capture(run.Quick, "getent", "passwd")
+func readPeople(limit time.Duration) ([]Account, error) {
+	output, err := run.Capture(limit, "getent", "passwd")
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("the accounts on this computer can't be read: %w", err)
 	}
 	var found []Account
 	for _, line := range run.Lines(output) {
@@ -58,16 +59,29 @@ func Humans() []Account {
 			found = append(found, person)
 		}
 	}
+	return found, nil
+}
+
+func Humans() []Account {
+	found, _ := readPeople(run.Quick)
 	return found
 }
 
-func Owning(path string) (Account, bool) {
-	for _, person := range Humans() {
+func People() ([]Account, error) {
+	return readPeople(run.Minute)
+}
+
+func Owner(path string) (Account, bool, error) {
+	people, err := People()
+	if err != nil {
+		return Account{}, false, fmt.Errorf("%w, so %s is left alone", err, path)
+	}
+	for _, person := range people {
 		if person.Home != "" && strings.HasPrefix(path, filepath.Clean(person.Home)+"/") {
-			return person, true
+			return person, true, nil
 		}
 	}
-	return Account{}, false
+	return Account{}, false, nil
 }
 
 func Lookup(name string) (Account, bool) {

@@ -21,11 +21,11 @@ func (deployer *Deployer) inHome(path string) bool {
 	return home != "" && strings.HasPrefix(path, filepath.Clean(home)+"/")
 }
 
-func (deployer *Deployer) homeOwner(path string) (account.Account, bool) {
+func (deployer *Deployer) homeOwner(path string) (account.Account, bool, error) {
 	if deployer.inHome(path) {
-		return deployer.Person, true
+		return deployer.Person, true, nil
 	}
-	return account.Owning(path)
+	return account.Owner(path)
 }
 
 func (deployer *Deployer) userWrite(path string, data []byte, mode os.FileMode) error {
@@ -58,7 +58,11 @@ func (deployer *Deployer) settleHome(target string, data []byte, mode os.FileMod
 }
 
 func (deployer *Deployer) remove(path string) error {
-	if person, ok := deployer.homeOwner(path); ok {
+	person, ok, err := deployer.homeOwner(path)
+	if err != nil {
+		return err
+	}
+	if ok {
 		return person.Run(deployer.Log, "rm", "-f", path)
 	}
 	if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
@@ -71,7 +75,11 @@ func (deployer *Deployer) restoreOld(path string) (bool, error) {
 	if !fsutil.Exists(path + oldSuffix) {
 		return false, nil
 	}
-	if person, ok := deployer.homeOwner(path); ok {
+	person, ok, err := deployer.homeOwner(path)
+	if err != nil {
+		return false, err
+	}
+	if ok {
 		return true, person.Run(deployer.Log, "mv", "-fT", path+oldSuffix, path)
 	}
 	return true, os.Rename(path+oldSuffix, path)
