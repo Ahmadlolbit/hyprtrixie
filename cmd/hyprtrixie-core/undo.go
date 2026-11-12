@@ -22,7 +22,11 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/ui"
 )
 
-const shownNames = 8
+const (
+	shownNames    = 8
+	backupsModule = "16"
+	backupHelper  = "restic-backup"
+)
 
 var undoable = []string{"09", "10", "11", "16"}
 
@@ -175,8 +179,32 @@ func (plan undoPlan) takeMade(log *runlog.Log) error {
 	return nil
 }
 
+func usbOff(log *runlog.Log, helper string) error {
+	person, ok, err := account.Owner(helper)
+	if err != nil || !ok {
+		return err
+	}
+	return person.Run(log, helper, "usb", "off")
+}
+
+func (plan undoPlan) backupsOff(log *runlog.Log) error {
+	if plan.id != backupsModule {
+		return nil
+	}
+	for _, path := range plan.files {
+		if filepath.Base(path) != backupHelper || !fsutil.Runnable(path) {
+			continue
+		}
+		if err := usbOff(log, path); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (plan undoPlan) run(log *runlog.Log) error {
 	steps := []func(*runlog.Log) error{
+		plan.backupsOff,
 		func(log *runlog.Log) error { return service.Disable(log, plan.services...) },
 		plan.takeMade,
 		plan.takeFiles,
