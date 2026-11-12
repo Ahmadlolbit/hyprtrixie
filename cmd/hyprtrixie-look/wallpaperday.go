@@ -146,8 +146,12 @@ func ownPictures(place string) []string {
 		lines, _ := fsutil.Lines(place)
 		return slices.DeleteFunc(slices.Clone(lines), func(line string) bool { return !fsutil.IsFile(expandHome(strings.TrimSpace(line))) })
 	}
+	folder := place
+	if real, err := filepath.EvalSymlinks(place); err == nil {
+		folder = real
+	}
 	var found []string
-	for _, entry := range fsutil.Entries(place) {
+	for _, entry := range fsutil.Entries(folder) {
 		path := filepath.Join(place, entry.Name())
 		if !strings.HasPrefix(entry.Name(), ".") && slices.Contains(pictureKind, strings.ToLower(filepath.Ext(entry.Name()))) && fsutil.IsFile(path) {
 			found = append(found, path)
