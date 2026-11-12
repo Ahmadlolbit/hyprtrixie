@@ -14,15 +14,17 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fetch"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/files"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 )
 
 const (
-	nerdFont   = "jetbrainsmono-nerd"
-	loginZsh   = "/usr/bin/zsh"
-	fontPrefix = "JetBrainsMonoNerdFont"
-	shellStamp = "shell"
+	nerdFont    = "jetbrainsmono-nerd"
+	loginZsh    = "/usr/bin/zsh"
+	fontPrefix  = "JetBrainsMonoNerdFont"
+	shellStamp  = "shell"
+	tmuxPlugins = ".config/tmux/plugins"
 )
 
 func fontDir() string {
@@ -169,6 +171,9 @@ func (context *Context) tmuxSetup(log *runlog.Log) error {
 	if err := context.Deploy.UserFile("config/tmux/tmux.conf", ".config/tmux/tmux.conf"); err != nil {
 		return err
 	}
+	if context.pluginsYours(log) {
+		return nil
+	}
 	plugins, err := context.pluginsFolder(log)
 	if err != nil {
 		return err
@@ -181,16 +186,31 @@ func (context *Context) tmuxSetup(log *runlog.Log) error {
 	return nil
 }
 
-func (context *Context) pluginsFolder(log *runlog.Log) (string, error) {
-	dir := context.Person.Path(".config/tmux/plugins")
-	if err := context.userFolder(log, ".config/tmux/plugins"); err != nil {
-		return "", err
-	}
+func (context *Context) leftToRoot(dir string) bool {
 	info, err := os.Lstat(dir)
 	if err != nil || !info.IsDir() {
-		return dir, err
+		return false
 	}
-	if owner, ok := info.Sys().(*syscall.Stat_t); ok && owner.Uid == 0 && context.Person.UID != "0" {
+	owner, ok := info.Sys().(*syscall.Stat_t)
+	return ok && owner.Uid == 0 && context.Person.UID != "0"
+}
+
+func (context *Context) pluginsYours(log *runlog.Log) bool {
+	dir := context.Person.Path(tmuxPlugins)
+	if !fsutil.IsLink(dir) && (ours(dir, "") || context.leftToRoot(dir)) {
+		return false
+	}
+	log.Line("info", dir+" is a plugins folder of your own, so the plugins in it stay as they are")
+	return true
+}
+
+func (context *Context) pluginsFolder(log *runlog.Log) (string, error) {
+	dir := context.Person.Path(tmuxPlugins)
+	if err := context.userFolder(log, tmuxPlugins); err != nil {
+		return "", err
+	}
+	ledger.Note(ledger.Made, dir)
+	if context.leftToRoot(dir) {
 		return dir, run.Logged(log, "chown", "-h", context.Person.Name+":", dir)
 	}
 	return dir, nil
