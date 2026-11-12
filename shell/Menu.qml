@@ -611,8 +611,10 @@ Scope {
               target: root
 
               function onStampChanged() {
-                if (!item.look && item.modelData.state)
+                if (!item.look && item.modelData.state) {
                   probe.running = true;
+                  probe.running = Qt.binding(() => !item.look && !!item.modelData.state && root.open);
+                }
               }
             }
 
