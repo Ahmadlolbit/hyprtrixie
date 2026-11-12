@@ -9,6 +9,7 @@ Singleton {
 
   property bool awake: false
   property bool recording: false
+  property bool powerProfiles: false
   property bool fnLock: false
   property string fnLed: ""
   property real until: 0
@@ -66,6 +67,12 @@ Singleton {
     running: root.awake
     stdinEnabled: true
     command: ["systemd-inhibit", "--what=idle", "--who=Hyprtrixie", "--why=Stay awake", "cat"]
+  }
+
+  Process {
+    running: true
+    command: ["powerprofilesctl", "get"]
+    onExited: code => root.powerProfiles = code === 0
   }
 
   Process {

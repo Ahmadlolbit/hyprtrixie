@@ -78,6 +78,8 @@ Scope {
   function present(entry) {
     if (entry.needs === "brightness")
       return Brightness.available && Popups.held("brightness");
+    if (entry.needs === "power-profiles")
+      return Session.powerProfiles;
     return true;
   }
 
