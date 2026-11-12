@@ -215,6 +215,8 @@ func SecureBoot() string {
 	}
 	state, _ := run.CaptureOnce(run.Quick, "mokutil", "--sb-state")
 	switch {
+	case strings.Contains(state, "SecureBoot enabled") && strings.Contains(state, "validation is disabled in shim"):
+		return "disabled"
 	case strings.Contains(state, "enabled"):
 		return "enabled"
 	case strings.Contains(state, "disabled"):
