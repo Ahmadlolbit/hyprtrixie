@@ -83,7 +83,7 @@ func (context *Context) hyprlandDefaults(log *runlog.Log) error {
 }
 
 func nvidiaDrivesDisplay(hardware detect.Hardware, graphics string) bool {
-	return graphics == "proprietary" && hardware.HasGPU("nvidia") && !hardware.Hybrid()
+	return graphics == "proprietary" && hardware.HasGPU("nvidia") && !hardware.NvidiaLegacy && !hardware.Hybrid()
 }
 
 func (context *Context) hyprlandOptions(*runlog.Log) error {
