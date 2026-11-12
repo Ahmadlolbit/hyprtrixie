@@ -17,13 +17,17 @@ Scope {
   property string selected: ""
   property int index: 0
   property bool busy: false
+  property string trying: ""
+  property string failed: ""
   readonly property bool open: mode !== ""
+  readonly property string hint: failed ? "Couldn't apply " + failed : filter ? "Filter: " + filter : "Type to filter · arrows or wheel to move · Enter to apply · Esc to close"
   readonly property var shown: items.filter(item => item.label.toLowerCase().includes(filter.toLowerCase()))
   readonly property var screen: Quickshell.screens.find(item => Hyprland.focusedMonitor && item.name === Hyprland.focusedMonitor.name) || Quickshell.screens[0]
 
   function show(kind) {
     mode = kind;
     filter = "";
+    failed = "";
     busy = applying.running;
     items = [];
     content.forceActiveFocus();
@@ -52,6 +56,7 @@ Scope {
   }
 
   function move(step) {
+    failed = "";
     if (shown.length)
       index = Math.max(0, Math.min(shown.length - 1, index + step));
   }
@@ -61,6 +66,8 @@ Scope {
     if (!item || busy)
       return;
     busy = true;
+    failed = "";
+    trying = item.label;
     applying.command = mode === "themes" ? ["hyprtrixie-theme-set", item.value] : ["hyprtrixie-background", item.value];
     applying.running = true;
   }
@@ -81,7 +88,10 @@ Scope {
     };
   }
 
-  onFilterChanged: index = 0
+  onFilterChanged: {
+    index = 0;
+    failed = "";
+  }
 
   FileView {
     id: themeName
@@ -126,7 +136,14 @@ Scope {
   Process {
     id: applying
 
-    onExited: done.restart()
+    onExited: code => {
+      if (code === 0) {
+        done.restart();
+        return;
+      }
+      root.busy = false;
+      root.failed = root.trying;
+    }
   }
 
   Timer {
@@ -316,8 +333,8 @@ Scope {
         anchors.top: title.bottom
         anchors.topMargin: 10
         anchors.horizontalCenter: parent.horizontalCenter
-        text: root.filter ? "Filter: " + root.filter : "Type to filter · arrows or wheel to move · Enter to apply · Esc to close"
-        color: Theme.subtext
+        text: root.hint
+        color: root.failed ? Theme.critical : Theme.subtext
       }
     }
   }
