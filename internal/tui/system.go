@@ -192,7 +192,7 @@ func keepWindows(why string, shrink bool) string {
 func (state *system) diskRows(flow *wizard) []row {
 	rows := []row{{label: "Where Hyprtrixie goes", heading: true}, {info: true}}
 	if len(state.found) == 0 {
-		return append(rows, row{label: "No disk here can take it: each is under 40 GB, read-only, or in use.", info: true})
+		return append(rows, row{label: fmt.Sprintf("No disk here can take it: each is under %s, read-only, or in use.", disks.Size(disks.SmallestUse)), info: true})
 	}
 	for _, disk := range state.found {
 		rows = append(rows, state.diskRow(flow, disk))
