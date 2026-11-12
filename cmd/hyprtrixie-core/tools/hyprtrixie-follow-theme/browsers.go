@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
@@ -50,7 +51,7 @@ func policyDirs(installed map[string]bool) ([]string, []string) {
 func browserColor(current theme) string {
 	path := filepath.Join(current.home, ".local/state/hyprtrixie/current/theme/chromium.theme")
 	own, err := run.CaptureQuiet(run.Quick, "runuser", "-u", current.user, "--", "head", "-c", "64", path)
-	if color, ok := follow.FromRGB(own); err == nil && ok {
+	if color, ok := follow.FromRGB(strings.TrimPrefix(own, "\ufeff")); err == nil && ok {
 		return color
 	}
 	return current.background

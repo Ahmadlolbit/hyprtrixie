@@ -415,7 +415,8 @@ func scaleText(current map[string]string, scale float64) {
 }
 
 func iconTheme(mode string) string {
-	icons, _, _ := strings.Cut(fsutil.Optional(filepath.Join(state(), "theme", "icons.theme")), "\n")
+	first, _, _ := strings.Cut(fsutil.Optional(filepath.Join(state(), "theme", "icons.theme")), "\n")
+	icons := strings.TrimSpace(strings.TrimPrefix(first, "\ufeff"))
 	if iconName.MatchString(icons) && fsutil.IsDir("/usr/share/icons/"+icons) {
 		return icons
 	}
