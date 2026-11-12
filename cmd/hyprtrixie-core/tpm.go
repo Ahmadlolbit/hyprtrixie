@@ -46,6 +46,7 @@ const (
 	untouched backedOut = iota
 	putBack
 	imageBack
+	toolsBack
 	stuck
 )
 
@@ -218,16 +219,14 @@ func restoreImage(kernel string) error {
 	return copyFile(bootimage.Image(tpm.Before(kernel)), bootimage.Image(kernel))
 }
 
-func trialImage(log *runlog.Log, root luksRoot, kernel string) error {
-	if err := writeDracutConfig(true); err != nil {
-		return err
-	}
+func trialPackages(log *runlog.Log) error {
 	if err := apt.InstallLists(log, "tpm2"); err != nil {
 		return err
 	}
-	if err := apt.Fetch(log, "dracut", "initramfs-tools"); err != nil {
-		return err
-	}
+	return apt.Fetch(log, "dracut", "initramfs-tools")
+}
+
+func trialImage(log *runlog.Log, root luksRoot, kernel string) error {
 	folder, err := os.MkdirTemp("", "hyprtrixie-tpm-")
 	if err != nil {
 		return err
@@ -236,20 +235,33 @@ func trialImage(log *runlog.Log, root luksRoot, kernel string) error {
 	return buildImage(log, filepath.Join(folder, "initrd.img"), kernel, root.mapper, false)
 }
 
-func backOut(log *runlog.Log, kernel string) backedOut {
-	err := apt.InstallCached(log, "initramfs-tools")
-	if err == nil {
-		err = run.Logged(log, "update-initramfs", "-u", "-k", kernel)
+func trial(log *runlog.Log, root luksRoot, kernel string) string {
+	if err := writeDracutConfig(true); err != nil {
+		return fmt.Sprintf("dracut can't make a boot image that unlocks this disk: %v", err)
 	}
-	if err == nil {
+	if err := trialPackages(log); err != nil {
+		return fmt.Sprintf("apt couldn't get the packages the TPM needs: %v", err)
+	}
+	if err := trialImage(log, root, kernel); err != nil {
+		return fmt.Sprintf("dracut can't make a boot image that unlocks this disk: %v", err)
+	}
+	return ""
+}
+
+func backOut(log *runlog.Log, kernel string) backedOut {
+	installed := apt.InstallCached(log, "initramfs-tools") == nil
+	if installed && run.Logged(log, "update-initramfs", "-u", "-k", kernel) == nil {
 		os.Remove(dracutConfig())
 		tidyFallback(log)
 		return putBack
 	}
-	if restoreImage(kernel) == nil {
-		return imageBack
+	switch {
+	case restoreImage(kernel) != nil:
+		return stuck
+	case installed:
+		return toolsBack
 	}
-	return stuck
+	return imageBack
 }
 
 func switchToDracut(log *runlog.Log, root luksRoot, kernel string) (backedOut, error) {
@@ -273,6 +285,8 @@ func switchFailed(how backedOut, err error, kernel string) int {
 		return fail("Moving to dracut stopped: %v. Nothing at boot has changed.", err)
 	case imageBack:
 		return fail("Moving to dracut stopped: %v. The boot image from before is back and asks for your disk password, but dracut is half set up: run sudo apt install initramfs-tools before the next update.", err)
+	case toolsBack:
+		return fail("Moving to dracut stopped: %v. initramfs-tools and the boot image from before are back, and your disk password works as before, but initramfs-tools couldn't make a new boot image: run sudo update-initramfs -u before the next update to see why.", err)
 	case stuck:
 		return fail("Moving to dracut stopped: %v. Neither initramfs-tools nor the old boot image could be put back. Before you restart, run sudo apt install initramfs-tools; if the next boot doesn't start, pick the kernel %s under Advanced options.", err, tpm.Before(kernel))
 	}
@@ -298,9 +312,9 @@ func useTPM(log *runlog.Log, root luksRoot, kernel string) error {
 
 func turnOn(root luksRoot, kernel string) int {
 	log := joinedLog()
-	if err := trialImage(log, root, kernel); err != nil {
+	if why := trial(log, root, kernel); why != "" {
 		os.Remove(dracutConfig())
-		return fail("dracut can't make a boot image that unlocks this disk: %v. Nothing at boot has changed.", err)
+		return fail("%s. Nothing at boot has changed.", why)
 	}
 	if how, err := switchToDracut(log, root, kernel); err != nil {
 		return switchFailed(how, err, kernel)

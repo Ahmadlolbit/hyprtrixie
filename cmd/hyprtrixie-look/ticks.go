@@ -71,6 +71,7 @@ func save(path, value string) {
 func showCoordinates([]string) int {
 	value, ok := settings.Coordinates()
 	if !ok {
+		fmt.Fprintln(os.Stderr, noLocation)
 		return 1
 	}
 	fmt.Println(value)

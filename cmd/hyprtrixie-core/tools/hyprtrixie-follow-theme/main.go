@@ -165,14 +165,16 @@ func menu(current theme) bool {
 	return err == nil
 }
 
-func console(current theme) {
+func console(current theme) bool {
 	changed, err := refresh(vtrgb, follow.Palette(current.colors, current.foreground))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
+		return false
 	}
 	if changed {
 		run.Quiet(run.Quick, "setvtrgb", vtrgb)
 	}
+	return true
 }
 
 func removeWallpapers() {
@@ -305,7 +307,7 @@ func paintOnce(current theme, initramfs bool) int {
 		painted = menu(current)
 	}
 	if follow.Setting(current.settings, "console") == "yes" {
-		console(current)
+		painted = console(current) && painted
 	}
 	if fsutil.IsDir(sddmDir) {
 		painted = loginScreen(current) && painted

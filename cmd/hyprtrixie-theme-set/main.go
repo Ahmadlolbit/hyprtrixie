@@ -59,7 +59,7 @@ func userThemes() string {
 
 func themesIn(dir string) []string {
 	var names []string
-	for _, entry := range fsutil.Entries(dir) {
+	for _, entry := range fsutil.Entries(fsutil.Followed(dir)) {
 		if (entry.IsDir() || entry.Type()&os.ModeSymlink != 0) && theme.ValidName(entry.Name()) {
 			names = append(names, entry.Name())
 		}
@@ -348,7 +348,7 @@ func pickBackground(name, previous string, colors theme.Colors) {
 	if previous == name && fsutil.Exists(link) {
 		return
 	}
-	found := fsutil.Images(filepath.Join(state(), "theme", "backgrounds"), filepath.Join(env.AppConfig(), "backgrounds", name))
+	found := fsutil.Images(filepath.Join(state(), "theme", "backgrounds"), look.OwnBackgrounds(name))
 	target, _ := os.Readlink(link)
 	switch {
 	case len(found) > 0:
@@ -415,7 +415,8 @@ func scaleText(current map[string]string, scale float64) {
 }
 
 func iconTheme(mode string) string {
-	icons, _, _ := strings.Cut(fsutil.Optional(filepath.Join(state(), "theme", "icons.theme")), "\n")
+	first, _, _ := strings.Cut(fsutil.Optional(filepath.Join(state(), "theme", "icons.theme")), "\n")
+	icons := strings.TrimSpace(strings.TrimPrefix(first, "\ufeff"))
 	if iconName.MatchString(icons) && fsutil.IsDir("/usr/share/icons/"+icons) {
 		return icons
 	}

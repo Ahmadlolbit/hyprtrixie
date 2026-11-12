@@ -60,6 +60,17 @@ func swap(part, dir string) error {
 	return os.RemoveAll(old)
 }
 
+func complete(part, dir string) bool {
+	name := filepath.Base(dir)
+	for _, folder := range []string{part, filepath.Join(env.ThemeRoot(), "themes", name)} {
+		if fsutil.IsFile(filepath.Join(folder, "colors.toml")) {
+			return true
+		}
+	}
+	fmt.Fprintf(os.Stderr, "theme %s has no colors.toml\n", name)
+	return false
+}
+
 func install(url, dir string) bool {
 	if err := os.MkdirAll(filepath.Dir(dir), 0o777); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -69,7 +80,7 @@ func install(url, dir string) bool {
 	os.RemoveAll(part)
 	defer os.RemoveAll(part)
 	os.Setenv("GIT_TERMINAL_PROMPT", "0")
-	if run.Status("git", "-c", "http.lowSpeedLimit=1000", "-c", "http.lowSpeedTime=60", "clone", "--quiet", "--depth", "1", "--", url, part) != 0 {
+	if run.Status("git", "-c", "http.lowSpeedLimit=1000", "-c", "http.lowSpeedTime=60", "clone", "--quiet", "--depth", "1", "--", url, part) != 0 || !complete(part, dir) {
 		return false
 	}
 	if err := swap(part, dir); err != nil {

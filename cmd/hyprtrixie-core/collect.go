@@ -351,14 +351,23 @@ func copyAsUser(person account.Account, source, target string) {
 	}
 }
 
-func copyLogs(person account.Account, folder string) {
-	run.Quiet(run.Slow, "cp", "-r", env.LogDir(), filepath.Join(folder, "log"))
-	run.Quiet(run.Slow, "cp", "-r", filepath.Join(person.Home, "runbook-logs"), folder+"/")
-	for _, file := range []string{config.Path(), modules.StatusFile()} {
-		if fsutil.IsFile(file) {
-			run.Within(run.Slow, "cp", file, folder+"/")
+func copyAsRoot(person account.Account, folder string) []string {
+	var failed []string
+	for _, tree := range [][]string{{env.LogDir(), filepath.Join(folder, "log")}, {filepath.Join(person.Home, "runbook-logs"), folder + "/"}} {
+		if fsutil.IsDir(tree[0]) && run.Within(run.Slow, "cp", "-r", tree[0], tree[1]) != 0 {
+			failed = append(failed, tree[0])
 		}
 	}
+	for _, file := range []string{config.Path(), modules.StatusFile()} {
+		if fsutil.IsFile(file) && run.Within(run.Slow, "cp", file, folder+"/") != 0 {
+			failed = append(failed, file)
+		}
+	}
+	return failed
+}
+
+func copyLogs(person account.Account, folder string) error {
+	failed := copyAsRoot(person, folder)
 	if report := filepath.Join(person.Home, "runbook-report.md"); fsutil.IsFile(report) {
 		copyAsUser(person, report, filepath.Join(folder, filepath.Base(report)))
 	}
@@ -368,6 +377,10 @@ func copyLogs(person account.Account, folder string) {
 			copyAsUser(person, file, filepath.Join(folder, "hyprland-"+filepath.Base(filepath.Dir(file))+".log"))
 		}
 	}
+	if len(failed) > 0 {
+		return errors.New("cannot copy " + strings.Join(failed, ", "))
+	}
+	return nil
 }
 
 func saveFor(person account.Account, path, name string, args ...string) bool {
@@ -409,7 +422,10 @@ func pack(person account.Account, work, stamp, target string, verbose bool) (str
 			return path, false
 		}
 	}
-	copyLogs(person, folder)
+	if err := copyLogs(person, folder); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return folder, false
+	}
 	if err := privatize(folder); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return folder, false

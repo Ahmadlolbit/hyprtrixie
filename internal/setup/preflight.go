@@ -169,10 +169,14 @@ func (context *Context) newPassword() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if first != "" && first == second {
+		switch {
+		case first == "":
+			context.Run.Warn("A password can't be empty, try again")
+		case first == second:
 			return first, nil
+		default:
+			context.Run.Warn("Those didn't match, try again")
 		}
-		context.Run.Warn("Those didn't match, try again")
 	}
 }
 
