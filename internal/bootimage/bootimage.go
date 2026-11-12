@@ -28,7 +28,7 @@ func Newest() string {
 	output, _ := run.CaptureQuiet(run.Minute, "ls", "-v", "--quoting-style=literal", Folder())
 	newest := ""
 	for _, name := range run.Lines(output) {
-		if version, ok := strings.CutPrefix(name, kernelPrefix); ok {
+		if version, ok := strings.CutPrefix(name, kernelPrefix); ok && !strings.Contains(version, ".dpkg-") {
 			newest = version
 		}
 	}
