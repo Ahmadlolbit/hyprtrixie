@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
@@ -21,7 +22,11 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/ui"
 )
 
-const shownNames = 8
+const (
+	shownNames    = 8
+	backupsModule = "16"
+	backupHelper  = "restic-backup"
+)
 
 var undoable = []string{"09", "10", "11", "16"}
 
@@ -174,8 +179,32 @@ func (plan undoPlan) takeMade(log *runlog.Log) error {
 	return nil
 }
 
+func usbOff(log *runlog.Log, helper string) error {
+	person, ok, err := account.Owner(helper)
+	if err != nil || !ok {
+		return err
+	}
+	return person.Run(log, helper, "usb", "off")
+}
+
+func (plan undoPlan) backupsOff(log *runlog.Log) error {
+	if plan.id != backupsModule {
+		return nil
+	}
+	for _, path := range plan.files {
+		if filepath.Base(path) != backupHelper || !fsutil.Runnable(path) {
+			continue
+		}
+		if err := usbOff(log, path); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (plan undoPlan) run(log *runlog.Log) error {
 	steps := []func(*runlog.Log) error{
+		plan.backupsOff,
 		func(log *runlog.Log) error { return service.Disable(log, plan.services...) },
 		plan.takeMade,
 		plan.takeFiles,
@@ -192,6 +221,39 @@ func (plan undoPlan) run(log *runlog.Log) error {
 	return modules.SaveStatus(map[string]string{plan.id: modules.Undone})
 }
 
+func undoFailed(log *runlog.Log, format string, args ...any) int {
+	log.Line("error", fmt.Sprintf(format, args...))
+	return fail(format, args...)
+}
+
+func takeBack(id string, yes bool, log *runlog.Log) int {
+	plan, err := planUndo(id)
+	if err != nil {
+		return undoFailed(log, "Nothing was changed: %v.", err)
+	}
+	description := plan.describe()
+	fmt.Fprint(log, description)
+	fmt.Print(description)
+	if !yes && !ui.Confirm("Undo module "+id+"?") {
+		return undoFailed(log, "Nothing was changed.")
+	}
+	taken, err := snapshotBefore("before undoing module " + id)
+	if err != nil {
+		return undoFailed(log, "%v", err)
+	}
+	log.Mirror(func(data []byte) { os.Stdout.Write(data) })
+	err = plan.run(log)
+	log.Mirror(nil)
+	if err != nil && taken {
+		return undoFailed(log, "Undoing module %s stopped: %v. The restore point taken first can bring the system back: hyprtrixie restore.", id, err)
+	} else if err != nil {
+		return undoFailed(log, "Undoing module %s stopped: %v. Run it again once that's fixed: it picks up where it stopped.", id, err)
+	}
+	log.Line("info", "module "+id+" undone")
+	fmt.Printf("Module %s is undone. The setup leaves it out until you run it again: sudo hyprtrixie install --only %s\n", id, id)
+	return 0
+}
+
 func undo(id string, yes bool) int {
 	if status, _ := modules.StatusOf(fsutil.Optional(modules.StatusFile()), id); !ledger.Known(id) && status == modules.Undone {
 		return say(fmt.Sprintf("Module %s is undone already. The setup leaves it out until you run it again: sudo hyprtrixie install --only %s\n", id, id))
@@ -199,27 +261,13 @@ func undo(id string, yes bool) int {
 	if !ledger.Known(id) {
 		return fail("There's no record of module %s yet. Run the setup once (sudo hyprtrixie install), then undo it.", id)
 	}
-	plan, err := planUndo(id)
+	log, err := runlog.Start("undo " + id)
 	if err != nil {
-		return fail("Nothing was changed: %v.", err)
+		return fail("Nothing was changed: cannot write logs to %s.", env.LogDir())
 	}
-	fmt.Print(plan.describe())
-	if !yes && !ui.Confirm("Undo module "+id+"?") {
-		return fail("Nothing was changed.")
-	}
-	taken, err := snapshotBefore("before undoing module " + id)
-	if err != nil {
-		return fail("%v", err)
-	}
-	log := runlog.Joined()
-	log.Mirror(func(data []byte) { os.Stdout.Write(data) })
-	if err := plan.run(log); err != nil && taken {
-		return fail("Undoing module %s stopped: %v. The restore point taken first can bring the system back: hyprtrixie restore.", id, err)
-	} else if err != nil {
-		return fail("Undoing module %s stopped: %v. Run it again once that's fixed: it picks up where it stopped.", id, err)
-	}
-	fmt.Printf("Module %s is undone. The setup leaves it out until you run it again: sudo hyprtrixie install --only %s\n", id, id)
-	return 0
+	code := takeBack(id, yes, log)
+	log.Line("info", "finished with exit code "+strconv.Itoa(code))
+	return code
 }
 
 func undoCommand() int {

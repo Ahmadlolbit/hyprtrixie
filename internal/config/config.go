@@ -35,6 +35,7 @@ type Config struct {
 	Notes   []Note
 	options []options.Option
 	values  map[string]string
+	read    map[string]string
 }
 
 func RenamedThemes() map[string]string {
@@ -46,7 +47,7 @@ func Path() string {
 }
 
 func Defaults() *Config {
-	current := &Config{options: options.All(), values: map[string]string{}}
+	current := &Config{options: options.All(), values: map[string]string{}, read: map[string]string{}}
 	for _, option := range current.options {
 		current.values[option.Key] = option.DefaultFor("developer")
 	}
@@ -65,8 +66,27 @@ func (current *Config) Load(path string) bool {
 	if !fsutil.IsFile(path) {
 		return false
 	}
-	current.LoadText(path, fsutil.Optional(path))
+	current.read[path] = fsutil.Optional(path)
+	current.LoadText(path, current.read[path])
 	return true
+}
+
+func (current *Config) Edited(path string) bool {
+	return fsutil.Optional(path) != current.read[path]
+}
+
+func (current *Config) Merged(path string) *Config {
+	base := Defaults()
+	if text, found := current.read[path]; found {
+		base.LoadText(path, text)
+	}
+	yours := Read(path)
+	for key, value := range current.values {
+		if value != base.values[key] && yours.values[key] == base.values[key] {
+			yours.values[key] = value
+		}
+	}
+	return yours
 }
 
 func (current *Config) LoadText(path, text string) {

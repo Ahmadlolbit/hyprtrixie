@@ -92,14 +92,13 @@ func snapshotDirClear(log *runlog.Log) error {
 
 func snapshotsMount(log *runlog.Log) error {
 	options, _ := run.CaptureQuiet(run.Minute, "findmnt", "-no", "OPTIONS", snapshotDir())
-	if holdsSnapshots(options) {
-		return nil
-	}
-	if err := snapshotDirClear(log); err != nil {
-		return err
-	}
-	if err := btrfs.MountSubvolume(log, snapshotSubvolume, snapshotDir()); err != nil {
-		return err
+	if !holdsSnapshots(options) {
+		if err := snapshotDirClear(log); err != nil {
+			return err
+		}
+		if err := btrfs.MountSubvolume(log, snapshotSubvolume, snapshotDir()); err != nil {
+			return err
+		}
 	}
 	return os.Chmod(snapshotDir(), snapshotsMode)
 }
@@ -149,7 +148,15 @@ func (context *Context) snapperConfigure(log *runlog.Log) error {
 			return err
 		}
 	}
-	return nil
+	return context.snapshotsReadable(log)
+}
+
+func (context *Context) snapshotsReadable(log *runlog.Log) error {
+	dir := snapshotDir()
+	if !fsutil.IsDir(dir) || context.answers("test", "-r", dir, "-a", "-x", dir) {
+		return nil
+	}
+	return run.Logged(log, "snapper", snapperArgs("set-config", "ALLOW_GROUPS="+adminGroup, "SYNC_ACL=yes")...)
 }
 
 func firstTaken() string {

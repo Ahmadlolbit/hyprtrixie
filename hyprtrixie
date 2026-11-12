@@ -35,6 +35,7 @@ stale() {
   for program in "$tools"/*; do
     [[ -s $program ]] || return 0
   done
+  [[ $root != "${HYPRTRIXIE_SYSTEM_CLONE:-/opt/hyprtrixie}" && -n $(find "$tools/hyprtrixie-core" -newermt now -print -quit) ]] && return 0
   [[ -n $(find "$root/cmd" "$root/internal" "$root/vendor" "$root/go.mod" -newer "$tools/hyprtrixie-core" -print -quit) ]]
 }
 

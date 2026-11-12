@@ -1,6 +1,7 @@
 package step
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -35,6 +36,10 @@ var choices = []string{"Retry", "Skip", "Continue", "Halt", showLog}
 
 type Work func(log *runlog.Log) error
 
+type halting struct {
+	error
+}
+
 type Mark struct {
 	Module string
 	Kind   string
@@ -62,6 +67,14 @@ type Runner struct {
 	signals     chan os.Signal
 	failedAt    int
 	skippedAt   int
+}
+
+func Halting(err error) error {
+	return halting{err}
+}
+
+func (stop halting) Unwrap() error {
+	return stop.error
 }
 
 func New(log *runlog.Log, module, mode string) *Runner {
@@ -222,6 +235,9 @@ func (runner *Runner) failed(kind, title string, offset int64, err error) string
 	ui.Fail(words.T(title))
 	for _, line := range runner.Log.Since(offset, shownLines) {
 		ui.Note(line)
+	}
+	if errors.As(err, new(halting)) {
+		return halt
 	}
 	return runner.choice(title, offset)
 }

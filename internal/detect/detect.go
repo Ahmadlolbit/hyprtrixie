@@ -16,6 +16,7 @@ import (
 
 const (
 	firstOpenNvidia = 0x1e00
+	firstMaxwell    = 0x1340
 	kibPerMib       = 1024
 	secureBootByte  = 4
 	idGroupSize     = len("[0000:0000]")
@@ -30,11 +31,12 @@ var (
 )
 
 type Hardware struct {
-	CPU        string
-	GPUs       []string
-	Wifi       []string
-	NvidiaOpen bool
-	IPU6       bool
+	CPU          string
+	GPUs         []string
+	Wifi         []string
+	NvidiaOpen   bool
+	NvidiaLegacy bool
+	IPU6         bool
 }
 
 type machine struct {
@@ -43,6 +45,7 @@ type machine struct {
 	gpuVendors    []string
 	gpuNames      []string
 	nvidiaOpen    bool
+	nvidiaDriven  bool
 	ipu6Camera    bool
 	wifiVendors   []string
 	laptop        bool
@@ -124,9 +127,13 @@ func addWord(list []string, word string) []string {
 	return append(list, word)
 }
 
-func openNvidia(device string) bool {
+func nvidiaFrom(device string, first uint64) bool {
 	value, err := strconv.ParseUint(device, 16, 32)
-	return err == nil && value >= firstOpenNvidia
+	return err == nil && value >= first
+}
+
+func openNvidia(device string) bool {
+	return nvidiaFrom(device, firstOpenNvidia)
 }
 
 func (found *machine) readGPUs(lspci string) {
@@ -140,6 +147,9 @@ func (found *machine) readGPUs(lspci string) {
 		found.gpuNames = append(found.gpuNames, gpuName(line))
 		if name == "nvidia" && openNvidia(device) {
 			found.nvidiaOpen = true
+		}
+		if name == "nvidia" && nvidiaFrom(device, firstMaxwell) {
+			found.nvidiaDriven = true
 		}
 	}
 }
@@ -205,6 +215,8 @@ func SecureBoot() string {
 	}
 	state, _ := run.CaptureOnce(run.Quick, "mokutil", "--sb-state")
 	switch {
+	case strings.Contains(state, "SecureBoot enabled") && strings.Contains(state, "validation is disabled in shim"):
+		return "disabled"
 	case strings.Contains(state, "enabled"):
 		return "enabled"
 	case strings.Contains(state, "disabled"):
@@ -316,7 +328,8 @@ func (found *machine) readChips() {
 }
 
 func (found machine) hardware() Hardware {
-	return Hardware{found.cpuVendor, found.gpuVendors, found.wifiVendors, found.nvidiaOpen, found.ipu6Camera}
+	legacy := slices.Contains(found.gpuVendors, "nvidia") && !found.nvidiaDriven
+	return Hardware{found.cpuVendor, found.gpuVendors, found.wifiVendors, found.nvidiaOpen, legacy, found.ipu6Camera}
 }
 
 func ReadHardware() Hardware {

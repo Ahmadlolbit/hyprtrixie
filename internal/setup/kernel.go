@@ -25,6 +25,7 @@ const (
 	nvidiaSettings = "/etc/modprobe.d/hyprtrixie-nvidia.conf"
 	hybridPower    = " NVreg_DynamicPowerManagement=0x02"
 	kernelKept     = "The backports kernel stays installed, because the setup never removes a kernel."
+	nvidiaLegacy   = "This NVIDIA card is older than Maxwell, and Debian 13's NVIDIA driver no longer supports it, so it stays on nouveau, the open driver."
 	kernelBack     = "To go back to Debian's own: sudo apt install linux-image-amd64/trixie linux-headers-amd64/trixie " +
 		"(leave out the headers if you don't have them) and say yes to going back, restart into Debian's kernel from " +
 		"Advanced options in the boot menu, then sudo apt remove the backports kernel: dpkg -l 'linux-image-*' | grep bpo shows its name."
@@ -111,8 +112,12 @@ func nvidiaBuilt(*runlog.Log) error {
 	return quietly("there's no nvidia module for "+kernel, "modinfo", "-k", kernel, "nvidia")
 }
 
-func (driver *nvidiaDriver) wanted() bool {
+func (driver *nvidiaDriver) chosen() bool {
 	return driver.hardware.HasGPU("nvidia") && driver.Config.Get("GRAPHICS") == "proprietary"
+}
+
+func (driver *nvidiaDriver) wanted() bool {
+	return driver.chosen() && !driver.hardware.NvidiaLegacy
 }
 
 func (driver *nvidiaDriver) install(log *runlog.Log) error {
@@ -165,6 +170,9 @@ func kernelSteps(context *Context) {
 	context.Run.Step("Install the "+context.Config.Get("KERNEL")+" kernel", context.kernelInstall)
 	for _, note := range context.kernelNotes() {
 		context.Run.Note(note)
+	}
+	if driver.chosen() && driver.hardware.NvidiaLegacy {
+		context.Run.Note(nvidiaLegacy)
 	}
 	if driver.wanted() {
 		context.Run.Step("Install the NVIDIA driver", driver.install)
