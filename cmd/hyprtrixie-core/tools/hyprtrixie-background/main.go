@@ -89,8 +89,11 @@ func workspaces() bool {
 }
 
 func forWorkspace(found []string, id int) string {
-	offset := max(slices.Index(found, current()), 0)
-	return found[(max(id, 1)-1+offset)%len(found)]
+	offset := slices.Index(found, current())
+	if offset < 0 && current() != "" {
+		return current()
+	}
+	return found[(max(id, 1)-1+max(offset, 0))%len(found)]
 }
 
 func oneWorkspace(monitor, workspace string) int {
