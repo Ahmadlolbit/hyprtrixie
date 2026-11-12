@@ -219,22 +219,33 @@ func restoreImage(kernel string) error {
 	return copyFile(bootimage.Image(tpm.Before(kernel)), bootimage.Image(kernel))
 }
 
-func trialImage(log *runlog.Log, root luksRoot, kernel string) error {
-	if err := writeDracutConfig(true); err != nil {
-		return err
-	}
+func trialPackages(log *runlog.Log) error {
 	if err := apt.InstallLists(log, "tpm2"); err != nil {
 		return err
 	}
-	if err := apt.Fetch(log, "dracut", "initramfs-tools"); err != nil {
-		return err
-	}
+	return apt.Fetch(log, "dracut", "initramfs-tools")
+}
+
+func trialImage(log *runlog.Log, root luksRoot, kernel string) error {
 	folder, err := os.MkdirTemp("", "hyprtrixie-tpm-")
 	if err != nil {
 		return err
 	}
 	defer os.RemoveAll(folder)
 	return buildImage(log, filepath.Join(folder, "initrd.img"), kernel, root.mapper, false)
+}
+
+func trial(log *runlog.Log, root luksRoot, kernel string) string {
+	if err := writeDracutConfig(true); err != nil {
+		return fmt.Sprintf("dracut can't make a boot image that unlocks this disk: %v", err)
+	}
+	if err := trialPackages(log); err != nil {
+		return fmt.Sprintf("apt couldn't get the packages the TPM needs: %v", err)
+	}
+	if err := trialImage(log, root, kernel); err != nil {
+		return fmt.Sprintf("dracut can't make a boot image that unlocks this disk: %v", err)
+	}
+	return ""
 }
 
 func backOut(log *runlog.Log, kernel string) backedOut {
@@ -301,9 +312,9 @@ func useTPM(log *runlog.Log, root luksRoot, kernel string) error {
 
 func turnOn(root luksRoot, kernel string) int {
 	log := joinedLog()
-	if err := trialImage(log, root, kernel); err != nil {
+	if why := trial(log, root, kernel); why != "" {
 		os.Remove(dracutConfig())
-		return fail("dracut can't make a boot image that unlocks this disk: %v. Nothing at boot has changed.", err)
+		return fail("%s. Nothing at boot has changed.", why)
 	}
 	if how, err := switchToDracut(log, root, kernel); err != nil {
 		return switchFailed(how, err, kernel)
