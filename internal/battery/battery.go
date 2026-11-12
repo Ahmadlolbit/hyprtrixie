@@ -133,8 +133,9 @@ func Upgrade() error {
 }
 
 type Reading struct {
-	Percent  int
-	Charging bool
+	Percent int
+	Plugged bool
+	AtLimit bool
 }
 
 func number(folder, name string) (float64, bool) {
@@ -171,7 +172,7 @@ func Read() (Reading, bool) {
 	}
 	var levels []int
 	var now, full float64
-	weighed, charging := true, false
+	weighed, statuses := true, map[string]bool{}
 	for _, folder := range folders {
 		level, err := strconv.Atoi(strings.TrimSpace(fsutil.Optional(filepath.Join(folder, "capacity"))))
 		if err != nil {
@@ -180,11 +181,11 @@ func Read() (Reading, bool) {
 		levels = append(levels, min(max(level, 0), Full))
 		left, size, ok := stored(folder)
 		now, full, weighed = now+left, full+size, weighed && ok
-		status := strings.TrimSpace(fsutil.Optional(filepath.Join(folder, "status")))
-		charging = charging || status == "Charging" || status == "Full"
+		statuses[strings.TrimSpace(fsutil.Optional(filepath.Join(folder, "status")))] = true
 	}
 	if len(levels) == 0 {
 		return Reading{}, false
 	}
-	return Reading{percent(levels, now, full, weighed), charging}, true
+	limited := statuses["Not charging"] && !statuses["Charging"]
+	return Reading{percent(levels, now, full, weighed), statuses["Charging"] || statuses["Full"] || limited, limited}, true
 }

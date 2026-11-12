@@ -83,11 +83,14 @@ func batteryLine() string {
 	if !found {
 		return ""
 	}
-	glyph := batteryPlugged
-	if !reading.Charging {
+	glyph, note := batteryPlugged, ""
+	if !reading.Plugged {
 		glyph = batteryGlyphs[(reading.Percent+5)/10]
 	}
-	return fmt.Sprintf("%s %d%%", glyph, reading.Percent)
+	if reading.AtLimit {
+		note = " · charge limit reached"
+	}
+	return fmt.Sprintf("%s %d%%%s", glyph, reading.Percent, note)
 }
 
 func lockShown(key string, line func() string) int {
