@@ -8,12 +8,5 @@ import (
 )
 
 func OwnBackgrounds(theme string) string {
-	folder := filepath.Join(env.AppConfig(), "backgrounds", theme)
-	if !fsutil.IsLink(folder) {
-		return folder
-	}
-	if real, err := filepath.EvalSymlinks(folder); err == nil {
-		return real
-	}
-	return folder
+	return fsutil.Followed(filepath.Join(env.AppConfig(), "backgrounds", theme))
 }

@@ -59,7 +59,7 @@ func userThemes() string {
 
 func themesIn(dir string) []string {
 	var names []string
-	for _, entry := range fsutil.Entries(dir) {
+	for _, entry := range fsutil.Entries(fsutil.Followed(dir)) {
 		if (entry.IsDir() || entry.Type()&os.ModeSymlink != 0) && theme.ValidName(entry.Name()) {
 			names = append(names, entry.Name())
 		}

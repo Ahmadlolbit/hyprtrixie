@@ -115,6 +115,16 @@ func IsLink(path string) bool {
 	return err == nil && info.Mode()&os.ModeSymlink != 0
 }
 
+func Followed(path string) string {
+	if !IsLink(path) {
+		return path
+	}
+	if real, err := filepath.EvalSymlinks(path); err == nil {
+		return real
+	}
+	return path
+}
+
 func Exists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
