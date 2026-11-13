@@ -27,7 +27,7 @@ type barSettings struct {
 
 func Preset(data []byte) string {
 	var shell barSettings
-	if json.Unmarshal(data, &shell) != nil {
+	if json.Unmarshal(unmarked(data), &shell) != nil {
 		return ""
 	}
 	return shell.Bar.Preset
@@ -35,7 +35,7 @@ func Preset(data []byte) string {
 
 func Position(data []byte) string {
 	var shell barSettings
-	if json.Unmarshal(data, &shell) != nil {
+	if json.Unmarshal(unmarked(data), &shell) != nil {
 		return ""
 	}
 	return shell.Bar.Position
@@ -50,7 +50,7 @@ func WithPosition(data []byte, position string) ([]byte, error) {
 }
 
 func withBar(data []byte, key, value string) ([]byte, error) {
-	document, err := parseOrEmpty(data)
+	document, err := parseOrEmpty(unmarked(data))
 	if err != nil {
 		return nil, err
 	}
@@ -70,6 +70,10 @@ func withBar(data []byte, key, value string) ([]byte, error) {
 	}
 	document.Set("bar", updated)
 	return document.Indented()
+}
+
+func unmarked(data []byte) []byte {
+	return bytes.TrimPrefix(data, []byte("\ufeff"))
 }
 
 func parseOrEmpty(data []byte) (*ordered.Object, error) {
