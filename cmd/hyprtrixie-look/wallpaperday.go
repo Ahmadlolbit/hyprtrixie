@@ -272,7 +272,7 @@ func dayWallpaperNow() int {
 	if err == nil && !showDay(path) {
 		err = errors.New("the wallpaper didn't change")
 	}
-	if err != nil || !final {
+	if err != nil || (!final && networkUp()) {
 		save(lookState("day-wallpaper-retry"), strconv.FormatInt(at.Unix()+retryAfter, 10))
 	}
 	if err != nil {
