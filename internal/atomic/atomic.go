@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -17,8 +18,10 @@ import (
 )
 
 const (
-	maxLinks  = 40
-	maxCopies = 100
+	maxLinks   = 40
+	maxCopies  = 100
+	randomLong = 11
+	staleAfter = time.Hour
 )
 
 var signalWait = 10 * time.Second
@@ -87,6 +90,7 @@ func Symlink(target, link string) error {
 		os.Remove(temp)
 		return err
 	}
+	sweep(link)
 	return syncDir(filepath.Dir(link))
 }
 
@@ -151,6 +155,29 @@ func temporary(path string) string {
 	return filepath.Join(filepath.Dir(path), "."+filepath.Base(path)+"."+strconv.FormatUint(rand.Uint64(), 36))
 }
 
+func leftOver(name, prefix string, info fs.FileInfo) bool {
+	random, found := strings.CutPrefix(name, prefix)
+	_, err := strconv.ParseUint(random, 36, 64)
+	return found && err == nil && len(random) >= randomLong && random == strings.ToLower(random) &&
+		!info.IsDir() && time.Since(info.ModTime()) > staleAfter
+}
+
+func sweep(path string) {
+	dir, prefix := filepath.Dir(path), "."+filepath.Base(path)+"."
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	for _, entry := range entries {
+		if !strings.HasPrefix(entry.Name(), prefix) {
+			continue
+		}
+		if info, err := entry.Info(); err == nil && leftOver(entry.Name(), prefix, info) {
+			os.Remove(filepath.Join(dir, entry.Name()))
+		}
+	}
+}
+
 func guarded(temp string) func() {
 	finished := make(chan struct{})
 	stop := cleanup.OnSignal(func() {
@@ -184,6 +211,7 @@ func replace(path string, source io.Reader, perm os.FileMode, adjust func(*os.Fi
 		os.Remove(temp)
 		return err
 	}
+	sweep(path)
 	return syncDir(filepath.Dir(path))
 }
 
