@@ -283,19 +283,27 @@ func (visit *checkup) snapshots(setting string) {
 	ui.OK("Snapshots are being taken")
 }
 
+func tidied(what, why, name string, args ...string) bool {
+	if succeeded(name, args...) {
+		return true
+	}
+	ui.Note("Couldn't " + what + ": " + name + " failed" + why)
+	return false
+}
+
 func (visit *checkup) freeSpace() bool {
 	before, _ := filesystems(visit.limit)
-	run.Within(run.Slow, "apt-get", "clean")
+	done := tidied("clear the package cache", ", perhaps while another apt runs, such as the daily update", "apt-get", "clean")
 	if installed("snapper") {
-		run.Within(run.Slow, "snapper", "-c", "root", "cleanup", "number")
+		done = tidied("trim the old snapshots", "", "snapper", "-c", "root", "cleanup", "number") && done
 	}
-	run.Within(run.Slow, "journalctl", "--vacuum-time=2weeks")
+	done = tidied("trim the old logs", "", "journalctl", "--vacuum-time=2weeks") && done
 	after, err := filesystems(visit.limit)
 	if err != nil || len(after) == 0 {
 		ui.Note("Couldn't check the disks again; df -h shows how full they are")
 		return false
 	}
-	return roomNow(before, after)
+	return roomNow(before, after) && done
 }
 
 func roomNow(before, after []fsutil.Filesystem) bool {
