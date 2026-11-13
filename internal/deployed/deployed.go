@@ -1,9 +1,11 @@
 package deployed
 
 import (
+	"cmp"
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,7 +30,7 @@ type Change struct {
 
 func LastCommit() string {
 	logs, _ := filepath.Glob(filepath.Join(env.LogDir(), "run-*.log"))
-	slices.Reverse(logs)
+	slices.SortFunc(logs, newerFirst)
 	for _, path := range logs {
 		data, _ := os.ReadFile(path)
 		if commit, ok := lastStart(string(data)); ok {
@@ -36,6 +38,22 @@ func LastCommit() string {
 		}
 	}
 	return ""
+}
+
+func newerFirst(one, other string) int {
+	oneStamp, oneCopy := runOrder(one)
+	otherStamp, otherCopy := runOrder(other)
+	return cmp.Or(strings.Compare(otherStamp, oneStamp), cmp.Compare(otherCopy, oneCopy))
+}
+
+func runOrder(path string) (string, int) {
+	name := strings.TrimSuffix(filepath.Base(path), ".log")
+	stamp, number, found := strings.Cut(name, " (")
+	count, err := strconv.Atoi(strings.TrimSuffix(number, ")"))
+	if !found || err != nil {
+		return name, 1
+	}
+	return stamp, count
 }
 
 func lastStart(text string) (string, bool) {
