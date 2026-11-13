@@ -47,11 +47,34 @@ func mountedAt(table, path string) bool {
 	return false
 }
 
+func mountPoint(path string) string {
+	var one, up syscall.Stat_t
+	if syscall.Stat(path, &one) != nil {
+		return path
+	}
+	for path != "/" {
+		if syscall.Stat(filepath.Dir(path), &up) != nil || up.Dev != one.Dev {
+			return path
+		}
+		path = filepath.Dir(path)
+	}
+	return path
+}
+
+func linkedToMount(table, path string) bool {
+	if !fsutil.IsLink(path) {
+		return false
+	}
+	real, err := filepath.EvalSymlinks(path)
+	return err == nil && mountedAt(table, mountPoint(real))
+}
+
 func keptWord(root, table, rel, inside, apart, nested string) string {
+	path := filepath.Join(root, rel)
 	switch {
-	case !separate(filepath.Join(root, rel), root):
+	case !separate(path, root):
 		return inside
-	case mountedAt(table, "/"+rel):
+	case mountedAt(table, "/"+rel) || linkedToMount(table, path):
 		return apart
 	}
 	return nested
