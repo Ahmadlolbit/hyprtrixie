@@ -247,6 +247,10 @@ func StageTree(source, target string) error {
 	return copyTree(source, target, atomic.Stage)
 }
 
+func ScratchTree(source, target string) error {
+	return copyTree(source, target, atomic.Scratch)
+}
+
 func CopyEntry(source, target string) error {
 	return copyEntry(source, target, atomic.Write)
 }

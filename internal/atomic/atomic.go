@@ -71,6 +71,18 @@ func Stage(path string, data []byte, perm os.FileMode) error {
 	return err
 }
 
+func Scratch(path string, data []byte, perm os.FileMode) error {
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, perm)
+	if err != nil {
+		return err
+	}
+	_, err = file.Write(data)
+	if closed := file.Close(); err == nil {
+		err = closed
+	}
+	return err
+}
+
 func SyncFolders(root string) error {
 	return filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil || !entry.IsDir() {
