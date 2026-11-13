@@ -5,7 +5,7 @@ local function setting(path, key)
   if not file then
     return nil
   end
-  local text = "\n" .. file:read("a")
+  local text = "\n" .. file:read("a"):gsub("^\239\187\191", "")
   file:close()
   local value
   for found in text:gmatch("\n[ \t]*" .. key .. "[ \t]*=([^\n]*)") do
