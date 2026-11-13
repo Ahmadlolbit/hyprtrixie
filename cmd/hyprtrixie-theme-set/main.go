@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -491,7 +492,14 @@ func prepare(name, next string) (theme.Colors, theme.Colors, bool) {
 
 func apply(name string) (paper, bool) {
 	next := filepath.Join(filepath.Dir(state()), "next-theme")
-	defer cleanup.OnSignal(func() { os.RemoveAll(next) })()
+	var moving sync.Mutex
+	swapping := false
+	defer cleanup.OnSignal(func() {
+		moving.Lock()
+		if !swapping {
+			os.RemoveAll(next)
+		}
+	})()
 	previous, _ := fsutil.Text(filepath.Join(state(), "theme.name"))
 	before := shownBackground()
 	colors, apps, ok := prepare(name, next)
@@ -502,6 +510,9 @@ func apply(name string) (paper, bool) {
 		fmt.Fprintln(os.Stderr, err)
 		return paperKept, false
 	}
+	moving.Lock()
+	swapping = true
+	moving.Unlock()
 	if err := swap(next, filepath.Join(state(), "theme")); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return paperKept, false
