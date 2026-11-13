@@ -19,6 +19,8 @@ Scope {
   property bool busy: false
   property string trying: ""
   property string failed: ""
+  property int opening: 0
+  property int startedIn: 0
   readonly property bool open: mode !== ""
   readonly property string hint: failed ? "Couldn't apply " + failed : filter ? "Filter: " + filter : "Type to filter · arrows or wheel to move · Enter to apply · Esc to close"
   readonly property var shown: items.filter(item => item.label.toLowerCase().includes(filter.toLowerCase()))
@@ -29,6 +31,7 @@ Scope {
     filter = "";
     failed = "";
     busy = applying.running;
+    opening++;
     items = [];
     content.forceActiveFocus();
     if (kind === "themes") {
@@ -68,6 +71,7 @@ Scope {
     busy = true;
     failed = "";
     trying = item.label;
+    startedIn = opening;
     applying.command = mode === "themes" ? ["hyprtrixie-theme-set", item.value] : ["hyprtrixie-background", item.value];
     applying.running = true;
   }
@@ -137,6 +141,10 @@ Scope {
     id: applying
 
     onExited: code => {
+      if (root.startedIn !== root.opening) {
+        root.busy = false;
+        return;
+      }
       if (code === 0) {
         done.restart();
         return;
