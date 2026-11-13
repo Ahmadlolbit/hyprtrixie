@@ -413,7 +413,7 @@ func nightNow() (wanted, known bool) {
 
 func nightTick() {
 	wanted, known := nightNow()
-	if !known || wanted == (run.Within(run.Quick, "pgrep", "-x", nightLight) == 0) {
+	if !known || wanted == (run.Within(run.Quick, "pgrep", "-x", "-u", strconv.Itoa(os.Getuid()), nightLight) == 0) {
 		return
 	}
 	if wanted {
