@@ -94,11 +94,14 @@ func Remove(log *runlog.Log, names ...string) ([]string, error) {
 		return nil, putBack(log, manual, err)
 	}
 	gone, kept := freed(names, before, after)
-	if len(gone) == 0 {
-		return kept, nil
+	if len(gone) > 0 {
+		if err := checkedRemoval(log, gone); err != nil {
+			return nil, putBack(log, manual, err)
+		}
 	}
-	if err := checkedRemoval(log, gone); err != nil {
-		return nil, putBack(log, manual, err)
-	}
-	return kept, nil
+	return kept, putBack(log, staying(manual, kept), nil)
+}
+
+func staying(manual, kept []string) []string {
+	return slices.DeleteFunc(slices.Clone(manual), func(name string) bool { return !slices.Contains(kept, name) })
 }

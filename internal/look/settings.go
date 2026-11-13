@@ -95,6 +95,10 @@ func (store *Store) Put(key, value string) error {
 	return nil
 }
 
+func Hold(dir string) (func(), error) {
+	return hold(dir)
+}
+
 func hold(dir string) (func(), error) {
 	folder, err := os.Open(dir)
 	if err != nil {

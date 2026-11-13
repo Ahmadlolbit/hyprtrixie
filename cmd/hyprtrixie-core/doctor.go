@@ -31,6 +31,7 @@ const (
 	noMatch     = 1
 	inactive    = 3
 	unknownUnit = 4
+	runGoing    = "\nA Hyprtrixie run is still going, so the doctor fixed nothing: run hyprtrixie doctor once it ends.\n"
 )
 
 var desktopPrograms = [][2]string{
@@ -282,19 +283,27 @@ func (visit *checkup) snapshots(setting string) {
 	ui.OK("Snapshots are being taken")
 }
 
+func tidied(what, why, name string, args ...string) bool {
+	if succeeded(name, args...) {
+		return true
+	}
+	ui.Note("Couldn't " + what + ": " + name + " failed" + why)
+	return false
+}
+
 func (visit *checkup) freeSpace() bool {
 	before, _ := filesystems(visit.limit)
-	run.Within(run.Slow, "apt-get", "clean")
+	done := tidied("clear the package cache", ", perhaps while another apt runs, such as the daily update", "apt-get", "clean")
 	if installed("snapper") {
-		run.Within(run.Slow, "snapper", "-c", "root", "cleanup", "number")
+		done = tidied("trim the old snapshots", "", "snapper", "-c", "root", "cleanup", "number") && done
 	}
-	run.Within(run.Slow, "journalctl", "--vacuum-time=2weeks")
+	done = tidied("trim the old logs", "", "journalctl", "--vacuum-time=2weeks") && done
 	after, err := filesystems(visit.limit)
 	if err != nil || len(after) == 0 {
 		ui.Note("Couldn't check the disks again; df -h shows how full they are")
 		return false
 	}
-	return roomNow(before, after)
+	return roomNow(before, after) && done
 }
 
 func roomNow(before, after []fsutil.Filesystem) bool {
@@ -493,13 +502,19 @@ func (visit *checkup) offerFixes() {
 		return
 	}
 	if lock.Busy() {
-		ui.Print("\nA Hyprtrixie run is still going, so the doctor fixed nothing: run hyprtrixie doctor once it ends.\n")
+		ui.Print(runGoing)
 		return
 	}
 	if !ui.CanAsk() {
 		ui.Print("\nRun it in a terminal to apply the fixes it offers.\n")
 		return
 	}
+	held, err := lock.Take()
+	if err != nil {
+		ui.Print(runGoing)
+		return
+	}
+	defer held.Close()
 	ui.Print("\n")
 	for _, offered := range visit.fixes {
 		if !ui.Confirm(offered.question + "?") {

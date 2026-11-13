@@ -10,6 +10,7 @@ work=/work
 pkg="$work/hyprtrixie"
 lib="$pkg/usr/lib/hyprtrixie"
 version="${TAG#v}"
+version="${version//-/\~}"
 git clone --quiet --no-checkout /src "$work/src"
 git -C "$work/src" checkout --quiet --detach "refs/tags/$TAG"
 mkdir -p "$pkg/DEBIAN" "$pkg/usr/bin" "$lib/bin" "$pkg/usr/share/doc/hyprtrixie"

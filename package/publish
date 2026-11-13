@@ -11,6 +11,7 @@ key="${HYPRTRIXIE_APT_KEY:-}"
   echo "KEY is your OpenPGP key's fingerprint; the clone is your clone of hyprtrixie-apt" >&2
   exit 1
 }
+apt_repo="$(cd "$apt_repo" && pwd)"
 ca=""
 for bundle in /etc/ssl/certs/ca-certificates.crt /etc/ssl/cert.pem /etc/pki/tls/certs/ca-bundle.crt; do
   if [[ -f $bundle ]]; then

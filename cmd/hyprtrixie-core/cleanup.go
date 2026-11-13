@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/btrfs"
@@ -54,13 +55,20 @@ func elsewhere(stalled bool) string {
 	return text + oldRoots()
 }
 
+func gone(number string) bool {
+	all, err := snapshots.All()
+	return err == nil && !slices.ContainsFunc(all, func(snapshot snapshots.Snapshot) bool { return snapshot.Number == number })
+}
+
 func deleteUntilClean(numbers []string, use int) int {
 	deleted, uses := 0, []int{use}
 	for _, number := range numbers {
-		if run.Within(deleteLimit, "snapper", "--no-dbus", "-c", "root", "delete", "--sync", number) != 0 {
+		switch {
+		case run.Within(deleteLimit, "snapper", "--no-dbus", "-c", "root", "delete", "--sync", number) == 0:
+			deleted++
+		case !gone(number):
 			return stopped(deleted, "snapshot %s could not be deleted", number)
 		}
-		deleted++
 		var ok bool
 		if use, ok = snapshots.DiskUse(); !ok {
 			return stopped(deleted, "cannot tell how full / is")
@@ -72,7 +80,7 @@ func deleteUntilClean(numbers []string, use int) int {
 	}
 	text := fmt.Sprintf("Deleted %s. / is %d%% full.\n", snapshots.Count(deleted, "snapshot"), use)
 	if use >= cleanGoal {
-		text += elsewhere(deleted < len(numbers))
+		text += elsewhere(len(uses) <= len(numbers))
 	}
 	return say(text)
 }

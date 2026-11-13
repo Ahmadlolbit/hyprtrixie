@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -64,7 +65,7 @@ func textFile() string {
 }
 
 func running() bool {
-	return run.Quiet(run.Quick, "pgrep", "-f", "kitty --class "+class) == 0
+	return run.Quiet(run.Quick, "pgrep", "-u", strconv.Itoa(os.Getuid()), "-f", "kitty --class "+class) == 0
 }
 
 func stop() {
@@ -72,7 +73,7 @@ func stop() {
 }
 
 func locked() bool {
-	return run.Quiet(run.Quick, "pidof", "hyprlock") == 0
+	return run.Quiet(run.Quick, "pgrep", "-xu", strconv.Itoa(os.Getuid()), "hyprlock") == 0
 }
 
 func monitors() []string {

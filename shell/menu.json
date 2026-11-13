@@ -879,7 +879,7 @@
   "system.lock": {
     "glyph": "\uf023",
     "label": "Lock",
-    "action": "pidof hyprlock || hyprlock",
+    "action": "pgrep -xu \"$(id -u)\" hyprlock >/dev/null || hyprlock",
     "keywords": [
       "lock"
     ]

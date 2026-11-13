@@ -86,7 +86,7 @@ var commands = map[string]func() int{
 	"changes":       changes,
 	"update":        update,
 	"config":        configCommand,
-	"modules":       modulesCommand,
+	"modules":       nothingAfter("modules", modulesCommand),
 	"collect":       collect,
 	"doctor":        doctor,
 	"app":           appCommand,
@@ -97,7 +97,7 @@ var commands = map[string]func() int{
 	"install":       installCommand,
 	"verify":        verifyCommand,
 	"account":       accountCommand,
-	"guide":         guide,
+	"guide":         nothingAfter("guide", guide),
 	"keyboard":      keyboardCommand,
 	"battery-limit": batteryLimit,
 	"trust":         trustCommand,
@@ -122,6 +122,15 @@ func asRoot(mode string, command func() int) int {
 	}
 	defer cleanup.IgnoreQuit()()
 	return command()
+}
+
+func nothingAfter(name string, command func() int) func() int {
+	return func() int {
+		if env.Arg(2) != "" {
+			return fail("usage: hyprtrixie %s", name)
+		}
+		return command()
+	}
 }
 
 func alone(command func() int) func() int {
