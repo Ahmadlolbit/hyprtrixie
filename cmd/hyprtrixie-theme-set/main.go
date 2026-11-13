@@ -415,10 +415,19 @@ func scaleText(current map[string]string, scale float64) {
 	}
 }
 
+func iconInstalled(name string) bool {
+	for _, dir := range []string{filepath.Join(env.DataHome(), "icons"), filepath.Join(env.Home(), ".icons"), "/usr/local/share/icons", "/usr/share/icons"} {
+		if fsutil.IsDir(filepath.Join(dir, name)) {
+			return true
+		}
+	}
+	return false
+}
+
 func iconTheme(mode string) string {
 	first, _, _ := strings.Cut(fsutil.Optional(filepath.Join(state(), "theme", "icons.theme")), "\n")
 	icons := strings.TrimSpace(strings.TrimPrefix(first, "\ufeff"))
-	if iconName.MatchString(icons) && fsutil.IsDir("/usr/share/icons/"+icons) {
+	if iconName.MatchString(icons) && iconInstalled(icons) {
 		return icons
 	}
 	if mode == "dark" {
