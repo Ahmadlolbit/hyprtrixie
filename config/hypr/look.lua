@@ -7,7 +7,8 @@ local function setting(path, key)
   end
   local text = "\n" .. file:read("a")
   file:close()
-  return text:match("\n" .. key .. "=([^\n]*)")
+  local value = text:match("\n[ \t]*" .. key .. "[ \t]*=([^\n]*)")
+  return value and value:match("^%s*(.-)%s*$")
 end
 
 local function config_home()
