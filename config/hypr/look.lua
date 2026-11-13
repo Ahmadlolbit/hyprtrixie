@@ -7,7 +7,10 @@ local function setting(path, key)
   end
   local text = "\n" .. file:read("a")
   file:close()
-  local value = text:match("\n[ \t]*" .. key .. "[ \t]*=([^\n]*)")
+  local value
+  for found in text:gmatch("\n[ \t]*" .. key .. "[ \t]*=([^\n]*)") do
+    value = found
+  end
   return value and value:match("^%s*(.-)%s*$")
 end
 
