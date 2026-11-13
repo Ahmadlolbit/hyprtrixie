@@ -34,6 +34,7 @@ const (
 
 var (
 	ErrStopped = errors.New("stopped before it started")
+	ErrEnded   = errors.New("ended as soon as it started")
 	stopped    atomic.Bool
 	traced     atomic.Pointer[io.Writer]
 	answers    atomic.Pointer[sync.Map]
@@ -223,6 +224,26 @@ func Spawn(environment []string, name string, args ...string) (*Child, error) {
 func (child *Child) Wait() (int, string) {
 	err := child.command.Wait()
 	return Code(err), strings.TrimSpace(child.errors.String())
+}
+
+func Detach(watch time.Duration, name string, args ...string) error {
+	trace(name, args)
+	command := exec.Command(name, args...)
+	command.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	if err := command.Start(); err != nil {
+		return err
+	}
+	ended := make(chan error, 1)
+	go func() { ended <- command.Wait() }()
+	select {
+	case err := <-ended:
+		if err == nil {
+			return ErrEnded
+		}
+		return err
+	case <-time.After(watch):
+		return nil
+	}
 }
 
 func Page(text string) {
