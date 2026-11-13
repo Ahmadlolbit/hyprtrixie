@@ -67,22 +67,37 @@ func simulating() bool {
 	return os.Getenv("APT_SIMULATE") == "1"
 }
 
-func held(path string) bool {
+func held(path string) (bool, bool) {
 	file, err := os.OpenFile(path, os.O_RDWR, 0)
 	if err != nil {
-		return false
+		return false, false
 	}
 	defer file.Close()
 	lock := syscall.Flock_t{Type: syscall.F_WRLCK}
-	return syscall.FcntlFlock(file.Fd(), syscall.F_GETLK, &lock) == nil && lock.Type != syscall.F_UNLCK
+	return syscall.FcntlFlock(file.Fd(), syscall.F_GETLK, &lock) == nil && lock.Type != syscall.F_UNLCK, true
+}
+
+func locked(path string) bool {
+	busy, _ := held(path)
+	return busy
+}
+
+func dpkgRunning() bool {
+	for _, process := range fsutil.Entries("/proc") {
+		if name, err := os.ReadFile(filepath.Join("/proc", process.Name(), "comm")); err == nil && string(name) == "dpkg\n" {
+			return true
+		}
+	}
+	return false
 }
 
 func dpkgBusy() bool {
-	return held(dpkgLock)
+	busy, seen := held(dpkgLock)
+	return busy || !seen && dpkgRunning()
 }
 
 func waitForApt(out io.Writer) {
-	for waited := time.Duration(0); !run.Stopped() && slices.ContainsFunc(aptLocks, held) && waited < lockLimit; waited += lockPause {
+	for waited := time.Duration(0); !run.Stopped() && slices.ContainsFunc(aptLocks, locked) && waited < lockLimit; waited += lockPause {
 		if waited == 0 {
 			fmt.Fprintln(out, "another apt is updating its lists or downloading, perhaps the daily update; waiting for it, up to 10 minutes")
 		}
