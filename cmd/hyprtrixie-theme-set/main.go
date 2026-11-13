@@ -83,7 +83,7 @@ func previewOf(name string) string {
 		}
 	}
 	for _, dir := range []string{own, shipped} {
-		if found := fsutil.Images(filepath.Join(dir, "backgrounds")); len(found) > 0 {
+		if found := fsutil.Images(fsutil.Followed(filepath.Join(dir, "backgrounds"))); len(found) > 0 {
 			return found[0]
 		}
 	}
@@ -112,8 +112,8 @@ func stageEntry(own, next string, entry fs.DirEntry) error {
 	case strings.HasSuffix(base, ".lua") || strings.Contains(denied, " "+base+" "):
 		fmt.Fprintf(os.Stderr, "ignored %s from %s: your themes can't bring code or settings that run commands\n", base, own)
 		return nil
-	case base == "backgrounds" && entry.IsDir():
-		return stageImages(source, target)
+	case base == "backgrounds" && fsutil.IsDir(source):
+		return stageImages(fsutil.Followed(source), target)
 	case !slices.Contains(ownFiles, base):
 		return nil
 	case entry.Type()&os.ModeSymlink != 0:
