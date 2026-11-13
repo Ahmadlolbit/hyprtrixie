@@ -33,17 +33,26 @@ func ask(input *bufio.Reader, question string) string {
 	return strings.TrimSpace(line)
 }
 
+func fetchIcon(file, address string) bool {
+	part := file + ".part"
+	defer os.Remove(part)
+	if run.Within(run.Quick, "curl", "-fsSL", "--max-time", "8", "-o", part, webapp.Favicon(address)) != 0 {
+		return false
+	}
+	data, err := os.ReadFile(part)
+	return err == nil && atomic.Write(file, data, 0o644) == nil
+}
+
 func chooseIcon(name, address string) string {
 	if err := os.MkdirAll(webapp.IconFolder(), 0o777); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return webapp.GenericIcon
 	}
 	file := webapp.Icon(name)
-	if run.Within(run.Quick, "curl", "-fsSL", "--max-time", "8", "-o", file, webapp.Favicon(address)) != 0 {
-		os.Remove(file)
-		return webapp.GenericIcon
+	if fetchIcon(file, address) || fsutil.IsFile(file) {
+		return file
 	}
-	return file
+	return webapp.GenericIcon
 }
 
 func givenIcon(icon string) string {

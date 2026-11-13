@@ -137,14 +137,18 @@ func zone() (string, bool) {
 	return name, found
 }
 
+func entry(line string) (string, string, bool) {
+	key, value, found := strings.Cut(line, "=")
+	return strings.TrimSpace(key), strings.TrimSpace(value), found
+}
+
 func Value(text, key string) string {
-	prefix := key + "="
 	value := ""
 	text = strings.TrimPrefix(text, "\ufeff")
 	for text != "" {
 		var line string
 		line, text, _ = strings.Cut(text, "\n")
-		if found, ok := strings.CutPrefix(strings.TrimSuffix(line, "\r"), prefix); ok {
+		if name, found, ok := entry(line); ok && name == key {
 			value = found
 		}
 	}
@@ -152,13 +156,12 @@ func Value(text, key string) string {
 }
 
 func Without(text, key string) string {
-	prefix := key + "="
 	var kept strings.Builder
 	text = strings.TrimPrefix(text, "\ufeff")
 	for text != "" {
 		var line string
 		line, text, _ = strings.Cut(text, "\n")
-		if !strings.HasPrefix(line, prefix) {
+		if name, _, ok := entry(line); !ok || name != key {
 			kept.WriteString(line + "\n")
 		}
 	}

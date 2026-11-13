@@ -295,10 +295,7 @@ func networkHandover(log *runlog.Log) error {
 	if err := addConnections(log, wifiNetworks(lines)); err != nil {
 		return err
 	}
-	if err := keepOld(log, path); err != nil {
-		return err
-	}
-	if err := atomic.Write(path, []byte(loopbackOnly), plainMode); err != nil {
+	if replaced, err := replaceKept(log, path, []byte(loopbackOnly)); err != nil || !replaced {
 		return err
 	}
 	log.Line("info", "NetworkManager takes over the network connections from the next boot")

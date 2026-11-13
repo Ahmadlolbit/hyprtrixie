@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/apt"
-	"github.com/Ahmadlolbit/hyprtrixie/internal/atomic"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/detect"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
@@ -36,16 +35,13 @@ func moveDebianEntries(log *runlog.Log) error {
 	if err != nil || !slices.ContainsFunc(lines, debianEntry) {
 		return err
 	}
-	if err := keepOld(log, path); err != nil {
-		return err
-	}
 	var kept strings.Builder
 	for _, line := range lines {
 		if !debianEntry(line) {
 			kept.WriteString(line + "\n")
 		}
 	}
-	if err := atomic.Write(path, []byte(kept.String()), plainMode); err != nil {
+	if replaced, err := replaceKept(log, path, []byte(kept.String())); err != nil || !replaced {
 		return err
 	}
 	log.Line("info", "moved the Debian entries out of "+path+" (backup in "+path+".hyprtrixie-old)")

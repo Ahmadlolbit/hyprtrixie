@@ -177,14 +177,15 @@ func console(current theme) bool {
 	return true
 }
 
-func removeWallpapers() {
+func removeWallpapers(keep string) {
 	entries, err := os.ReadDir(sddmDir)
 	if err != nil {
 		return
 	}
 	for _, entry := range entries {
-		if strings.HasPrefix(entry.Name(), "wallpaper.") {
-			if err := os.Remove(filepath.Join(sddmDir, entry.Name())); err != nil {
+		name := entry.Name()
+		if name != keep && (strings.HasPrefix(name, "wallpaper.") || strings.HasPrefix(name, ".wallpaper-")) {
+			if err := os.Remove(filepath.Join(sddmDir, name)); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 			}
 		}
@@ -219,7 +220,7 @@ func copyWallpaper(user, image, name string) bool {
 	if !fetchWallpaper(temp, user, image) {
 		return false
 	}
-	removeWallpapers()
+	removeWallpapers(filepath.Base(temp))
 	err := os.Chmod(temp, 0o644)
 	if err == nil {
 		err = os.Rename(temp, filepath.Join(sddmDir, name))

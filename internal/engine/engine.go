@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"runtime/debug"
 	"slices"
@@ -175,8 +176,8 @@ func (options Options) wants(id string) bool {
 }
 
 func packages() []string {
-	output, _ := run.CaptureQuiet(run.Slow, "dpkg-query", "-W", "-f=${Package}\n")
-	return run.Lines(strings.TrimSuffix(output, "\n"))
+	installed, _ := apt.Installed()
+	return slices.Sorted(maps.Keys(installed))
 }
 
 func callers() []int {
@@ -582,6 +583,10 @@ func (work *session) changeApp(app apps.App, change func(*config.Config), steps 
 	if !work.saveSettings() {
 		return work.outcome()
 	}
+	return work.appSteps(app, steps)
+}
+
+func (work *session) appSteps(app apps.App, steps func(*setup.Context, apps.App)) int {
 	work.applyOverrides()
 	context, err := work.context()
 	if err != nil {
@@ -592,6 +597,15 @@ func (work *session) changeApp(app apps.App, change func(*config.Config), steps 
 	steps(context, app)
 	work.recordEnd(appsModule, record)
 	work.forgetRemoved(record.before)
+	return work.outcome()
+}
+
+func (work *session) removeApp(app apps.App) int {
+	work.runner.Begin(noModule)
+	if work.appSteps(app, setup.RemoveApp) == 0 {
+		work.settings.Untick("APPS", app.ID)
+		work.saveSettings()
+	}
 	return work.outcome()
 }
 
@@ -630,8 +644,7 @@ func AddApp(app apps.App) int {
 }
 
 func RemoveApp(app apps.App) int {
-	untick := func(settings *config.Config) { settings.Untick("APPS", app.ID) }
 	return entered(appMode+"remove", Options{}, []string{app.ID}, func(work *session) int {
-		return work.followed(app, work.changeApp(app, untick, setup.RemoveApp))
+		return work.followed(app, work.removeApp(app))
 	})
 }

@@ -145,7 +145,7 @@ func listedPictures(list string) []string {
 	lines, _ := fsutil.Lines(list)
 	var found []string
 	for _, line := range lines {
-		path := expandHome(strings.TrimSpace(line))
+		path := expandHome(strings.TrimSpace(strings.TrimPrefix(line, "\ufeff")))
 		if path != "" && !filepath.IsAbs(path) {
 			path = filepath.Join(filepath.Dir(list), path)
 		}
@@ -272,7 +272,7 @@ func dayWallpaperNow() int {
 	if err == nil && !showDay(path) {
 		err = errors.New("the wallpaper didn't change")
 	}
-	if err != nil || !final {
+	if err != nil || (!final && networkUp()) {
 		save(lookState("day-wallpaper-retry"), strconv.FormatInt(at.Unix()+retryAfter, 10))
 	}
 	if err != nil {

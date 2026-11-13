@@ -73,7 +73,7 @@ func (work *session) summaryLines() []string {
 	lines := []string{
 		"Took " + duration(int(time.Since(work.started).Seconds())),
 		fmt.Sprintf("Steps: %d passed, %d skipped, %d failed", runner.Steps, count(runner.Skips, "step"), count(runner.Failures, "step")),
-		fmt.Sprintf("Checks: %d passed, %d failed", runner.Checks, count(runner.Failures, "check")),
+		fmt.Sprintf("Checks: %d passed, %d skipped, %d failed", runner.Checks, count(runner.Skips, "check"), count(runner.Failures, "check")),
 		fmt.Sprintf("Packages installed: %d", len(added)),
 		fmt.Sprintf("Files updated: %d, kept with your edits: %d", updated, kept),
 	}
