@@ -31,6 +31,7 @@ const (
 	noMatch     = 1
 	inactive    = 3
 	unknownUnit = 4
+	runGoing    = "\nA Hyprtrixie run is still going, so the doctor fixed nothing: run hyprtrixie doctor once it ends.\n"
 )
 
 var desktopPrograms = [][2]string{
@@ -493,13 +494,19 @@ func (visit *checkup) offerFixes() {
 		return
 	}
 	if lock.Busy() {
-		ui.Print("\nA Hyprtrixie run is still going, so the doctor fixed nothing: run hyprtrixie doctor once it ends.\n")
+		ui.Print(runGoing)
 		return
 	}
 	if !ui.CanAsk() {
 		ui.Print("\nRun it in a terminal to apply the fixes it offers.\n")
 		return
 	}
+	held, err := lock.Take()
+	if err != nil {
+		ui.Print(runGoing)
+		return
+	}
+	defer held.Close()
 	ui.Print("\n")
 	for _, offered := range visit.fixes {
 		if !ui.Confirm(offered.question + "?") {
