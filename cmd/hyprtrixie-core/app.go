@@ -11,7 +11,6 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/config"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/engine"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
-	"github.com/Ahmadlolbit/hyprtrixie/internal/firewall"
 )
 
 const appUsage = "usage: hyprtrixie app [list [installed|available] | install APP | remove APP]"
@@ -57,17 +56,7 @@ func appChange(action string, change func(apps.App) int) int {
 	if os.Getenv("HYPRTRIXIE_ENGINE") == "" {
 		return throughScript()
 	}
-	return asRoot("app "+action+" "+id, func() int { return followed(app, change(app)) })
-}
-
-func followed(app apps.App, code int) int {
-	if !firewall.Opens(app.ID) {
-		return code
-	}
-	if err := firewall.Refresh(os.Stderr); err != nil {
-		fmt.Fprintf(os.Stderr, "the firewall can't follow %s: %v\n", app.Name, err)
-	}
-	return code
+	return asRoot("app "+action+" "+id, func() int { return change(app) })
 }
 
 func appCommand() int {
