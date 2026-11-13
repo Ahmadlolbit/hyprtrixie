@@ -31,6 +31,9 @@ const (
 var secrets = regexp.MustCompile(`(wifi-sec\.psk|802-11-wireless-security\.psk|wpa-psk|psk=)[^\n]*`)
 
 func Redact(text string) string {
+	if !strings.Contains(text, "psk") {
+		return text
+	}
 	return secrets.ReplaceAllString(text, "$1 (hidden)")
 }
 
