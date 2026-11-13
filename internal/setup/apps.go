@@ -223,27 +223,41 @@ func (context *Context) defaultApp(log *runlog.Log, name, entry string, types []
 	if !fsutil.IsFile(filepath.Join(applicationsDir(), entry)) {
 		return nil
 	}
-	return context.defaultOnce(log, name, entry, types)
+	_, err := context.defaultOnce(log, name, entry, types)
+	return err
 }
 
-func (context *Context) defaultOnce(log *runlog.Log, name, entry string, types []string) error {
+func (context *Context) defaultOnce(log *runlog.Log, name, entry string, types []string) (bool, error) {
 	stamp := context.Person.Path(filepath.Join(yourDefaults, name))
 	if fsutil.IsFile(stamp) {
-		return nil
+		return false, nil
 	}
 	shared := filepath.Join(env.StateDir(), "defaults", name)
-	if !fsutil.IsFile(shared) {
+	set := !fsutil.IsFile(shared)
+	if set {
 		if err := context.Person.Run(log, append([]string{"xdg-mime", "default", entry}, types...)...); err != nil {
-			return err
+			return false, err
 		}
 	}
 	if err := context.userFolder(log, yourDefaults); err != nil {
-		return err
+		return set, err
 	}
 	if err := context.Person.Write(log, stamp, entry+"\n"); err != nil {
-		return err
+		return set, err
 	}
-	return removeFiles(shared)
+	return set, removeFiles(shared)
+}
+
+func (context *Context) heliumDefault() {
+	set := false
+	made := context.Run.Step("Make Helium the default browser", func(log *runlog.Log) error {
+		var err error
+		set, err = context.defaultOnce(log, "browser", heliumEntry, webTypes)
+		return err
+	})
+	if made && set {
+		context.Run.Check("Helium is the default browser", context.heliumIsDefault)
+	}
 }
 
 func (context *Context) defaultApps(log *runlog.Log) error {
@@ -323,9 +337,7 @@ func appSteps(context *Context) {
 		})
 	}
 	if context.Config.Enabled("APPS", "helium") {
-		context.Run.Step("Make Helium the default browser", func(log *runlog.Log) error {
-			return context.defaultOnce(log, "browser", heliumEntry, webTypes)
-		})
+		context.heliumDefault()
 	}
 	context.Run.Step("Choose the apps that open images, PDFs, videos and archives", context.defaultApps)
 	chezmoiSteps(context)
@@ -334,8 +346,5 @@ func appSteps(context *Context) {
 
 func appChecks(context *Context) {
 	context.Run.Check("Every ticked app is installed", context.appsMissing)
-	if context.Config.Enabled("APPS", "helium") {
-		context.Run.Check("Helium is the default browser", context.heliumIsDefault)
-	}
 	extrasChecks(context)
 }
