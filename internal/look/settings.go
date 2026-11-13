@@ -140,10 +140,11 @@ func zone() (string, bool) {
 func Value(text, key string) string {
 	prefix := key + "="
 	value := ""
+	text = strings.TrimPrefix(text, "\ufeff")
 	for text != "" {
 		var line string
 		line, text, _ = strings.Cut(text, "\n")
-		if found, ok := strings.CutPrefix(line, prefix); ok {
+		if found, ok := strings.CutPrefix(strings.TrimSuffix(line, "\r"), prefix); ok {
 			value = found
 		}
 	}
@@ -153,6 +154,7 @@ func Value(text, key string) string {
 func Without(text, key string) string {
 	prefix := key + "="
 	var kept strings.Builder
+	text = strings.TrimPrefix(text, "\ufeff")
 	for text != "" {
 		var line string
 		line, text, _ = strings.Cut(text, "\n")

@@ -1,6 +1,7 @@
 package record
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -26,7 +27,9 @@ recording or starts one of a region.
 `
 	recorder   = "wf-recorder"
 	noRecorder = "wf-recorder isn't installed: sudo apt install wf-recorder"
+	endedEarly = "wf-recorder stopped as soon as it started, so nothing was recorded"
 	settle     = 3 * time.Second
+	watch      = time.Second
 )
 
 func stateFile() string {
@@ -92,11 +95,15 @@ func startUnless(mode string, running func() bool) int {
 		return 1
 	}
 	remember(file)
-	args := append([]string{"-f", recorder, "-y", "-f", file}, where...)
-	code := run.Quiet(run.Quick, "setsid", args...)
-	if code != 0 {
+	err = run.Detach(watch, recorder, append([]string{"-y", "-f", file}, where...)...)
+	switch {
+	case errors.Is(err, run.ErrEnded):
+		return 0
+	case err != nil:
 		os.Remove(file)
-		return code
+		fmt.Fprintln(os.Stderr, endedEarly)
+		notify.Post([]string{"--app-name=Recording"}, "Can't record", endedEarly)
+		return 1
 	}
 	look.CallShell("recording", "started")
 	return 0

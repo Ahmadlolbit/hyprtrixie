@@ -44,8 +44,9 @@ Label {
   }
 
   function duration(seconds) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.round(seconds % 3600 / 60);
+    const total = Math.round(seconds / 60);
+    const hours = Math.floor(total / 60);
+    const minutes = total % 60;
     return hours > 0 ? hours + " h " + minutes + " min" : minutes + " min";
   }
 

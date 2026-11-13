@@ -153,6 +153,82 @@ func gitWrite(args ...string) int {
 	return run.Status(command[0], command[1:]...)
 }
 
+func gitPaths(args ...string) ([]string, bool) {
+	output, err := run.CaptureQuiet(run.Slow, "git", append([]string{"-C", root()}, args...)...)
+	if output == "" {
+		return nil, err == nil
+	}
+	return strings.Split(strings.TrimSuffix(output, "\x00"), "\x00"), err == nil
+}
+
+func inMove(paths, moving []string) []string {
+	var found []string
+	for _, path := range paths {
+		if slices.Contains(moving, path) {
+			found = append(found, path)
+		}
+	}
+	return found
+}
+
+func movedAlready(target string, paths []string) []string {
+	if len(paths) == 0 {
+		return nil
+	}
+	differ, ok := gitPaths(append([]string{"diff", "--no-renames", "--name-only", "-z", target, "--"}, paths...)...)
+	if !ok {
+		return nil
+	}
+	var same []string
+	for _, path := range paths {
+		if !slices.Contains(differ, path) {
+			same = append(same, path)
+		}
+	}
+	return same
+}
+
+func addedAlready(target string, paths []string) []string {
+	if len(paths) == 0 {
+		return nil
+	}
+	hashes, err := run.CaptureQuiet(run.Slow, "git", append([]string{"-C", root(), "hash-object", "--"}, paths...)...)
+	listed, ok := gitPaths(append([]string{"ls-tree", "-z", target, "--"}, paths...)...)
+	if err != nil || !ok {
+		return nil
+	}
+	found := run.Lines(hashes)
+	var same []string
+	for index, path := range paths {
+		if index < len(found) && slices.ContainsFunc(listed, func(line string) bool { return strings.HasSuffix(line, " blob "+found[index]+"\t"+path) }) {
+			same = append(same, path)
+		}
+	}
+	return same
+}
+
+func undoHalfMove(target string) {
+	if run.Quiet(run.Quick, "git", "-C", root(), "merge-base", "--is-ancestor", "HEAD", target) != 0 {
+		return
+	}
+	moving, ok := gitPaths("diff", "--no-renames", "--name-only", "-z", "HEAD", target)
+	changed, okChanged := gitPaths("diff", "--no-renames", "--name-only", "-z", "HEAD")
+	others, okOthers := gitPaths("ls-files", "-z", "--others", "--exclude-standard")
+	if !ok || !okChanged || !okOthers {
+		return
+	}
+	tracked, untracked := movedAlready(target, inMove(changed, moving)), addedAlready(target, inMove(others, moving))
+	if len(tracked)+len(untracked) > 0 {
+		fmt.Println("An earlier update stopped halfway, so the files it moved go back first.")
+	}
+	if len(tracked) > 0 {
+		gitWrite(append([]string{"checkout", "-q", "HEAD", "--"}, tracked...)...)
+	}
+	if len(untracked) > 0 {
+		gitWrite(append([]string{"clean", "-q", "-f", "--"}, untracked...)...)
+	}
+}
+
 func updateHyprtrixie() int {
 	fmt.Printf("Updating %s\n", root())
 	tag, target, err := releaseTarget()
@@ -172,6 +248,7 @@ func updateHyprtrixie() int {
 	if status := snapshotFirst(); status != 0 {
 		return status
 	}
+	undoHalfMove(target)
 	if gitWrite("merge", "--ff-only", target) != 0 {
 		return fail("moving to %s failed: the folder has local changes, or its branch has gone its own way", tag)
 	}

@@ -23,6 +23,20 @@ as_root() {
   sudo "$@"
 }
 
+apt_get() {
+  local start=$SECONDS said="" errors
+  until { errors="$(as_root env LC_ALL=C.UTF-8 apt-get -o DPkg::Lock::Timeout=600 "$@" 2>&1 >&3)"; } 3>&1; do
+    if [[ $errors != *"Could not get lock"* ]] || ((SECONDS - start >= 600)); then
+      printf '%s\n' "$errors" >&2
+      return 1
+    fi
+    [[ -n $said ]] || printf 'Another apt is updating its lists or downloading, perhaps the daily update; waiting for it, up to 10 minutes\n' >&2
+    said=1
+    sleep 5
+  done
+  [[ -z $errors ]] || printf '%s\n' "$errors" >&2
+}
+
 needs_root() {
   ((EUID == 0)) && return 0
   printf 'Hyprtrixie needs root for this. Run it again with sudo: sudo %s %s\n' "$0" "$1" >&2
@@ -43,8 +57,8 @@ build() {
   ((${HYPRTRIXIE_TOOLS_BUILT:-0})) && return 0
   stale || return 0
   if ! command -v go >/dev/null; then
-    as_root apt-get update
-    as_root apt-get install -y golang-go
+    apt_get update
+    apt_get install -y golang-go
   fi
   local builder=()
   if [[ -e $root/build && ! -w $root/build && -O $root ]]; then

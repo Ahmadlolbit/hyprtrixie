@@ -128,7 +128,11 @@ func get(out io.Writer, args ...string) error {
 
 func fresh() bool {
 	info, err := os.Stat(stamp())
-	return err == nil && time.Since(info.ModTime()) < updateMaxAge
+	if err != nil {
+		return false
+	}
+	age := time.Since(info.ModTime())
+	return age >= 0 && age < updateMaxAge
 }
 
 func Update(log *runlog.Log) error {

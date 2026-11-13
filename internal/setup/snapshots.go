@@ -341,7 +341,7 @@ func grubBuild(log *runlog.Log, source string) error {
 		return err
 	}
 	defer os.RemoveAll(folder)
-	if err := fsutil.CopyTree(source, folder); err != nil {
+	if err := fsutil.ScratchTree(source, folder); err != nil {
 		return err
 	}
 	return run.Logged(log, "make", "-C", folder, "install", "GRUB_UPDATE_EXCLUDE=true")

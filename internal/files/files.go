@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/Ahmadlolbit/hyprtrixie/internal/account"
@@ -21,6 +22,8 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/runlog"
 )
+
+var verified sync.Map
 
 const (
 	oldSuffix    = ".hyprtrixie-old"
@@ -154,8 +157,7 @@ func (deployer *Deployer) place(path string, data []byte, mode os.FileMode, owne
 	return install(path, data, mode, owner)
 }
 
-func (deployer *Deployer) settle(target string, data []byte, mode os.FileMode, owner string) error {
-	hash := fingerprint(data)
+func (deployer *Deployer) settle(target string, data []byte, hash string, mode os.FileMode, owner string) error {
 	if fsutil.IsLink(target) {
 		return deployer.record(target, hash)
 	}
@@ -231,7 +233,7 @@ func (deployer *Deployer) existing(target string, data []byte, mode os.FileMode,
 	known := deployer.hashes[target]
 	switch {
 	case found == fresh:
-		return true, deployer.settle(target, data, mode, owner)
+		return true, deployer.settle(target, data, fresh, mode, owner)
 	case known == fresh && found != known:
 		return true, nil
 	case known != "" && found != known:
@@ -425,7 +427,10 @@ func (deployer *Deployer) ToolAt(name, target string) error {
 		}
 		return deployer.link(filepath.Join(env.BinDir(), program), target)
 	}
-	if unchanged(source, target) {
+	if hash, same := unchanged(source, target); same && !deployer.inHome(target) {
+		ledger.Note(ledger.File, target)
+		return deployer.settle(target, nil, hash, programMode, systemOwner)
+	} else if same {
 		return deployer.Program(source, target)
 	}
 	data, err := deployer.read(source)
@@ -450,13 +455,34 @@ func (deployer *Deployer) placeOnce(program string) error {
 	return nil
 }
 
-func unchanged(source, target string) bool {
-	info, err := os.Lstat(target)
+func identityOf(path string) string {
+	info, err := os.Lstat(path)
 	if err != nil || !info.Mode().IsRegular() {
-		return false
+		return ""
+	}
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	if !ok {
+		return ""
+	}
+	return fmt.Sprint(stat.Dev, stat.Ino, info.Size(), info.ModTime().UnixNano())
+}
+
+func unchanged(source, target string) (string, bool) {
+	from, to := identityOf(source), identityOf(target)
+	if to == "" {
+		return "", false
+	}
+	if hash, ok := verified.Load(from + "|" + to); ok && from != "" {
+		return hash.(string), true
 	}
 	hash := current(source)
-	return hash != "" && hash == current(target)
+	if hash == "" || hash != current(target) {
+		return "", false
+	}
+	if from != "" {
+		verified.Store(from+"|"+to, hash)
+	}
+	return hash, true
 }
 
 func (deployer *Deployer) link(program, target string) error {

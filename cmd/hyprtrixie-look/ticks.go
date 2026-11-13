@@ -258,9 +258,14 @@ func weatherTick() {
 		remove(lookState("weather-retry"))
 		return
 	}
-	if at, ok := moment(); ok {
+	if at, ok := moment(); ok && networkUp() {
 		save(lookState("weather-retry"), strconv.FormatInt(at.Unix()+weatherRetry, 10))
 	}
+}
+
+func networkUp() bool {
+	state, err := run.CaptureInEnglish(run.Quick, "nmcli", "-t", "-f", "STATE", "general")
+	return err != nil || strings.TrimSpace(state) == "connected"
 }
 
 func updateWeather() int {

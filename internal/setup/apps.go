@@ -44,16 +44,27 @@ func (context *Context) wantedApps() []apps.App {
 	return slices.DeleteFunc(apps.All(), func(app apps.App) bool { return !context.Config.Enabled("APPS", app.ID) })
 }
 
+func noPinned(app apps.App, repository string, tried error) error {
+	reason := "apt finds no " + app.Packages[0] + " in the " + repository + " repository"
+	if tried != nil {
+		var said strings.Builder
+		run.Explain(&said, tried)
+		reason = cmp.Or(strings.TrimSpace(said.String()), "the "+repository+" repository couldn't be set up")
+	}
+	return errors.New("no pinned package for " + app.ID + ", and " + reason)
+}
+
 func extrepoAppInstall(log *runlog.Log, app apps.App, repository string) error {
 	ledger.Note(ledger.Wants, app.Packages...)
 	if apt.Present(app.Packages...) == nil {
 		return nil
 	}
-	if apt.ExtrepoTry(log, repository) == nil && apt.Candidate(app.Packages[0]) != "" {
+	tried := apt.ExtrepoTry(log, repository)
+	if tried == nil && apt.Candidate(app.Packages[0]) != "" {
 		return apt.Install(log, app.Packages...)
 	}
 	if !fetch.HasRelease(app.ID) {
-		return errors.New("no pinned package for " + app.ID)
+		return noPinned(app, repository, tried)
 	}
 	fmt.Fprintf(log, "The %s repository is unavailable, installing the pinned package instead\n", repository)
 	return apt.InstallRelease(log, app.ID, app.Packages[0])

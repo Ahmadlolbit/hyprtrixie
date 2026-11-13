@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -82,7 +83,7 @@ func previewOf(name string) string {
 		}
 	}
 	for _, dir := range []string{own, shipped} {
-		if found := fsutil.Images(filepath.Join(dir, "backgrounds")); len(found) > 0 {
+		if found := fsutil.Images(fsutil.Followed(filepath.Join(dir, "backgrounds"))); len(found) > 0 {
 			return found[0]
 		}
 	}
@@ -111,8 +112,8 @@ func stageEntry(own, next string, entry fs.DirEntry) error {
 	case strings.HasSuffix(base, ".lua") || strings.Contains(denied, " "+base+" "):
 		fmt.Fprintf(os.Stderr, "ignored %s from %s: your themes can't bring code or settings that run commands\n", base, own)
 		return nil
-	case base == "backgrounds" && entry.IsDir():
-		return stageImages(source, target)
+	case base == "backgrounds" && fsutil.IsDir(source):
+		return stageImages(fsutil.Followed(source), target)
 	case !slices.Contains(ownFiles, base):
 		return nil
 	case entry.Type()&os.ModeSymlink != 0:
@@ -414,10 +415,19 @@ func scaleText(current map[string]string, scale float64) {
 	}
 }
 
+func iconInstalled(name string) bool {
+	for _, dir := range []string{filepath.Join(env.DataHome(), "icons"), filepath.Join(env.Home(), ".icons"), "/usr/local/share/icons", "/usr/share/icons"} {
+		if fsutil.IsDir(filepath.Join(dir, name)) {
+			return true
+		}
+	}
+	return false
+}
+
 func iconTheme(mode string) string {
 	first, _, _ := strings.Cut(fsutil.Optional(filepath.Join(state(), "theme", "icons.theme")), "\n")
 	icons := strings.TrimSpace(strings.TrimPrefix(first, "\ufeff"))
-	if iconName.MatchString(icons) && fsutil.IsDir("/usr/share/icons/"+icons) {
+	if iconName.MatchString(icons) && iconInstalled(icons) {
 		return icons
 	}
 	if mode == "dark" {
@@ -491,7 +501,14 @@ func prepare(name, next string) (theme.Colors, theme.Colors, bool) {
 
 func apply(name string) (paper, bool) {
 	next := filepath.Join(filepath.Dir(state()), "next-theme")
-	defer cleanup.OnSignal(func() { os.RemoveAll(next) })()
+	var moving sync.Mutex
+	swapping := false
+	defer cleanup.OnSignal(func() {
+		moving.Lock()
+		if !swapping {
+			os.RemoveAll(next)
+		}
+	})()
 	previous, _ := fsutil.Text(filepath.Join(state(), "theme.name"))
 	before := shownBackground()
 	colors, apps, ok := prepare(name, next)
@@ -502,6 +519,9 @@ func apply(name string) (paper, bool) {
 		fmt.Fprintln(os.Stderr, err)
 		return paperKept, false
 	}
+	moving.Lock()
+	swapping = true
+	moving.Unlock()
 	if err := swap(next, filepath.Join(state(), "theme")); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return paperKept, false

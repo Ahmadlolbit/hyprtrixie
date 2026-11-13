@@ -20,6 +20,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/events"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/files"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/firewall"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/ledger"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/lock"
@@ -610,16 +611,27 @@ func (work *session) forgetRemoved(before map[string]bool) {
 	}
 }
 
+func (work *session) followed(app apps.App, code int) int {
+	if code != 0 || !firewall.Opens(app.ID) {
+		return code
+	}
+	if err := firewall.Refresh(work.log); err != nil {
+		work.log.Line("warn", "the firewall can't follow "+app.Name+": "+err.Error())
+		ui.Warn("The firewall can't follow " + app.Name + ": " + err.Error())
+	}
+	return code
+}
+
 func AddApp(app apps.App) int {
 	tick := func(settings *config.Config) { settings.Tick("APPS", app.ID) }
 	return entered(appMode+"install", Options{}, []string{app.ID}, func(work *session) int {
-		return work.changeApp(app, tick, setup.AddApp)
+		return work.followed(app, work.changeApp(app, tick, setup.AddApp))
 	})
 }
 
 func RemoveApp(app apps.App) int {
 	untick := func(settings *config.Config) { settings.Untick("APPS", app.ID) }
 	return entered(appMode+"remove", Options{}, []string{app.ID}, func(work *session) int {
-		return work.changeApp(app, untick, setup.RemoveApp)
+		return work.followed(app, work.changeApp(app, untick, setup.RemoveApp))
 	})
 }
