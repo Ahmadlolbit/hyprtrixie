@@ -18,6 +18,7 @@ const (
 	starts     = "hyprtrixie "
 	folderMode = 0o755
 	stampMode  = 0o644
+	newSuffix  = ".hyprtrixie-new"
 )
 
 type Change struct {
@@ -128,6 +129,14 @@ func hashes(limit time.Duration, messages *os.File, lines []string) (map[string]
 }
 
 func Waiting(limit time.Duration, home string) ([]string, error) {
-	output, err := run.CaptureQuiet(limit, "find", "-H", "/etc", "/usr/share/hyprtrixie", filepath.Join(home, ".config"), "-name", "*.hyprtrixie-new")
-	return run.Lines(output), err
+	output, err := run.CaptureQuiet(limit, "find", "-H", "/etc", "/usr/share/hyprtrixie", filepath.Join(home, ".config"), "-name", "*"+newSuffix)
+	found := run.Lines(output)
+	lines, _ := fsutil.Lines(filepath.Join(env.StateDir(), "files.db"))
+	for _, line := range lines {
+		path, _, _ := strings.Cut(line, "\t")
+		if fresh := path + newSuffix; fsutil.Exists(fresh) && !slices.Contains(found, fresh) {
+			found = append(found, fresh)
+		}
+	}
+	return found, err
 }
