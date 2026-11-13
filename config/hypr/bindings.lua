@@ -15,7 +15,7 @@ bind("SUPER + F", "Full screen", hl.dsp.window.fullscreen({ mode = "fullscreen" 
 bind("SUPER + T", "Float or tile window", hl.dsp.window.float({ action = "toggle" }))
 bind("SUPER + J", "Change split direction", hl.dsp.layout("togglesplit"))
 bind("SUPER + P", "Pseudo-tile window", hl.dsp.window.pseudo())
-bind("SUPER + L", "Lock", "pidof hyprlock || hyprlock")
+bind("SUPER + L", "Lock", [[pgrep -xu "$(id -u)" hyprlock >/dev/null || hyprlock]])
 bind("SUPER + Space", "Launcher", "walker")
 bind("SUPER + ALT + Space", "Menu", "qs -p /usr/share/hyprtrixie/shell ipc call menu toggle root")
 bind("SUPER + Escape", "System menu", "qs -p /usr/share/hyprtrixie/shell ipc call menu toggle system")
