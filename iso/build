@@ -5,6 +5,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 root="$(dirname "$here")"
 out="${1:-$root/build/iso}"
 mkdir -p "$out"
+out="$(cd "$out" && pwd)"
 ca=""
 for bundle in /etc/ssl/certs/ca-certificates.crt /etc/ssl/cert.pem /etc/pki/tls/certs/ca-bundle.crt; do
   if [[ -f $bundle ]]; then

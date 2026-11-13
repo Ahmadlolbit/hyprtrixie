@@ -25,6 +25,7 @@ done
   exit 1
 }
 mkdir -p "$out"
+out="$(cd "$out" && pwd)"
 docker run --rm --platform linux/amd64 -e TAG="$tag" \
   -v "$root:/src:ro" -v "$out:/out" -v "$ca:/run/host-ca.pem:ro" -v hyprtrixie-package-cache:/var/cache/apt/archives \
   debian:trixie bash /src/package/inside
