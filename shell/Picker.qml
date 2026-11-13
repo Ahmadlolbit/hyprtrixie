@@ -158,7 +158,10 @@ Scope {
     id: done
 
     interval: 300
-    onTriggered: root.close()
+    onTriggered: {
+      if (root.startedIn === root.opening)
+        root.close();
+    }
   }
 
   IpcHandler {
