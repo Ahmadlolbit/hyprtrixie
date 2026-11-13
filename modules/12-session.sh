@@ -101,7 +101,7 @@ idle_listener() {
 hypridle_config() {
   local lock=$((IDLE_LOCK_MINUTES * 60)) suspend=$((IDLE_SUSPEND_MINUTES * 60)) saver=$((SCREENSAVER_MINUTES * 60))
   local on="hyprctl dispatch 'hl.dsp.dpms({action = \"on\"})'" off="hyprctl dispatch 'hl.dsp.dpms({action = \"off\"})'"
-  printf 'general {\n    lock_cmd = pidof hyprlock || hyprlock\n    before_sleep_cmd = loginctl lock-session\n'
+  printf 'general {\n    lock_cmd = pgrep -xu "$(id -u)" hyprlock >/dev/null || hyprlock\n    before_sleep_cmd = loginctl lock-session\n'
   printf '    after_sleep_cmd = %s\n}\n' "$on"
   if ((saver > 0 && (lock == 0 || saver < lock))); then
     idle_listener "$saver" "hyprtrixie-screensaver start"

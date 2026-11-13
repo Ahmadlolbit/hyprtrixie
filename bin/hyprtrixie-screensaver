@@ -30,14 +30,14 @@ text_file() {
 }
 
 running() {
-  pgrep -f "kitty --class $CLASS" >/dev/null
+  pgrep -u "$UID" -f "kitty --class $CLASS" >/dev/null
 }
 
 start() {
   local monitor monitors=()
   [[ -e $OFF ]] && return 0
   running && return 0
-  pidof hyprlock >/dev/null && return 0
+  pgrep -xu "$UID" hyprlock >/dev/null && return 0
   mapfile -t monitors < <(hyprctl monitors -j | jq -r 'sort_by(.focused) | .[].name')
   for monitor in "${monitors[@]}"; do
     hyprctl dispatch "hl.dsp.focus({ monitor = \"$monitor\" })" >/dev/null
@@ -68,7 +68,7 @@ run() {
       "${EFFECTS[RANDOM % ${#EFFECTS[@]}]}" &
     pid=$!
     while true; do
-      if read -rsn1 -t 1 || ! focused || pidof hyprlock >/dev/null; then
+      if read -rsn1 -t 1 || ! focused || pgrep -xu "$UID" hyprlock >/dev/null; then
         finish
       fi
       kill -0 "$pid" 2>/dev/null || break

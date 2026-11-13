@@ -129,8 +129,8 @@
   "toggle.nightlight": {
     "glyph": "\udb81\udd94",
     "label": "Night light",
-    "action": "pkill -x hyprsunset || setsid -f hyprsunset -t 4500 >/dev/null 2>&1",
-    "state": "pgrep -x hyprsunset >/dev/null",
+    "action": "pkill -xu \"$(id -u)\" hyprsunset || setsid -f hyprsunset -t 4500 >/dev/null 2>&1",
+    "state": "pgrep -xu \"$(id -u)\" hyprsunset >/dev/null",
     "keywords": [
       "night",
       "light",
@@ -627,7 +627,7 @@
   "system.lock": {
     "glyph": "\uf023",
     "label": "Lock",
-    "action": "pidof hyprlock || hyprlock",
+    "action": "pgrep -xu \"$(id -u)\" hyprlock >/dev/null || hyprlock",
     "keywords": [
       "lock"
     ]
