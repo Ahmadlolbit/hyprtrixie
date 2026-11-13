@@ -46,6 +46,7 @@ func tip() (string, bool) {
 	var tips []string
 	for _, file := range []string{tipsFile, filepath.Join(env.ConfigHome(), "hyprtrixie", "tips.txt")} {
 		for _, line := range strings.Split(read(file), "\n") {
+			line = strings.TrimSuffix(line, "\r")
 			if strings.TrimSpace(line) != "" {
 				tips = append(tips, line)
 			}
