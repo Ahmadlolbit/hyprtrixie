@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"runtime/debug"
 	"slices"
@@ -175,8 +176,8 @@ func (options Options) wants(id string) bool {
 }
 
 func packages() []string {
-	output, _ := run.CaptureQuiet(run.Slow, "dpkg-query", "-W", "-f=${Package}\n")
-	return run.Lines(strings.TrimSuffix(output, "\n"))
+	installed, _ := apt.Installed()
+	return slices.Sorted(maps.Keys(installed))
 }
 
 func callers() []int {
