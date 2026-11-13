@@ -36,11 +36,25 @@ func showBar(read func([]byte) string, fallback string) int {
 }
 
 func setBar(change func([]byte, string) ([]byte, error), value string) int {
+	if status := changeBar(change, value); status != 0 {
+		return status
+	}
+	run.Quiet(run.Quick, "hyprctl", "reload")
+	return 0
+}
+
+func changeBar(change func([]byte, string) ([]byte, error), value string) int {
 	file := shellFile()
 	if err := os.MkdirAll(filepath.Dir(file), 0o777); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
+	unlock, err := look.Hold(filepath.Dir(file))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	defer unlock()
 	data, err := os.ReadFile(file)
 	if err != nil && !os.IsNotExist(err) {
 		fmt.Fprintln(os.Stderr, err)
@@ -59,7 +73,6 @@ func setBar(change func([]byte, string) ([]byte, error), value string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	run.Quiet(run.Quick, "hyprctl", "reload")
 	return 0
 }
 
