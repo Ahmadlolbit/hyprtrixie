@@ -220,8 +220,15 @@ func RemoveApp(context *Context, app apps.App) {
 }
 
 func (context *Context) defaultApp(log *runlog.Log, name, entry string, types []string) error {
+	if !fsutil.IsFile(filepath.Join(applicationsDir(), entry)) {
+		return nil
+	}
+	return context.defaultOnce(log, name, entry, types)
+}
+
+func (context *Context) defaultOnce(log *runlog.Log, name, entry string, types []string) error {
 	stamp := context.Person.Path(filepath.Join(yourDefaults, name))
-	if fsutil.IsFile(stamp) || !fsutil.IsFile(filepath.Join(applicationsDir(), entry)) {
+	if fsutil.IsFile(stamp) {
 		return nil
 	}
 	shared := filepath.Join(env.StateDir(), "defaults", name)
@@ -317,7 +324,7 @@ func appSteps(context *Context) {
 	}
 	if context.Config.Enabled("APPS", "helium") {
 		context.Run.Step("Make Helium the default browser", func(log *runlog.Log) error {
-			return context.Person.Run(log, append([]string{"xdg-mime", "default", heliumEntry}, webTypes...)...)
+			return context.defaultOnce(log, "browser", heliumEntry, webTypes)
 		})
 	}
 	context.Run.Step("Choose the apps that open images, PDFs, videos and archives", context.defaultApps)
