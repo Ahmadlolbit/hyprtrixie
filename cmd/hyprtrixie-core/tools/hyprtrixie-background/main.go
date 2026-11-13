@@ -76,7 +76,10 @@ func workspaces() bool {
 	if len(found) == 0 {
 		return current() == "" || overIPC(current())
 	}
-	monitors, _ := hypr.QuietMonitors()
+	monitors, ok := hypr.QuietMonitors()
+	if !ok {
+		return false
+	}
 	for _, monitor := range monitors {
 		if monitor.ActiveWorkspace.ID == nil {
 			continue
