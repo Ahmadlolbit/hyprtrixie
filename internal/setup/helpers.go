@@ -121,6 +121,22 @@ func keepOld(_ *runlog.Log, path string) error {
 	return files.KeepCopy(path, path+".hyprtrixie-old")
 }
 
+func replaceKept(log *runlog.Log, path string, data []byte) (bool, error) {
+	before, _ := files.Hash(path)
+	if saved, err := files.Hash(path + ".hyprtrixie-old"); err == nil && saved != before {
+		fresh := path + ".hyprtrixie-new"
+		log.Line("warn", "kept local edits in "+path+", new version written to "+fresh)
+		if fsutil.Optional(fresh) == string(data) {
+			return false, nil
+		}
+		return false, atomic.Write(fresh, data, plainMode)
+	}
+	if err := keepOld(log, path); err != nil {
+		return false, err
+	}
+	return true, atomic.Write(path, data, plainMode)
+}
+
 func unpackedRelease(log *runlog.Log, name string) (string, error) {
 	file, err := fetch.FetchRelease(log, name)
 	if err != nil {
