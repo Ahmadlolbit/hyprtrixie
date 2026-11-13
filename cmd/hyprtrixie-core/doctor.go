@@ -17,6 +17,7 @@ import (
 	"github.com/Ahmadlolbit/hyprtrixie/internal/deployed"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/env"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/fsutil"
+	"github.com/Ahmadlolbit/hyprtrixie/internal/lock"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/run"
 	"github.com/Ahmadlolbit/hyprtrixie/internal/ui"
 )
@@ -489,6 +490,10 @@ func checkInstaller() {
 func (visit *checkup) offerFixes() {
 	if len(visit.fixes) == 0 {
 		ui.Print("\nNothing for the doctor to fix.\n")
+		return
+	}
+	if lock.Busy() {
+		ui.Print("\nA Hyprtrixie run is still going, so the doctor fixed nothing: run hyprtrixie doctor once it ends.\n")
 		return
 	}
 	if !ui.CanAsk() {
