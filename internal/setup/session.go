@@ -189,7 +189,7 @@ func screenOffListeners(saver int) string {
 
 func hypridleConfig(lock, suspend, saver int) string {
 	var text strings.Builder
-	text.WriteString("general {\n    lock_cmd = pidof hyprlock || hyprlock\n    before_sleep_cmd = loginctl lock-session\n")
+	text.WriteString("general {\n    lock_cmd = pgrep -xu \"$(id -u)\" hyprlock >/dev/null || hyprlock\n    before_sleep_cmd = loginctl lock-session\n")
 	text.WriteString("    after_sleep_cmd = " + dpmsOn + "\n}\n")
 	if saver > 0 && (lock == 0 || saver < lock) {
 		text.WriteString(idleListener(saver, "hyprtrixie-screensaver start --idle", ""))
